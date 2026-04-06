@@ -8,6 +8,8 @@ import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { CategoriaService } from '../../infrastructure/services/categoria.service';
 
@@ -30,150 +32,370 @@ interface Categoria {
     TagModule,
     ToastModule,
     ConfirmDialogModule,
+    ToggleSwitchModule,
+    TooltipModule,
   ],
   providers: [MessageService, ConfirmationService],
   template: `
-    <p-toast></p-toast>
+    <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
-
-    <div class="animate-fade-in">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Gestión de Categorías</h2>
-        <button
-          pButton
-          label="Nueva Categoría"
-          icon="pi pi-plus"
-          (click)="openNew()"
-          class="bg-[#39A900] border-[#39A900] hover:bg-[#2D8600]"
-        ></button>
-      </div>
-
-      <div class="bg-white rounded-lg shadow border border-gray-200">
-        <div class="p-4 border-b border-gray-200">
-          <span class="p-input-icon-left">
-            <i class="pi pi-search"></i>
-            <input
+    <div class="module-container">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button
+            pButton
+            label="Nuevo"
+            icon="pi pi-plus"
+            class="btn-new"
+            (click)="openNew()"
+          ></button>
+        </div>
+        <div class="toolbar-center"><h2 class="page-title">Gestionar Categorías</h2></div>
+        <div class="toolbar-right">
+          <span class="p-input-icon-left search-box"
+            ><i class="pi pi-search"></i
+            ><input
               pInputText
               type="text"
               [(ngModel)]="filtro"
               (input)="filtrar()"
-              placeholder="Buscar categoría..."
-              class="w-64"
-            />
-          </span>
+              placeholder="Buscar categorías..."
+              class="search-input"
+          /></span>
         </div>
-
+      </div>
+      <div class="table-card">
         <p-table
           [value]="categoriasFiltradas"
           [paginator]="true"
           [rows]="10"
-          [tableStyle]="{ 'min-width': '50rem' }"
-          styleClass="p-datatable-striped"
+          [rowsPerPageOptions]="[5, 10, 25]"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} categorías"
+          [tableStyle]="{ 'min-width': '40rem' }"
+          [stripedRows]="true"
+          styleClass="p-datatable-gridlines"
+          [rowHover]="true"
         >
-          <ng-template pTemplate="header">
-            <tr>
-              <th class="!bg-white !text-gray-600">ID</th>
-              <th class="!bg-white !text-gray-600">Nombre de Categoría</th>
-              <th class="!bg-white !text-gray-600">Estado</th>
-              <th class="!bg-white !text-gray-600 text-center">Acciones</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-categoria>
-            <tr>
-              <td class="font-medium text-gray-900">#{{ categoria.id }}</td>
-              <td class="font-medium text-gray-900">{{ categoria.nombreCat }}</td>
+          <ng-template pTemplate="header"
+            ><tr>
+              <th pSortableColumn="id" style="width:80px">
+                ID <p-sortIcon field="id"></p-sortIcon>
+              </th>
+              <th pSortableColumn="nombreCat">
+                Nombre de Categoría <p-sortIcon field="nombreCat"></p-sortIcon>
+              </th>
+              <th pSortableColumn="estado" style="width:100px">
+                Estado <p-sortIcon field="estado"></p-sortIcon>
+              </th>
+              <th style="width:100px;text-align:center">Acciones</th>
+            </tr></ng-template
+          >
+          <ng-template pTemplate="body" let-cat
+            ><tr>
+              <td>
+                <span class="id-badge">#{{ cat.id }}</span>
+              </td>
+              <td>
+                <span class="nombre-cell">{{ cat.nombreCat }}</span>
+              </td>
               <td>
                 <p-tag
-                  [value]="categoria.estado ? 'Activa' : 'Inactiva'"
-                  [severity]="categoria.estado ? 'success' : 'danger'"
+                  [value]="cat.estado ? 'Activa' : 'Inactiva'"
+                  [severity]="cat.estado ? 'success' : 'danger'"
                 ></p-tag>
               </td>
-              <td class="text-center">
+              <td class="action-buttons">
                 <button
                   pButton
                   icon="pi pi-pencil"
-                  (click)="editar(categoria)"
-                  class="p-button-text p-button-sm text-[#39A900] mr-2"
-                ></button>
-                <button
+                  class="btn-edit p-button-sm p-button-text"
+                  (click)="editar(cat)"
+                  pTooltip="Editar"
+                ></button
+                ><button
                   pButton
                   icon="pi pi-trash"
-                  (click)="eliminar(categoria)"
-                  class="p-button-text p-button-sm p-button-danger"
+                  class="btn-delete p-button-sm p-button-text"
+                  (click)="eliminar(cat)"
+                  pTooltip="Eliminar"
                 ></button>
+              </td></tr
+          ></ng-template>
+          <ng-template pTemplate="emptymessage"
+            ><tr>
+              <td colspan="4" class="empty-message">
+                <i class="pi pi-tag"></i><span>No se encontraron categorías.</span>
               </td>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="4" class="text-center py-8 text-gray-500">
-                No se encontraron categorías.
-              </td>
-            </tr>
-          </ng-template>
+            </tr></ng-template
+          >
         </p-table>
       </div>
     </div>
-
     <p-dialog
-      header="{{ esNuevo ? 'Nueva Categoría' : 'Editar Categoría' }}"
+      [header]="esNuevo ? 'Nueva Categoría' : 'Editar Categoría'"
       [(visible)]="displayDialog"
       [modal]="true"
-      [style]="{ width: '400px' }"
+      [style]="{ minWidth: '400px', width: '400px' }"
       [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
     >
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-2">
-          <label for="nombreCat" class="font-medium text-gray-700">Nombre de Categoría</label>
-          <input
+      <div class="form-container">
+        <div class="form-field">
+          <label for="nombreCat">Nombre de Categoría *</label
+          ><input
             pInputText
             id="nombreCat"
             [(ngModel)]="categoria.nombreCat"
-            class="w-full"
             placeholder="Ej: Herramientas"
+            class="form-input"
           />
         </div>
+        <div class="form-field">
+          <label>Estado</label>
+          <div class="switch-container">
+            <p-toggleswitch [(ngModel)]="categoria.estado"></p-toggleswitch
+            ><span class="switch-label">{{ categoria.estado ? 'Activa' : 'Inactiva' }}</span>
+          </div>
+        </div>
       </div>
-      <ng-template pTemplate="footer">
-        <button
-          pButton
-          label="Cancelar"
-          (click)="displayDialog = false"
-          class="p-button-text"
-        ></button>
-        <button
-          pButton
-          label="Guardar"
-          (click)="guardar()"
-          class="bg-[#39A900] border-[#39A900]"
-        ></button>
-      </ng-template>
+      <ng-template pTemplate="footer"
+        ><div class="dialog-footer">
+          <button
+            pButton
+            label="Cancelar"
+            icon="pi pi-times"
+            class="btn-cancel"
+            (click)="displayDialog = false"
+          ></button
+          ><button
+            pButton
+            label="Guardar"
+            icon="pi pi-check"
+            class="btn-save"
+            (click)="guardar()"
+          ></button></div
+      ></ng-template>
     </p-dialog>
   `,
+  styles: [
+    `
+      .module-container {
+        padding: 24px;
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 60px);
+      }
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .toolbar-left {
+        display: flex;
+        gap: 10px;
+      }
+      .btn-new {
+        background-color: #39a900 !important;
+        border-color: #39a900 !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+      }
+      .btn-new:hover {
+        background-color: #2d8600 !important;
+        border-color: #2d8600 !important;
+      }
+      .toolbar-center {
+        flex: 1;
+        text-align: center;
+      }
+      .page-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #212529;
+        margin: 0;
+      }
+      .toolbar-right {
+        min-width: 280px;
+      }
+      .search-box {
+        width: 100%;
+      }
+      .search-input {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+      }
+      .search-input:focus {
+        border-color: #39a900;
+        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+      }
+      .table-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+      .id-badge {
+        font-weight: 600;
+        color: #495057;
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .nombre-cell {
+        font-weight: 500;
+        color: #212529;
+      }
+      .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+      }
+      .btn-edit {
+        color: #fd7e14 !important;
+      }
+      .btn-edit:hover {
+        background-color: #fff3e0 !important;
+      }
+      .btn-delete {
+        color: #dc3545 !important;
+      }
+      .btn-delete:hover {
+        background-color: #ffe8e8 !important;
+      }
+      .empty-message {
+        text-align: center;
+        padding: 40px !important;
+        color: #6c757d;
+      }
+      .empty-message i {
+        display: block;
+        font-size: 48px;
+        margin-bottom: 10px;
+        color: #adb5bd;
+      }
+      .form-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .form-field label {
+        font-weight: 500;
+        color: #495057;
+        font-size: 14px;
+      }
+      .form-input {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 10px 12px;
+      }
+      .form-input:focus {
+        border-color: #39a900;
+        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+      }
+      .switch-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .switch-label {
+        font-weight: 400;
+        color: #495057;
+      }
+      .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        width: 100%;
+      }
+      .btn-cancel {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        border-radius: 8px !important;
+      }
+      .btn-cancel:hover {
+        background-color: #5a6268 !important;
+      }
+      .btn-save {
+        background-color: #39a900 !important;
+        border-color: #39a900 !important;
+        border-radius: 8px !important;
+      }
+      .btn-save:hover {
+        background-color: #2d8600 !important;
+      }
+      :host ::ng-deep .p-datatable .p-datatable-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+      }
+      :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+        background: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #39a900;
+        padding: 14px;
+      }
+      :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+        padding: 14px;
+        border-bottom: 1px solid #e9ecef;
+      }
+      :host ::ng-deep .p-paginator {
+        padding: 12px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-header {
+        background: #39a900;
+        color: white;
+        padding: 16px 24px;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-title {
+        color: white;
+        font-weight: 600;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-header .p-dialog-header-icon {
+        color: white;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-body {
+        padding: 24px;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #dee2e6;
+      }
+    `,
+  ],
 })
 export class CategoriaComponent implements OnInit {
   private categoriaService = inject(CategoriaService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
-
   categorias: Categoria[] = [];
   categoriasFiltradas: Categoria[] = [];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
   categoria: Categoria = this.getNuevaCategoria();
-
   ngOnInit() {
     this.cargarCategorias();
   }
-
   cargarCategorias() {
     this.categoriaService.getCategorias().subscribe({
       next: (res: any) => {
-        if (res?.data) {
-          this.categorias = res.data;
-          this.categoriasFiltradas = res.data;
-        }
+        const d = res?.data || res || [];
+        this.categorias = d;
+        this.categoriasFiltradas = d;
       },
       error: () => {
         this.categorias = [];
@@ -181,31 +403,34 @@ export class CategoriaComponent implements OnInit {
       },
     });
   }
-
   filtrar() {
-    const filtroLower = this.filtro.toLowerCase();
+    const f = this.filtro.toLowerCase();
     this.categoriasFiltradas = this.categorias.filter((c) =>
-      c.nombreCat?.toLowerCase().includes(filtroLower),
+      c.nombreCat?.toLowerCase().includes(f),
     );
   }
-
   getNuevaCategoria(): Categoria {
     return { nombreCat: '', estado: true };
   }
-
   openNew() {
     this.esNuevo = true;
     this.categoria = this.getNuevaCategoria();
     this.displayDialog = true;
   }
-
-  editar(categoria: Categoria) {
+  editar(cat: Categoria) {
     this.esNuevo = false;
-    this.categoria = { ...categoria };
+    this.categoria = { ...cat };
     this.displayDialog = true;
   }
-
   guardar() {
+    if (!this.categoria.nombreCat) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'El nombre de la categoría es requerido',
+      });
+      return;
+    }
     if (this.esNuevo) {
       this.categoriaService.crearCategoria({ nombreCat: this.categoria.nombreCat }).subscribe({
         next: () => {
@@ -226,28 +451,50 @@ export class CategoriaComponent implements OnInit {
         },
       });
     } else {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Éxito',
-        detail: 'Categoría actualizada correctamente',
+      this.categoriaService.actualizarCategoria(this.categoria.id!, this.categoria).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Categoría actualizada correctamente',
+          });
+          this.displayDialog = false;
+          this.cargarCategorias();
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar la categoría',
+          });
+        },
       });
-      this.displayDialog = false;
-      this.cargarCategorias();
     }
   }
-
-  eliminar(categoria: Categoria) {
+  eliminar(cat: Categoria) {
     this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar la categoría ' + categoria.nombreCat + '?',
+      message: '¿Está seguro de eliminar la categoría ' + cat.nombreCat + '?',
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Categoría eliminada correctamente',
+        this.categoriaService.eliminarCategoria(cat.id!).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Categoría eliminada correctamente',
+            });
+            this.cargarCategorias();
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'No se pudo eliminar la categoría',
+            });
+          },
         });
-        this.cargarCategorias();
       },
     });
   }

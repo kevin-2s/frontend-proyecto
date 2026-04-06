@@ -15,4 +15,12 @@ export class UsuarioService {
   crearUsuario(usuario: Omit<Usuario, 'id'>): Observable<Usuario> {
     return this.api.post<Usuario>(this.endpoint, usuario);
   }
+
+  actualizarUsuario(id: number, usuario: Partial<Usuario>): Observable<any> {
+    return this.api.put<any>(`${this.endpoint}/${id}`, usuario);
+  }
+
+  eliminarUsuario(id: number): Observable<any> {
+    return this.api.delete<any>(`${this.endpoint}/${id}`);
+  }
 }

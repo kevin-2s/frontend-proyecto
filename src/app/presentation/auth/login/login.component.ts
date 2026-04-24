@@ -4,59 +4,68 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../infrastructure/services/auth.service';
 import { CommonModule } from '@angular/common';
 
+import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
+import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, InputTextModule, PasswordModule, ButtonModule, ToastModule],
+  providers: [MessageService],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
-      <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+    <p-toast></p-toast>
+    <div class="min-h-screen flex items-center justify-center bg-surface-50 p-4">
+      <div class="max-w-md w-full bg-white rounded-lg shadow-xl p-8 border border-surface-200">
         <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold text-[#39A900] mb-2 tracking-tight">SENA</h1>
-          <h2 class="text-xl text-gray-700 font-medium">Sistema de Gestión de Materiales</h2>
+          <h1 class="text-5xl font-extrabold text-[#39A900] mb-3 tracking-tight drop-shadow-sm">Logitma</h1>
+          <h2 class="text-lg text-surface-600 font-medium">Gestión de Materiales de Formación</h2>
         </div>
 
-        <div *ngIf="errorMsg()" class="mb-4 p-3 bg-[#DC3545] text-white rounded text-sm text-center">
-          {{ errorMsg() }}
-        </div>
-
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
-          <div>
-            <label for="correo" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
+          <div class="flex flex-col gap-2">
+            <label for="correo" class="text-sm font-semibold text-surface-700">Correo electrónico</label>
             <input 
+              pInputText
               id="correo" 
               type="email" 
               formControlName="correo"
-              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#39A900] focus:border-transparent outline-none transition-all"
+              class="w-full"
               placeholder="usuario@sena.edu.co"
             >
-            <div *ngIf="loginForm.get('correo')?.touched && loginForm.get('correo')?.invalid" class="text-[#DC3545] text-xs mt-1">
-              Correo es requerido y debe ser válido
-            </div>
+            <small *ngIf="loginForm.get('correo')?.touched && loginForm.get('correo')?.invalid" class="text-red-500 font-medium">
+              El correo es requerido y debe ser válido
+            </small>
           </div>
 
-          <div>
-            <label for="contrasena" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-            <input 
+          <div class="flex flex-col gap-2">
+            <label for="contrasena" class="text-sm font-semibold text-surface-700">Contraseña</label>
+            <p-password 
               id="contrasena" 
-              type="password" 
               formControlName="contrasena"
-              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#39A900] focus:border-transparent outline-none transition-all"
+              [feedback]="false"
+              styleClass="w-full"
+              [inputStyle]="{'width':'100%'}"
               placeholder="••••••••"
-            >
-            <div *ngIf="loginForm.get('contrasena')?.touched && loginForm.get('contrasena')?.invalid" class="text-[#DC3545] text-xs mt-1">
-              Contraseña requerida
-            </div>
+              [toggleMask]="true"
+            ></p-password>
+            <small *ngIf="loginForm.get('contrasena')?.touched && loginForm.get('contrasena')?.invalid" class="text-red-500 font-medium">
+              La contraseña es requerida
+            </small>
           </div>
 
-          <button 
-            type="submit" 
-            [disabled]="loginForm.invalid || isLoading()"
-            class="w-full bg-[#39A900] hover:bg-[#2D8600] text-white font-bold py-2.5 px-4 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
-          >
-            <span *ngIf="isLoading()" class="mr-2">Cargando...</span>
-            Ingresar
-          </button>
+          <div class="mt-4">
+            <p-button 
+              type="submit" 
+              [disabled]="loginForm.invalid || isLoading()"
+              [loading]="isLoading()"
+              label="Ingresar al sistema"
+              styleClass="w-full"
+              [style]="{'background-color': '#39A900', 'border-color': '#39A900', 'padding': '0.75rem'}"
+            ></p-button>
+          </div>
         </form>
       </div>
     </div>
@@ -66,6 +75,7 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private messageService = inject(MessageService);
 
   loginForm = this.fb.nonNullable.group({
     correo: ['', [Validators.required, Validators.email]],
@@ -73,7 +83,6 @@ export class LoginComponent {
   });
 
   isLoading = signal(false);
-  errorMsg = signal('');
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
@@ -82,7 +91,6 @@ export class LoginComponent {
     }
 
     this.isLoading.set(true);
-    this.errorMsg.set('');
 
     const { correo, contrasena } = this.loginForm.getRawValue();
 
@@ -93,7 +101,12 @@ export class LoginComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMsg.set(err.error?.message || 'Credenciales incorrectas o error en el servidor');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error de Autenticación',
+          detail: err.error?.message || 'Credenciales incorrectas o error en el servidor',
+          life: 4000
+        });
       }
     });
   }

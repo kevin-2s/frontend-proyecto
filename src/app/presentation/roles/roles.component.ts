@@ -5,19 +5,10 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { TooltipModule } from 'primeng/tooltip';
-import { MessageService, ConfirmationService } from 'primeng/api';
-import { RolService } from '../../infrastructure/services/rol.service';
-
-interface Rol {
-  id?: number;
-  nombreRol: string;
-  estado?: boolean;
-}
+import { MessageService } from 'primeng/api';
+import { RolService, Rol } from '../../infrastructure/services/rol.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
 
 @Component({
   selector: 'app-roles',
@@ -29,41 +20,37 @@ interface Rol {
     ButtonModule,
     InputTextModule,
     DialogModule,
-    TagModule,
     ToastModule,
-    ConfirmDialogModule,
-    ToggleSwitchModule,
-    TooltipModule,
   ],
-  providers: [MessageService, ConfirmationService],
+  providers: [MessageService],
   template: `
-    <p-toast position="top-right"></p-toast>
-    <p-confirmDialog></p-confirmDialog>
+    <p-toast></p-toast>
 
-    <div class="module-container">
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <button
-            pButton
-            label="Nuevo"
-            icon="pi pi-plus"
-            class="btn-new"
-            (click)="openNew()"
-          ></button>
-        </div>
-        <div class="toolbar-center">
-          <h2 class="page-title">Gestionar Roles</h2>
-        </div>
-        <div class="toolbar-right">
-          <span class="p-input-icon-left search-box">
+    <div class="animate-fade-in p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-surface-800">Gestión de Roles</h2>
+        <button
+          *ngIf="isAdmin"
+          pButton
+          label="Nuevo Rol"
+          icon="pi pi-plus"
+          (click)="openNew()"
+          styleClass="p-button-success"
+          [style]="{'background-color': '#39A900', 'border-color': '#39A900'}"
+        ></button>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border border-surface-200">
+        <div class="p-4 border-b border-surface-200">
+          <span class="p-input-icon-left w-full sm:w-auto">
             <i class="pi pi-search"></i>
             <input
               pInputText
               type="text"
               [(ngModel)]="filtro"
               (input)="filtrar()"
-              placeholder="Buscar roles..."
-              class="search-input"
+              placeholder="Buscar rol..."
+              class="w-full sm:w-64"
             />
           </span>
         </div>
@@ -74,65 +61,25 @@ interface Rol {
           [value]="rolesFiltrados"
           [paginator]="true"
           [rows]="10"
-          [rowsPerPageOptions]="[5, 10, 25]"
-          [showCurrentPageReport]="true"
-          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} roles"
-          [tableStyle]="{ 'min-width': '40rem' }"
-          [stripedRows]="true"
-          styleClass="p-datatable-gridlines"
-          [rowHover]="true"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          styleClass="p-datatable-striped"
+          [loading]="loading"
         >
           <ng-template pTemplate="header">
             <tr>
-              <th pSortableColumn="id" style="width: 80px">
-                ID <p-sortIcon field="id"></p-sortIcon>
-              </th>
-              <th pSortableColumn="nombreRol">
-                Nombre del Rol <p-sortIcon field="nombreRol"></p-sortIcon>
-              </th>
-              <th pSortableColumn="estado" style="width: 100px">
-                Estado <p-sortIcon field="estado"></p-sortIcon>
-              </th>
-              <th style="width: 100px; text-align: center">Acciones</th>
+              <th class="!bg-surface-50 !text-surface-700">ID</th>
+              <th class="!bg-surface-50 !text-surface-700">Nombre del Rol</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-rol>
+          <ng-template pTemplate="body" let-r>
             <tr>
-              <td>
-                <span class="id-badge">#{{ rol.id }}</span>
-              </td>
-              <td>
-                <span class="nombre-cell">{{ rol.nombreRol }}</span>
-              </td>
-              <td>
-                <p-tag
-                  [value]="rol.estado ? 'Activo' : 'Inactivo'"
-                  [severity]="rol.estado ? 'success' : 'danger'"
-                ></p-tag>
-              </td>
-              <td class="action-buttons">
-                <button
-                  pButton
-                  icon="pi pi-pencil"
-                  class="btn-edit p-button-sm p-button-text"
-                  (click)="editar(rol)"
-                  pTooltip="Editar"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  class="btn-delete p-button-sm p-button-text"
-                  (click)="eliminar(rol)"
-                  pTooltip="Eliminar"
-                ></button>
-              </td>
+              <td class="font-medium text-surface-900">#{{ r.id }}</td>
+              <td class="font-medium text-surface-900">{{ r.nombre }}</td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="4" class="empty-message">
-                <i class="pi pi-tag"></i><span>No se encontraron roles.</span>
-              </td>
+              <td colspan="2" class="text-center py-8 text-surface-500">No se encontraron roles.</td>
             </tr>
           </ng-template>
         </p-table>
@@ -140,7 +87,7 @@ interface Rol {
     </div>
 
     <p-dialog
-      [header]="esNuevo ? 'Nuevo Rol' : 'Editar Rol'"
+      header="Nuevo Rol"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ minWidth: '400px', width: '400px' }"
@@ -148,15 +95,15 @@ interface Rol {
       [resizable]="false"
       styleClass="form-dialog"
     >
-      <div class="form-container">
-        <div class="form-field">
-          <label for="nombreRol">Nombre del Rol *</label>
+      <div class="flex flex-col gap-4 mt-2">
+        <div class="flex flex-col gap-2">
+          <label for="nombre" class="font-medium text-surface-700">Nombre del Rol</label>
           <input
             pInputText
-            id="nombreRol"
-            [(ngModel)]="rol.nombreRol"
-            placeholder="Ej: Administrador"
-            class="form-input"
+            id="nombre"
+            [(ngModel)]="rol.nombre"
+            class="w-full"
+            placeholder="Ej: ADMINISTRADOR"
           />
         </div>
         <div class="form-field">
@@ -168,22 +115,20 @@ interface Rol {
         </div>
       </div>
       <ng-template pTemplate="footer">
-        <div class="dialog-footer">
-          <button
-            pButton
-            label="Cancelar"
-            icon="pi pi-times"
-            class="btn-cancel"
-            (click)="displayDialog = false"
-          ></button>
-          <button
-            pButton
-            label="Guardar"
-            icon="pi pi-check"
-            class="btn-save"
-            (click)="guardar()"
-          ></button>
-        </div>
+        <button
+          pButton
+          label="Cancelar"
+          (click)="displayDialog = false"
+          class="p-button-text p-button-secondary"
+        ></button>
+        <button
+          pButton
+          label="Guardar"
+          (click)="guardar()"
+          styleClass="p-button-success"
+          [style]="{'background-color': '#39A900', 'border-color': '#39A900'}"
+          [loading]="saving"
+        ></button>
       </ng-template>
     </p-dialog>
   `,
@@ -388,128 +333,71 @@ interface Rol {
 export class RolesComponent implements OnInit {
   private rolService = inject(RolService);
   private messageService = inject(MessageService);
-  private confirmationService = inject(ConfirmationService);
+  private authService = inject(AuthService);
 
   roles: Rol[] = [];
   rolesFiltrados: Rol[] = [];
   filtro = '';
+  
   displayDialog = false;
-  esNuevo = true;
-  rol: Rol = this.getNuevoRol();
+  loading = false;
+  saving = false;
+  isAdmin = false;
+
+  rol: Partial<Rol> = { nombre: '' };
 
   ngOnInit() {
+    this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
     this.cargarRoles();
   }
 
   cargarRoles() {
-    this.rolService.getRoles().subscribe({
+    this.loading = true;
+    this.rolService.getAll().subscribe({
       next: (res: any) => {
-        const data = res?.data || res || [];
+        const data = Array.isArray(res) ? res : (res.data || []);
         this.roles = data;
         this.rolesFiltrados = data;
+        this.loading = false;
       },
       error: () => {
         this.roles = [];
         this.rolesFiltrados = [];
+        this.loading = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los roles' });
       },
     });
   }
 
   filtrar() {
-    const f = this.filtro.toLowerCase();
-    this.rolesFiltrados = this.roles.filter((r) => r.nombreRol?.toLowerCase().includes(f));
-  }
-
-  getNuevoRol(): Rol {
-    return { nombreRol: '', estado: true };
+    const filtroLower = this.filtro.toLowerCase();
+    this.rolesFiltrados = this.roles.filter((r) =>
+      r.nombre?.toLowerCase().includes(filtroLower),
+    );
   }
 
   openNew() {
-    this.esNuevo = true;
-    this.rol = this.getNuevoRol();
-    this.displayDialog = true;
-  }
-
-  editar(rol: Rol) {
-    this.esNuevo = false;
-    this.rol = { ...rol };
+    this.rol = { nombre: '' };
     this.displayDialog = true;
   }
 
   guardar() {
-    if (!this.rol.nombreRol) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'El nombre del rol es requerido',
-      });
+    if (!this.rol.nombre || this.rol.nombre.trim() === '') {
+      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'El nombre del rol es requerido' });
       return;
     }
-    if (this.esNuevo) {
-      this.rolService.crearRol({ nombreRol: this.rol.nombreRol }).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Rol creado correctamente',
-          });
-          this.displayDialog = false;
-          this.cargarRoles();
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo crear el rol',
-          });
-        },
-      });
-    } else {
-      this.rolService.actualizarRol(this.rol.id!, this.rol).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Rol actualizado correctamente',
-          });
-          this.displayDialog = false;
-          this.cargarRoles();
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo actualizar el rol',
-          });
-        },
-      });
-    }
-  }
 
-  eliminar(rol: Rol) {
-    this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar el rol ' + rol.nombreRol + '?',
-      header: 'Confirmar Eliminación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      accept: () => {
-        this.rolService.eliminarRol(rol.id!).subscribe({
-          next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Rol eliminado correctamente',
-            });
-            this.cargarRoles();
-          },
-          error: () => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo eliminar el rol',
-            });
-          },
-        });
+    this.saving = true;
+    this.rolService.create({ nombre: this.rol.nombre }).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Rol creado correctamente' });
+        this.displayDialog = false;
+        this.saving = false;
+        this.cargarRoles();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear el rol' });
       },
     });
   }

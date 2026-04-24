@@ -1,105 +1,35 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { SkeletonModule } from 'primeng/skeleton';
-import { ButtonModule } from 'primeng/button';
-import { TooltipModule } from 'primeng/tooltip';
-import { ToastModule } from 'primeng/toast';
-import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
-import { forkJoin } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
-import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData } from 'chart.js';
-import { SolicitudService } from '../../infrastructure/services/solicitud.service';
-import { InventarioService } from '../../infrastructure/services/inventario.service';
-import { MovimientoService } from '../../infrastructure/services/movimiento.service';
-import { CategoriaService } from '../../infrastructure/services/categoria.service';
-import { ProductoService } from '../../infrastructure/services/producto.service';
-
-interface Solicitud {
-  id: number;
-  justificacion: string;
-  fechaSol: string;
-  estadoSol: string;
-}
-
-interface Categoria {
-  id: number;
-  nombre: string;
-  porcentaje?: number;
-}
-
-interface Producto {
-  id: number;
-  nombre: string;
-  categoriaId: number;
-  categoriaNombre?: string;
-}
-
-interface Movimiento {
-  id: number;
-  tipoMovimiento: string;
-  tipo?: string;
-  type?: string;
-  cantidad: number;
-  fechaMov: string;
-}
-
-interface Actividad {
-  id: number;
-  justificacion: string;
-  fechaSol: string;
-  estadoSol: string;
-}
+import { TagModule } from 'primeng/tag';
+import { ApiService } from '../../core/services/api.service';
+import { forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    CardModule,
-    TableModule,
-    SkeletonModule,
-    ButtonModule,
-    TooltipModule,
-    ToastModule,
-    SelectModule,
-    BaseChartDirective,
-  ],
-  providers: [MessageService],
+  imports: [CommonModule, CardModule, TableModule, SkeletonModule, TagModule],
   template: `
-    <p-toast position="top-right"></p-toast>
+    <div class="animate-fade-in">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Resumen</h2>
 
-    <div class="dashboard-container">
-      <!-- HEADER -->
-      <div class="dashboard-header">
-        <h2 class="dashboard-title">Dashboard SGM</h2>
-        <button
-          pButton
-          icon="pi pi-refresh"
-          label="Actualizar"
-          class="p-button-outlined p-button-sm header-btn"
-          (click)="cargarDatos()"
-          [loading]="cargando"
-          pTooltip="Actualizar datos"
-        ></button>
-      </div>
-
-      <!-- SECCIÓN 1: TARJETAS DE ESTADÍSTICAS SUPERIORES -->
-      <div class="stats-row">
-        <!-- Total Solicitudes -->
-        <div class="stat-card">
-          <div class="stat-card-content">
-            <div class="stat-left">
-              <span class="stat-label">Total Solicitudes</span>
-              <span class="stat-value" *ngIf="!cargando">{{ totalSolicitudes }}</span>
-              <p-skeleton *ngIf="cargando" width="60px" height="36px"></p-skeleton>
-              <span class="stat-badge" [class.positive]="true">+12%</span>
+      <!-- Tarjetas de Resumen (Sin PrimeNG para control total de colores y borde custom) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        
+        <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500 mb-1">Total Usuarios</p>
+              <ng-container *ngIf="loading(); else uTemplate">
+                <p-skeleton width="3rem" height="2rem"></p-skeleton>
+              </ng-container>
+              <ng-template #uTemplate>
+                <h3 class="text-3xl font-bold text-gray-800">{{ totalUsuarios() }}</h3>
+              </ng-template>
             </div>
             <div class="stat-right">
               <canvas
@@ -113,16 +43,16 @@ interface Actividad {
           </div>
         </div>
 
-        <!-- Solicitudes Pendientes -->
-        <div class="stat-card">
-          <div class="stat-card-content">
-            <div class="stat-left">
-              <span class="stat-label">Solicitudes Pendientes</span>
-              <span class="stat-value pending-value" *ngIf="!cargando">{{
-                solicitudesPendientes
-              }}</span>
-              <p-skeleton *ngIf="cargando" width="60px" height="36px"></p-skeleton>
-              <span class="stat-badge negative">-5%</span>
+        <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500 mb-1">Total Productos</p>
+              <ng-container *ngIf="loading(); else pTemplate">
+                <p-skeleton width="3rem" height="2rem"></p-skeleton>
+              </ng-container>
+              <ng-template #pTemplate>
+                <h3 class="text-3xl font-bold text-gray-800">{{ totalProductos() }}</h3>
+              </ng-template>
             </div>
             <div class="stat-right">
               <canvas
@@ -136,16 +66,16 @@ interface Actividad {
           </div>
         </div>
 
-        <!-- Total Inventario -->
-        <div class="stat-card">
-          <div class="stat-card-content">
-            <div class="stat-left">
-              <span class="stat-label">Total Inventario</span>
-              <span class="stat-value inventory-value" *ngIf="!cargando">{{
-                totalInventario | number
-              }}</span>
-              <p-skeleton *ngIf="cargando" width="60px" height="36px"></p-skeleton>
-              <span class="stat-badge" [class.positive]="true">+8%</span>
+        <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500 mb-1">Solicitudes Pendientes</p>
+              <ng-container *ngIf="loading(); else spTemplate">
+                <p-skeleton width="3rem" height="2rem"></p-skeleton>
+              </ng-container>
+              <ng-template #spTemplate>
+                <h3 class="text-3xl font-bold text-[#FD7E14]">{{ solicitudesPendientes() }}</h3>
+              </ng-template>
             </div>
             <div class="stat-right">
               <canvas
@@ -160,24 +90,16 @@ interface Actividad {
         </div>
       </div>
 
-      <!-- SECCIÓN 2: GRÁFICAS PRINCIPALES -->
-      <div class="charts-row">
-        <!-- Columna Izquierda 65% -->
-        <div class="chart-card left-col">
-          <div class="card-header">
-            <h3 class="card-title">Movimientos del Sistema</h3>
-            <p-select
-              [(ngModel)]="anioSeleccionado"
-              [options]="anios"
-              (onChange)="onAnioChange()"
-              styleClass="year-select"
-              placeholder="Seleccionar año"
-            ></p-select>
-          </div>
-          <div class="chart-values">
-            <div class="chart-value">
-              <span class="value-label">Total Entradas</span>
-              <span class="value-number green">{{ totalEntradas }}</span>
+        <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500 mb-1">Total Inventario</p>
+              <ng-container *ngIf="loading(); else invTemplate">
+                <p-skeleton width="4rem" height="2rem"></p-skeleton>
+              </ng-container>
+              <ng-template #invTemplate>
+                <h3 class="text-3xl font-bold text-[#28A745]">{{ totalInventario() | number }}</h3>
+              </ng-template>
             </div>
             <div class="chart-value">
               <span class="value-label">Total Salidas</span>
@@ -232,57 +154,13 @@ interface Actividad {
         </div>
       </div>
 
-      <!-- SECCIÓN 3: FILA INFERIOR -->
-      <div class="bottom-row">
-        <!-- Columna Izquierda 40% -->
-        <div class="chart-card left-col-40">
-          <div class="card-header">
-            <h3 class="card-title">Distribución de Productos por Categoría</h3>
-          </div>
-          <div
-            class="doughnut-container"
-            *ngIf="
-              !cargando && doughnutData && doughnutData.labels && doughnutData.labels.length > 0
-            "
-          >
-            <canvas
-              baseChart
-              [data]="doughnutData"
-              [options]="doughnutOptions"
-              [type]="'doughnut'"
-              height="200"
-            ></canvas>
-          </div>
-          <div class="doughnut-skeleton" *ngIf="cargando">
-            <p-skeleton width="200px" height="200px" shape="circle"></p-skeleton>
-          </div>
-          <div class="category-list" *ngIf="!cargando">
-            <div class="category-item" *ngFor="let cat of categoriaData; let i = index">
-              <div class="category-color" [style.backgroundColor]="getCategoryColor(i)"></div>
-              <span class="category-name">{{ cat.nombre }}</span>
-              <span class="category-percent">{{ cat.porcentaje }}%</span>
-            </div>
-          </div>
+      <!-- Tabla Últimas Solicitudes con PrimeNG Table -->
+      <div class="bg-white rounded-lg shadow border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200 bg-[#F8F9FA] flex justify-between items-center rounded-t-lg">
+          <h3 class="text-lg font-semibold text-gray-800">Últimas 5 Solicitudes</h3>
         </div>
-
-        <!-- Columna Derecha 60% -->
-        <div class="chart-card right-col-60">
-          <div class="card-header">
-            <h3 class="card-title">Últimas Solicitudes</h3>
-            <button
-              pButton
-              label="Ver todas"
-              class="p-button-sm view-btn"
-              icon="pi pi-arrow-right"
-              iconPos="right"
-            ></button>
-          </div>
-          <p-table
-            [value]="ultimasSolicitudes"
-            [tableStyle]="{ 'min-width': '40rem' }"
-            styleClass="custom-table"
-            [loading]="cargando"
-          >
+        
+        <p-table [value]="ultimasSolicitudes()" [tableStyle]="{ 'min-width': '50rem' }" styleClass="p-datatable-striped" [loading]="loading()">
             <ng-template pTemplate="header">
               <tr>
                 <th class="table-header">ID</th>
@@ -292,16 +170,21 @@ interface Actividad {
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-sol>
-              <tr>
-                <td class="table-cell id-cell">#{{ sol.id }}</td>
-                <td class="table-cell">{{ sol.justificacion }}</td>
-                <td class="table-cell">{{ sol.fechaSol | date: 'dd/MM/yyyy' }}</td>
-                <td class="table-cell">
-                  <span class="status-badge" [ngClass]="getStatusClass(sol.estadoSol)">{{
-                    sol.estadoSol
-                  }}</span>
-                </td>
-              </tr>
+                <tr>
+                    <td class="font-medium text-gray-900">#{{ sol.id }}</td>
+                    <td>{{ sol.justificacion || 'Sin justificación' }}</td>
+                    <td>{{ sol.fechaSol || sol.fecha | date:'mediumDate' }}</td>
+                    <td>
+                      <p-tag [value]="sol.estadoSol || sol.estado" [severity]="getSeverity(sol.estadoSol || sol.estado)"></p-tag>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="4" class="text-center py-8 text-gray-500">
+                        {{ loading() ? 'Cargando datos...' : 'No hay solicitudes recientes.' }}
+                    </td>
+                </tr>
             </ng-template>
             <ng-template pTemplate="emptymessage">
               <tr>
@@ -742,338 +625,85 @@ interface Actividad {
   ],
 })
 export class DashboardComponent implements OnInit {
-  private solicitudService = inject(SolicitudService);
-  private inventarioService = inject(InventarioService);
-  private movimientoService = inject(MovimientoService);
-  private categoriaService = inject(CategoriaService);
-  private productoService = inject(ProductoService);
-  private messageService = inject(MessageService);
+  private readonly apiService = inject(ApiService);
 
-  // Datos principales
-  totalSolicitudes = 0;
-  solicitudesPendientes = 0;
-  totalInventario = 0;
-  ultimasSolicitudes: Solicitud[] = [];
-  ultimasActividades: Actividad[] = [];
-
-  // Datos para gráficas
-  movimientosData: any[] = [];
-  categoriaData: Categoria[] = [];
-
-  // Gráfica barras + línea
-  totalEntradas = 0;
-  totalSalidas = 0;
-
-  // Variables de control
-  cargando = true;
-  anioSeleccionado: number = new Date().getFullYear();
-  anios: number[] = [];
-
-  // Chart configurations
-  sparklineOptions: ChartConfiguration<'line'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: { x: { display: false }, y: { display: false } },
-    elements: { point: { radius: 0 }, line: { tension: 0.4 } },
-  };
-
-  sparklineSolicitudesData: ChartData<'line'> = {
-    labels: [1, 2, 3, 4, 5, 6, 7],
-    datasets: [
-      {
-        data: [10, 15, 12, 20, 18, 25, 22],
-        borderColor: '#39A900',
-        backgroundColor: 'rgba(57,169,0,0.1)',
-        fill: true,
-        borderWidth: 2,
-      },
-    ],
-  };
-  sparklinePendientesData: ChartData<'line'> = {
-    labels: [1, 2, 3, 4, 5, 6, 7],
-    datasets: [
-      {
-        data: [8, 10, 7, 5, 9, 6, 4],
-        borderColor: '#FD7E14',
-        backgroundColor: 'rgba(253,126,20,0.1)',
-        fill: true,
-        borderWidth: 2,
-      },
-    ],
-  };
-  sparklineInventarioData: ChartData<'line'> = {
-    labels: [1, 2, 3, 4, 5, 6, 7],
-    datasets: [
-      {
-        data: [1000, 1200, 1100, 1300, 1250, 1400, 1350],
-        borderColor: '#0D6EFD',
-        backgroundColor: 'rgba(13,110,253,0.1)',
-        fill: true,
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  barLineChartData: ChartData<'bar'> = { labels: [], datasets: [] };
-  barLineChartOptions: ChartConfiguration<'bar'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: true, position: 'bottom' } },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: '#666' } },
-      y: { grid: { color: '#e0e0e0' }, ticks: { color: '#666' } },
-    },
-  };
-
-  doughnutData: ChartData<'doughnut'> = { labels: [], datasets: [] };
-  doughnutOptions: ChartConfiguration<'doughnut'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-  };
-
-  constructor() {
-    const currentYear = new Date().getFullYear();
-    this.anios = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
-  }
+  totalUsuarios = signal<number>(0);
+  totalProductos = signal<number>(0);
+  solicitudesPendientes = signal<number>(0);
+  totalInventario = signal<number>(0);
+  ultimasSolicitudes = signal<any[]>([]);
+  loading = signal<boolean>(true);
 
   ngOnInit() {
     this.cargarDatos();
   }
 
   cargarDatos() {
-    this.cargando = true;
+    this.loading.set(true);
+
+    const reqUsuarios = this.apiService.get<any>('/usuarios').pipe(
+      map(res => Array.isArray(res) ? res : (res?.data || [])),
+      catchError(() => of([]))
+    );
+
+    const reqProductos = this.apiService.get<any>('/productos').pipe(
+      map(res => Array.isArray(res) ? res : (res?.data || [])),
+      catchError(() => of([]))
+    );
+
+    const reqSolicitudes = this.apiService.get<any>('/solicitudes').pipe(
+      map(res => Array.isArray(res) ? res : (res?.data || [])),
+      catchError(() => of([]))
+    );
+
+    const reqInventario = this.apiService.get<any>('/inventario').pipe(
+      map(res => Array.isArray(res) ? res : (res?.data || [])),
+      catchError(() => of([]))
+    );
 
     forkJoin({
-      solicitudes: this.solicitudService.getSolicitudes().pipe(
-        catchError((err) => {
-          console.error('Error fetching solicitudes:', err);
-          return of({ total: 0, data: [] });
-        }),
-      ),
-      inventario: this.inventarioService.getInventarios().pipe(
-        catchError((err) => {
-          console.error('Error fetching inventario:', err);
-          return of({ data: [] });
-        }),
-      ),
-      movimientos: this.movimientoService.getMovimientos().pipe(
-        catchError((err) => {
-          console.error('Error fetching movimientos:', err);
-          return of([]);
-        }),
-      ),
-      categorias: this.categoriaService.getCategorias().pipe(
-        catchError((err) => {
-          console.error('Error fetching categorias:', err);
-          return of({ data: [] });
-        }),
-      ),
-      productos: this.productoService.getProductos().pipe(
-        catchError((err) => {
-          console.error('Error fetching productos:', err);
-          return of({ data: [] });
-        }),
-      ),
+      usuarios: reqUsuarios,
+      productos: reqProductos,
+      solicitudes: reqSolicitudes,
+      inventario: reqInventario
     }).subscribe({
-      next: (data) => {
-        // Procesar solicitudes
-        const solicitudes = data.solicitudes?.data || [];
-        this.totalSolicitudes = data.solicitudes?.total || solicitudes.length || 0;
-        this.solicitudesPendientes = solicitudes.filter(
-          (s: any) => s.estadoSol === 'PENDIENTE',
-        ).length;
-        this.ultimasSolicitudes = solicitudes.slice(0, 5);
-        this.ultimasActividades = solicitudes.slice(0, 8);
-
-        // Actualizar sparklines con datos reales
-        this.updateSparklines(solicitudes);
-
-        // Procesar inventario
-        const inventarios = data.inventario?.data || [];
-        this.totalInventario = inventarios.reduce(
-          (sum: number, inv: any) => sum + (inv.cantidadActual || 0),
-          0,
-        );
-        this.updateSparklineInventario(inventarios);
-
-        // Procesar movimientos
-        const movimientos = data.movimientos || [];
-        this.processMovimientos(movimientos);
-
-        // Procesar categorías y productos
-        const categorias = data.categorias?.data || [];
-        const productos = data.productos?.data || [];
-        this.processCategorias(categorias, productos);
-
-        this.cargando = false;
-      },
-      error: (err) => {
-        console.error('Error al cargar datos del dashboard:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar los datos del dashboard',
+      next: ({ usuarios, productos, solicitudes, inventario }) => {
+        this.totalUsuarios.set(usuarios.length);
+        this.totalProductos.set(productos.length);
+        
+        // Filtrar solicitudes pendientes
+        const pendientes = solicitudes.filter((s: any) => {
+          const estado = s.estadoSol || s.estado;
+          return estado === 'PENDIENTE';
+        }).length;
+        this.solicitudesPendientes.set(pendientes);
+        
+        // Últimas 5 solicitudes
+        const sorted = [...solicitudes].sort((a: any, b: any) => {
+          const dateA = new Date(a.fechaSol || a.fecha || a.createdAt || 0).getTime();
+          const dateB = new Date(b.fechaSol || b.fecha || b.createdAt || 0).getTime();
+          return dateB - dateA;
         });
-        this.cargando = false;
+        this.ultimasSolicitudes.set(sorted.slice(0, 5));
+
+        // Sumar cantidades de inventario (asumimos campo cantidad)
+        const totalInv = inventario.reduce((acc: number, curr: any) => acc + (Number(curr.cantidad) || Number(curr.stock) || 0), 0);
+        this.totalInventario.set(totalInv);
+
+        this.loading.set(false);
       },
-    });
-  }
-
-  updateSparklines(solicitudes: any[]) {
-    const total = solicitudes.length || 10;
-    const data = Array.from({ length: 7 }, () => Math.floor(Math.random() * total) + 5);
-    const pending = Math.max(1, this.solicitudesPendientes);
-    const pendingData = Array.from({ length: 7 }, () => Math.floor(Math.random() * pending) + 1);
-
-    this.sparklineSolicitudesData = {
-      labels: [1, 2, 3, 4, 5, 6, 7],
-      datasets: [
-        {
-          data,
-          borderColor: '#39A900',
-          backgroundColor: 'rgba(57,169,0,0.1)',
-          fill: true,
-          borderWidth: 2,
-        },
-      ],
-    };
-
-    this.sparklinePendientesData = {
-      labels: [1, 2, 3, 4, 5, 6, 7],
-      datasets: [
-        {
-          data: pendingData,
-          borderColor: '#FD7E14',
-          backgroundColor: 'rgba(253,126,20,0.1)',
-          fill: true,
-          borderWidth: 2,
-        },
-      ],
-    };
-  }
-
-  updateSparklineInventario(inventarios: any[]) {
-    const total = this.totalInventario || 1000;
-    const data = Array.from({ length: 7 }, () => Math.floor(total * (0.7 + Math.random() * 0.6)));
-
-    this.sparklineInventarioData = {
-      labels: [1, 2, 3, 4, 5, 6, 7],
-      datasets: [
-        {
-          data,
-          borderColor: '#0D6EFD',
-          backgroundColor: 'rgba(13,110,253,0.1)',
-          fill: true,
-          borderWidth: 2,
-        },
-      ],
-    };
-  }
-
-  processMovimientos(movimientos: any[]) {
-    const typeMap = new Map<string, number>();
-    const tiposValidos = ['ENTRADA', 'SALIDA', 'PRESTAMO', 'DEVOLUCION', 'TRANSFERENCIA'];
-
-    this.totalEntradas = 0;
-    this.totalSalidas = 0;
-
-    movimientos.forEach((m: Movimiento) => {
-      const tipo = m.tipoMovimiento || m.tipo || m.type;
-      if (tipo && tiposValidos.includes(tipo)) {
-        typeMap.set(tipo, (typeMap.get(tipo) || 0) + 1);
-
-        if (tipo === 'ENTRADA') this.totalEntradas++;
-        if (tipo === 'SALIDA') this.totalSalidas++;
+      error: () => {
+        this.loading.set(false);
       }
     });
-
-    const data = Array.from(typeMap.entries()).map(([type, count]) => ({
-      type: this.formatTipoMovimiento(type),
-      count,
-    }));
-
-    const colors = ['#39A900', '#DC3545', '#FD7E14', '#FFC107', '#0D6EFD'];
-
-    this.barLineChartData = {
-      labels: data.map((d) => d.type),
-      datasets: [
-        {
-          label: 'Cantidad',
-          data: data.map((d) => d.count),
-          backgroundColor: colors.slice(0, data.length),
-          borderRadius: 6,
-          barThickness: 40,
-        },
-      ],
-    };
   }
 
-  processCategorias(categorias: Categoria[], productos: Producto[]) {
-    const categoryCount = new Map<number, number>();
-
-    productos.forEach((p: Producto) => {
-      if (p.categoriaId) {
-        categoryCount.set(p.categoriaId, (categoryCount.get(p.categoriaId) || 0) + 1);
-      }
-    });
-
-    const totalProductos = productos.length || 1;
-    this.categoriaData = categorias
-      .map((cat: Categoria) => ({
-        ...cat,
-        porcentaje: Math.round(((categoryCount.get(cat.id) || 0) / totalProductos) * 100),
-      }))
-      .slice(0, 6);
-
-    const colors = ['#39A900', '#0D6EFD', '#FD7E14', '#FFC107', '#DC3545', '#6C757D'];
-
-    this.doughnutData = {
-      labels: this.categoriaData.map((c) => c.nombre),
-      datasets: [
-        {
-          data: this.categoriaData.map((c) => categoryCount.get(c.id) || 0),
-          backgroundColor: colors,
-          borderWidth: 0,
-        },
-      ],
-    };
-  }
-
-  onAnioChange() {
-    this.cargarDatos();
-  }
-
-  formatTipoMovimiento(tipo: string): string {
-    const map: { [key: string]: string } = {
-      ENTRADA: 'Entrada',
-      SALIDA: 'Salida',
-      PRESTAMO: 'Préstamo',
-      DEVOLUCION: 'Devolución',
-      TRANSFERENCIA: 'Transferencia',
-    };
-    return map[tipo] || tipo;
-  }
-
-  getStatusClass(estado: string): string {
-    const map: { [key: string]: string } = {
-      PENDIENTE: 'status-pending',
-      APROBADA: 'status-aprobada',
-      RECHAZADA: 'status-rechazada',
-    };
-    return map[estado] || '';
-  }
-
-  getActivityColor(estado: string): string {
-    if (estado === 'APROBADA') return 'green';
-    if (estado === 'PENDIENTE') return 'orange';
-    if (estado === 'RECHAZADA') return 'red';
-    return 'green';
-  }
-
-  getCategoryColor(index: number): string {
-    const colors = ['#39A900', '#0D6EFD', '#FD7E14', '#FFC107', '#DC3545', '#6C757D'];
-    return colors[index % colors.length];
+  getSeverity(estado: string): 'success' | 'warn' | 'danger' | 'info' {
+    if (!estado) return 'info';
+    const st = estado.toUpperCase();
+    if (st === 'APROBADA' || st === 'APROBADO' || st === 'ENTREGADO') return 'success';
+    if (st === 'PENDIENTE') return 'warn';
+    if (st === 'RECHAZADA' || st === 'RECHAZADO' || st === 'CANCELADO') return 'danger';
+    return 'info';
   }
 }

@@ -2,23 +2,25 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 
+export interface Rol {
+  id: number;
+  nombre: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RolService {
   private readonly api = inject(ApiService);
-
-  getRoles(): Observable<any> {
-    return this.api.get<any>('/roles');
+  private readonly endpoint = '/roles';
+  
+  getAll(): Observable<Rol[]> { 
+    return this.api.get<Rol[]>(this.endpoint); 
   }
 
-  crearRol(data: { nombreRol: string }): Observable<any> {
-    return this.api.post<any>('/roles', data);
+  getById(id: number): Observable<Rol> {
+    return this.api.get<Rol>(`${this.endpoint}/${id}`);
   }
-
-  actualizarRol(id: number, data: any): Observable<any> {
-    return this.api.put<any>(`/roles/${id}`, data);
-  }
-
-  eliminarRol(id: number): Observable<any> {
-    return this.api.delete<any>(`/roles/${id}`);
+  
+  create(data: { nombre: string }): Observable<Rol> { 
+    return this.api.post<Rol>(this.endpoint, data); 
   }
 }

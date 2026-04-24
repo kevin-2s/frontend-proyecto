@@ -8,65 +8,102 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
+import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, InputTextModule, PasswordModule, ButtonModule, ToastModule],
+  imports: [
+    ReactiveFormsModule, 
+    CommonModule, 
+    InputTextModule, 
+    PasswordModule, 
+    ButtonModule, 
+    ToastModule,
+    CheckboxModule
+  ],
   providers: [MessageService],
   template: `
     <p-toast></p-toast>
-    <div class="min-h-screen flex items-center justify-center bg-surface-50 p-4">
-      <div class="max-w-md w-full bg-white rounded-lg shadow-xl p-8 border border-surface-200">
-        <div class="text-center mb-8">
-          <h1 class="text-5xl font-extrabold text-[#39A900] mb-3 tracking-tight drop-shadow-sm">Logitma</h1>
-          <h2 class="text-lg text-surface-600 font-medium">Gestión de Materiales de Formación</h2>
+    
+    <!-- Contenedor Principal -->
+    <div class="min-h-screen flex items-center justify-center relative overflow-hidden">
+      <!-- Fondo borroso con la imagen -->
+      <div class="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110 blur-sm" style="background-image: url('sena.jpg');"></div>
+      <div class="absolute inset-0 bg-black/30"></div>
+
+      <!-- Tarjeta central (AQUÍ ES DONDE SE MODIFICA EL TAMAÑO) -->
+      <!-- Cambié max-w-[900px] a max-w-[1000px] y h-[550px] a min-h-[600px] -->
+      <div class="relative z-10 w-full max-w-[1000px] flex rounded-3xl shadow-2xl overflow-hidden mx-4 min-h-[600px]">
+        
+        <!-- Lado Izquierdo: Imagen nítida -->
+        <div class="hidden md:block w-1/2 bg-cover bg-center relative" style="background-image: url('sena.jpg');">
         </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
-          <div class="flex flex-col gap-2">
-            <label for="correo" class="text-sm font-semibold text-surface-700">Correo electrónico</label>
-            <input 
-              pInputText
-              id="correo" 
-              type="email" 
-              formControlName="correo"
-              class="w-full"
-              placeholder="usuario@sena.edu.co"
-            >
-            <small *ngIf="loginForm.get('correo')?.touched && loginForm.get('correo')?.invalid" class="text-red-500 font-medium">
-              El correo es requerido y debe ser válido
-            </small>
+        <!-- Lado Derecho: Formulario de Login -->
+        <div class="w-full md:w-1/2 p-8 md:p-14 flex flex-col justify-center bg-[#F4F6F5]">
+          <div class="text-center mb-8">
+            <!-- Icono y Logo -->
+            <div class="flex justify-center mb-2">
+              <div class="relative flex items-center justify-center w-16 h-16 rounded-full border-2 border-dashed border-[#39A900]">
+                <i class="pi pi-box text-3xl text-[#39A900]"></i>
+                <!-- Pequeñas flechas decorativas imitando el logo de la imagen -->
+                <i class="pi pi-arrow-right absolute -right-2 top-1/2 -translate-y-1/2 text-[#39A900] text-xs bg-[#F4F6F5]"></i>
+              </div>
+            </div>
+            <h1 class="text-2xl font-bold text-surface-900 tracking-tight">logitma</h1>
+            <p class="text-xs text-surface-500 mt-3 mx-2 leading-relaxed">
+              Accede al sistema de gestión de inventario LOGITMA con tus credenciales asignadas
+            </p>
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label for="contrasena" class="text-sm font-semibold text-surface-700">Contraseña</label>
-            <p-password 
-              id="contrasena" 
-              formControlName="contrasena"
-              [feedback]="false"
-              styleClass="w-full"
-              [inputStyle]="{'width':'100%'}"
-              placeholder="••••••••"
-              [toggleMask]="true"
-            ></p-password>
-            <small *ngIf="loginForm.get('contrasena')?.touched && loginForm.get('contrasena')?.invalid" class="text-red-500 font-medium">
-              La contraseña es requerida
-            </small>
-          </div>
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+            
+            <div class="flex flex-col gap-1">
+              <input 
+                pInputText
+                id="correo" 
+                type="email" 
+                formControlName="correo"
+                class="w-full !bg-surface-0 !border-surface-200 !p-3 text-sm !rounded-xl focus:!border-[#39A900] transition-colors"
+                placeholder="Usuario o correo"
+              >
+            </div>
 
-          <div class="mt-4">
+            <div class="flex flex-col gap-1">
+              <!-- Para arreglar el ojito, se debe asegurar que el contenedor padre del input tome todo el ancho con [style]="{'width':'100%'}" -->
+              <p-password 
+                id="contrasena" 
+                formControlName="contrasena"
+                [feedback]="false"
+                styleClass="w-full flex"
+                [style]="{'width':'100%', 'position': 'relative'}"
+                [inputStyle]="{'width':'100%', 'background-color': '#ffffff', 'border-color': '#e2e8f0', 'padding': '0.75rem', 'font-size': '0.875rem', 'border-radius': '0.75rem'}"
+                placeholder="Contraseña"
+                [toggleMask]="true"
+              ></p-password>
+            </div>
+
+            <div class="flex items-center justify-between mt-2 mb-3 px-1">
+              <div class="flex items-center gap-2">
+                <p-checkbox [binary]="true" inputId="recordarme" styleClass="text-xs"></p-checkbox>
+                <label for="recordarme" class="text-xs text-surface-500 cursor-pointer">Recordarme</label>
+              </div>
+              <a href="#" class="text-xs text-surface-400 hover:text-[#39A900] transition-colors" (click)="$event.preventDefault()">¿Olvidó su contraseña?</a>
+            </div>
+
             <p-button 
               type="submit" 
               [disabled]="loginForm.invalid || isLoading()"
               [loading]="isLoading()"
-              label="Ingresar al sistema"
+              label="INGRESAR"
               styleClass="w-full"
-              [style]="{'background-color': '#39A900', 'border-color': '#39A900', 'padding': '0.75rem'}"
+              [style]="{'background-color': '#39A900', 'border-color': '#39A900', 'padding': '0.85rem', 'font-weight': '700', 'border-radius': '0.75rem', 'letter-spacing': '0.05em'}"
             ></p-button>
-          </div>
-        </form>
+          </form>
+        </div>
+
       </div>
     </div>
   `

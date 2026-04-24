@@ -7,9 +7,7 @@ import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
-import { ToastModule } from 'primeng/toast';
 import { CheckboxModule } from 'primeng/checkbox';
-import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-login',
@@ -20,24 +18,16 @@ import { MessageService } from 'primeng/api';
     InputTextModule, 
     PasswordModule, 
     ButtonModule, 
-    ToastModule,
     CheckboxModule
   ],
-  providers: [MessageService],
   styles: [`
     :host ::ng-deep .p-password {
       width: 100% !important;
-      position: relative !important;
       display: block !important;
     }
     :host ::ng-deep .p-password-icon {
-      position: absolute !important;
-      right: 1.5rem !important;
-      top: 50% !important;
-      transform: translateY(-50%) !important;
       color: #9ca3af !important;
-      margin-top: 0 !important;
-      z-index: 10;
+      right: 1.25rem !important;
     }
     :host ::ng-deep .p-checkbox .p-checkbox-box {
       width: 1.25rem !important;
@@ -56,10 +46,12 @@ import { MessageService } from 'primeng/api';
       background-color: #39A900 !important;
       border-color: #39A900 !important;
     }
+    :host ::ng-deep input.ng-invalid.ng-touched,
+    :host ::ng-deep .p-password.ng-invalid.ng-touched .p-password-input {
+      border-color: #ef4444 !important;
+    }
   `],
   template: `
-    <p-toast></p-toast>
-    
     <div class="min-h-screen flex items-center justify-center relative overflow-hidden">
       <!-- Fondo estático detrás del contenedor -->
       <div class="absolute inset-0 bg-cover bg-center bg-no-repeat blur-sm scale-105" style="background-image: url('sena.jpg');"></div>
@@ -118,13 +110,19 @@ import { MessageService } from 'primeng/api';
             </div>
           </div>
 
-          <div class="text-center mb-12">
+          <div class="text-center mb-10">
             <h1 class="text-4xl font-bold text-gray-800 tracking-tight">Acceder a tu Cuenta</h1>
           </div>
 
-          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6 w-full max-w-[420px] mx-auto">
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5 w-full max-w-[420px] mx-auto">
             
-            <div class="flex flex-col gap-2">
+            <!-- Mensaje de Error General -->
+            <div *ngIf="loginError()" class="bg-red-50 text-red-600 p-3 rounded-xl mb-2 text-sm font-semibold border border-red-200 flex items-center gap-2">
+              <i class="pi pi-exclamation-circle text-lg"></i>
+              {{ loginError() }}
+            </div>
+
+            <div class="flex flex-col gap-1">
               <div class="relative flex items-center">
                 <input 
                   pInputText
@@ -135,23 +133,33 @@ import { MessageService } from 'primeng/api';
                   placeholder="Correo o usuario"
                 >
               </div>
+              <!-- Alerta de validación Correo -->
+              <div *ngIf="loginForm.get('correo')?.invalid && loginForm.get('correo')?.touched" class="text-red-500 text-xs font-semibold pl-2 mt-0.5">
+                <span *ngIf="loginForm.get('correo')?.errors?.['required']">El correo o usuario es obligatorio.</span>
+                <span *ngIf="loginForm.get('correo')?.errors?.['email']">Ingrese un formato de correo válido.</span>
+              </div>
             </div>
 
-            <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-1">
               <div class="relative flex items-center w-full">
                 <p-password 
                   id="contrasena" 
                   formControlName="contrasena"
                   [feedback]="false"
                   styleClass="w-full"
+                  [inputStyle]="{'width':'100%'}"
                   inputStyleClass="w-full !bg-gray-100 !border-2 !border-gray-200 !text-gray-800 !p-4 !px-6 text-[15px] !rounded-xl focus:!border-[#39A900] focus:!bg-white hover:!bg-gray-200 transition-all placeholder:!text-gray-400 outline-none !pr-12"
                   placeholder="Contraseña"
                   [toggleMask]="true"
                 ></p-password>
               </div>
+              <!-- Alerta de validación Contraseña -->
+              <div *ngIf="loginForm.get('contrasena')?.invalid && loginForm.get('contrasena')?.touched" class="text-red-500 text-xs font-semibold pl-2 mt-0.5">
+                <span *ngIf="loginForm.get('contrasena')?.errors?.['required']">La contraseña es obligatoria.</span>
+              </div>
             </div>
 
-            <div class="flex items-center justify-between mt-2 mb-4 px-2">
+            <div class="flex items-center justify-between mt-1 mb-4 px-2">
               <div class="flex items-center gap-2.5">
                 <p-checkbox [binary]="true" inputId="recordarme" styleClass="text-sm"></p-checkbox>
                 <label for="recordarme" class="text-sm font-medium text-gray-500 cursor-pointer select-none">Recordarme</label>
@@ -161,7 +169,7 @@ import { MessageService } from 'primeng/api';
 
             <p-button 
               type="submit" 
-              [disabled]="loginForm.invalid || isLoading()"
+              [disabled]="isLoading()"
               [loading]="isLoading()"
               label="Ingresar al Sistema"
               styleClass="w-full transition-all duration-300 hover:scale-[1.02]"
@@ -178,7 +186,6 @@ export class LoginComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
-  private messageService = inject(MessageService);
 
   loginForm = this.fb.nonNullable.group({
     correo: ['', [Validators.required, Validators.email]],
@@ -186,6 +193,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   });
 
   isLoading = signal(false);
+  loginError = signal<string | null>(null);
 
   // Lógica del carrusel
   images = ['sena.jpg', 'sena1.png', 'sena2.JPG'];
@@ -215,6 +223,8 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   onSubmit(): void {
+    this.loginError.set(null);
+
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
@@ -231,12 +241,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error de Autenticación',
-          detail: err.error?.message || 'Credenciales incorrectas o error en el servidor',
-          life: 4000
-        });
+        this.loginError.set(err.error?.message || 'Credenciales incorrectas o error en el servidor');
       }
     });
   }

@@ -5,17 +5,10 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { MessageService, ConfirmationService } from 'primeng/api';
-import { RolService } from '../../infrastructure/services/rol.service';
-
-interface Rol {
-  id?: number;
-  nombreRol: string;
-  estado?: boolean;
-}
+import { MessageService } from 'primeng/api';
+import { RolService, Rol } from '../../infrastructure/services/rol.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
 
 @Component({
   selector: 'app-roles',
@@ -27,30 +20,29 @@ interface Rol {
     ButtonModule,
     InputTextModule,
     DialogModule,
-    TagModule,
     ToastModule,
-    ConfirmDialogModule,
   ],
-  providers: [MessageService, ConfirmationService],
+  providers: [MessageService],
   template: `
     <p-toast></p-toast>
-    <p-confirmDialog></p-confirmDialog>
 
-    <div class="animate-fade-in">
+    <div class="animate-fade-in p-6">
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Gestión de Roles</h2>
+        <h2 class="text-3xl font-bold text-surface-800">Gestión de Roles</h2>
         <button
+          *ngIf="isAdmin"
           pButton
           label="Nuevo Rol"
           icon="pi pi-plus"
           (click)="openNew()"
-          class="bg-[#39A900] border-[#39A900] hover:bg-[#2D8600]"
+          styleClass="p-button-success"
+          [style]="{'background-color': '#39A900', 'border-color': '#39A900'}"
         ></button>
       </div>
 
-      <div class="bg-white rounded-lg shadow border border-gray-200">
-        <div class="p-4 border-b border-gray-200">
-          <span class="p-input-icon-left">
+      <div class="bg-white rounded-lg shadow-sm border border-surface-200">
+        <div class="p-4 border-b border-surface-200">
+          <span class="p-input-icon-left w-full sm:w-auto">
             <i class="pi pi-search"></i>
             <input
               pInputText
@@ -58,7 +50,7 @@ interface Rol {
               [(ngModel)]="filtro"
               (input)="filtrar()"
               placeholder="Buscar rol..."
-              class="w-64"
+              class="w-full sm:w-64"
             />
           </span>
         </div>
@@ -69,44 +61,23 @@ interface Rol {
           [rows]="10"
           [tableStyle]="{ 'min-width': '50rem' }"
           styleClass="p-datatable-striped"
+          [loading]="loading"
         >
           <ng-template pTemplate="header">
             <tr>
-              <th class="!bg-white !text-gray-600">ID</th>
-              <th class="!bg-white !text-gray-600">Nombre del Rol</th>
-              <th class="!bg-white !text-gray-600">Estado</th>
-              <th class="!bg-white !text-gray-600 text-center">Acciones</th>
+              <th class="!bg-surface-50 !text-surface-700">ID</th>
+              <th class="!bg-surface-50 !text-surface-700">Nombre del Rol</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-rol>
+          <ng-template pTemplate="body" let-r>
             <tr>
-              <td class="font-medium text-gray-900">#{{ rol.id }}</td>
-              <td class="font-medium text-gray-900">{{ rol.nombreRol }}</td>
-              <td>
-                <p-tag
-                  [value]="rol.estado ? 'Activo' : 'Inactivo'"
-                  [severity]="rol.estado ? 'success' : 'danger'"
-                ></p-tag>
-              </td>
-              <td class="text-center">
-                <button
-                  pButton
-                  icon="pi pi-pencil"
-                  (click)="editar(rol)"
-                  class="p-button-text p-button-sm text-[#39A900] mr-2"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  (click)="eliminar(rol)"
-                  class="p-button-text p-button-sm p-button-danger"
-                ></button>
-              </td>
+              <td class="font-medium text-surface-900">#{{ r.id }}</td>
+              <td class="font-medium text-surface-900">{{ r.nombre }}</td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="4" class="text-center py-8 text-gray-500">No se encontraron roles.</td>
+              <td colspan="2" class="text-center py-8 text-surface-500">No se encontraron roles.</td>
             </tr>
           </ng-template>
         </p-table>
@@ -114,21 +85,21 @@ interface Rol {
     </div>
 
     <p-dialog
-      header="{{ esNuevo ? 'Nuevo Rol' : 'Editar Rol' }}"
+      header="Nuevo Rol"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '400px' }"
       [draggable]="false"
     >
-      <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-4 mt-2">
         <div class="flex flex-col gap-2">
-          <label for="nombreRol" class="font-medium text-gray-700">Nombre del Rol</label>
+          <label for="nombre" class="font-medium text-surface-700">Nombre del Rol</label>
           <input
             pInputText
-            id="nombreRol"
-            [(ngModel)]="rol.nombreRol"
+            id="nombre"
+            [(ngModel)]="rol.nombre"
             class="w-full"
-            placeholder="Ej: Administrador"
+            placeholder="Ej: ADMINISTRADOR"
           />
         </div>
       </div>
@@ -137,13 +108,15 @@ interface Rol {
           pButton
           label="Cancelar"
           (click)="displayDialog = false"
-          class="p-button-text"
+          class="p-button-text p-button-secondary"
         ></button>
         <button
           pButton
           label="Guardar"
           (click)="guardar()"
-          class="bg-[#39A900] border-[#39A900]"
+          styleClass="p-button-success"
+          [style]="{'background-color': '#39A900', 'border-color': '#39A900'}"
+          [loading]="saving"
         ></button>
       </ng-template>
     </p-dialog>
@@ -152,30 +125,38 @@ interface Rol {
 export class RolesComponent implements OnInit {
   private rolService = inject(RolService);
   private messageService = inject(MessageService);
-  private confirmationService = inject(ConfirmationService);
+  private authService = inject(AuthService);
 
   roles: Rol[] = [];
   rolesFiltrados: Rol[] = [];
   filtro = '';
+  
   displayDialog = false;
-  esNuevo = true;
-  rol: Rol = this.getNuevoRol();
+  loading = false;
+  saving = false;
+  isAdmin = false;
+
+  rol: Partial<Rol> = { nombre: '' };
 
   ngOnInit() {
+    this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
     this.cargarRoles();
   }
 
   cargarRoles() {
-    this.rolService.getRoles().subscribe({
+    this.loading = true;
+    this.rolService.getAll().subscribe({
       next: (res: any) => {
-        if (res?.data) {
-          this.roles = res.data;
-          this.rolesFiltrados = res.data;
-        }
+        const data = Array.isArray(res) ? res : (res.data || []);
+        this.roles = data;
+        this.rolesFiltrados = data;
+        this.loading = false;
       },
       error: () => {
         this.roles = [];
         this.rolesFiltrados = [];
+        this.loading = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los roles' });
       },
     });
   }
@@ -183,69 +164,32 @@ export class RolesComponent implements OnInit {
   filtrar() {
     const filtroLower = this.filtro.toLowerCase();
     this.rolesFiltrados = this.roles.filter((r) =>
-      r.nombreRol?.toLowerCase().includes(filtroLower),
+      r.nombre?.toLowerCase().includes(filtroLower),
     );
   }
 
-  getNuevoRol(): Rol {
-    return { nombreRol: '', estado: true };
-  }
-
   openNew() {
-    this.esNuevo = true;
-    this.rol = this.getNuevoRol();
-    this.displayDialog = true;
-  }
-
-  editar(rol: Rol) {
-    this.esNuevo = false;
-    this.rol = { ...rol };
+    this.rol = { nombre: '' };
     this.displayDialog = true;
   }
 
   guardar() {
-    if (this.esNuevo) {
-      this.rolService.crearRol({ nombreRol: this.rol.nombreRol }).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Rol creado correctamente',
-          });
-          this.displayDialog = false;
-          this.cargarRoles();
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo crear el rol',
-          });
-        },
-      });
-    } else {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Éxito',
-        detail: 'Rol actualizado correctamente',
-      });
-      this.displayDialog = false;
-      this.cargarRoles();
+    if (!this.rol.nombre || this.rol.nombre.trim() === '') {
+      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'El nombre del rol es requerido' });
+      return;
     }
-  }
 
-  eliminar(rol: Rol) {
-    this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar el rol ' + rol.nombreRol + '?',
-      header: 'Confirmar Eliminación',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Rol eliminado correctamente',
-        });
+    this.saving = true;
+    this.rolService.create({ nombre: this.rol.nombre }).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Rol creado correctamente' });
+        this.displayDialog = false;
+        this.saving = false;
         this.cargarRoles();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear el rol' });
       },
     });
   }

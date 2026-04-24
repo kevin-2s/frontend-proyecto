@@ -5,26 +5,25 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
-import { InputMaskModule } from 'primeng/inputmask';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
+import { Select } from 'primeng/select';
+import { PasswordModule } from 'primeng/password';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
-import { RolService } from '../../infrastructure/services/rol.service';
+import { RolService, Rol } from '../../infrastructure/services/rol.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
 
 interface Usuario {
   id?: number;
-  nombreCompleto: string;
+  nombre?: string;
+  nombreCompleto?: string;
   correo: string;
+  contrasena?: string;
   estado: boolean;
-  rolId: number;
+  id_rol: number;
   rolNombre?: string;
-}
-
-interface Rol {
-  id: number;
-  nombre: string;
 }
 
 @Component({
@@ -37,32 +36,35 @@ interface Rol {
     ButtonModule,
     InputTextModule,
     DialogModule,
-    InputMaskModule,
     ToastModule,
     ConfirmDialogModule,
     TagModule,
+    Select,
+    PasswordModule
   ],
   providers: [MessageService, ConfirmationService],
   template: `
     <p-toast></p-toast>
     <p-confirmDialog></p-confirmDialog>
 
-    <div class="animate-fade-in">
+    <div class="animate-fade-in p-6">
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Gestión de Usuarios</h2>
+        <h2 class="text-3xl font-bold text-surface-800">Gestión de Usuarios</h2>
         <button
+          *ngIf="isAdmin"
           pButton
           label="Nuevo Usuario"
           icon="pi pi-plus"
           (click)="openNew()"
-          class="bg-[#39A900] border-[#39A900] hover:bg-[#2D8600]"
+          styleClass="p-button-success"
+          [style]="{'background-color': '#39A900', 'border-color': '#39A900'}"
         ></button>
       </div>
 
-      <div class="bg-white rounded-lg shadow border border-gray-200">
-        <div class="p-4 border-b border-gray-200">
+      <div class="bg-white rounded-lg shadow-sm border border-surface-200">
+        <div class="p-4 border-b border-surface-200">
           <div class="flex gap-4">
-            <span class="p-input-icon-left">
+            <span class="p-input-icon-left w-full sm:w-auto">
               <i class="pi pi-search"></i>
               <input
                 pInputText
@@ -70,7 +72,7 @@ interface Rol {
                 [(ngModel)]="filtro"
                 (input)="filtrar()"
                 placeholder="Buscar usuario..."
-                class="w-64"
+                class="w-full sm:w-64"
               />
             </span>
           </div>
@@ -83,50 +85,45 @@ interface Rol {
           [rowsPerPageOptions]="[5, 10, 25]"
           [tableStyle]="{ 'min-width': '50rem' }"
           styleClass="p-datatable-striped"
+          [loading]="loading"
         >
           <ng-template pTemplate="header">
             <tr>
-              <th class="!bg-white !text-gray-600">ID</th>
-              <th class="!bg-white !text-gray-600">Nombre Completo</th>
-              <th class="!bg-white !text-gray-600">Correo</th>
-              <th class="!bg-white !text-gray-600">Rol</th>
-              <th class="!bg-white !text-gray-600">Estado</th>
-              <th class="!bg-white !text-gray-600 text-center">Acciones</th>
+              <th class="!bg-surface-50 !text-surface-700">ID</th>
+              <th class="!bg-surface-50 !text-surface-700">Nombre Completo</th>
+              <th class="!bg-surface-50 !text-surface-700">Correo</th>
+              <th class="!bg-surface-50 !text-surface-700">Rol</th>
+              <th class="!bg-surface-50 !text-surface-700">Estado</th>
+              <th *ngIf="isAdmin" class="!bg-surface-50 !text-surface-700 text-center">Acciones</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-usuario>
+          <ng-template pTemplate="body" let-u>
             <tr>
-              <td class="font-medium text-gray-900">#{{ usuario.id }}</td>
-              <td class="font-medium text-gray-900">{{ usuario.nombreCompleto }}</td>
-              <td>{{ usuario.correo }}</td>
+              <td class="font-medium text-surface-900">#{{ u.id }}</td>
+              <td class="font-medium text-surface-900">{{ u.nombre || u.nombreCompleto }}</td>
+              <td>{{ u.correo }}</td>
               <td>
-                <p-tag [value]="usuario.rolNombre || 'Sin rol'"></p-tag>
+                <p-tag [value]="getRolNombre(u.id_rol)" [severity]="getRolSeverity(u.id_rol)"></p-tag>
               </td>
               <td>
                 <p-tag
-                  [value]="usuario.estado ? 'Activo' : 'Inactivo'"
-                  [severity]="usuario.estado ? 'success' : 'danger'"
+                  [value]="u.estado ? 'Activo' : 'Inactivo'"
+                  [severity]="u.estado ? 'success' : 'danger'"
                 ></p-tag>
               </td>
-              <td class="text-center">
+              <td *ngIf="isAdmin" class="text-center">
                 <button
                   pButton
                   icon="pi pi-pencil"
-                  (click)="editar(usuario)"
+                  (click)="editar(u)"
                   class="p-button-text p-button-sm text-[#39A900] mr-2"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-trash"
-                  (click)="eliminar(usuario)"
-                  class="p-button-text p-button-sm p-button-danger"
                 ></button>
               </td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="6" class="text-center py-8 text-gray-500">
+              <td [attr.colspan]="isAdmin ? 6 : 5" class="text-center py-8 text-surface-500">
                 No se encontraron usuarios.
               </td>
             </tr>
@@ -142,19 +139,20 @@ interface Rol {
       [style]="{ width: '500px' }"
       [draggable]="false"
     >
-      <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-4 mt-2">
         <div class="flex flex-col gap-2">
-          <label for="nombreCompleto" class="font-medium text-gray-700">Nombre Completo</label>
+          <label for="nombreCompleto" class="font-medium text-surface-700">Nombre Completo</label>
           <input
             pInputText
             id="nombreCompleto"
-            [(ngModel)]="usuario.nombreCompleto"
+            [(ngModel)]="usuario.nombre"
             class="w-full"
             placeholder="Ingrese nombre completo"
           />
         </div>
+        
         <div class="flex flex-col gap-2">
-          <label for="correo" class="font-medium text-gray-700">Correo Electrónico</label>
+          <label for="correo" class="font-medium text-surface-700">Correo Electrónico</label>
           <input
             pInputText
             id="correo"
@@ -164,23 +162,39 @@ interface Rol {
             placeholder="correo@ejemplo.com"
           />
         </div>
-        <div class="flex flex-col gap-2">
-          <label for="rol" class="font-medium text-gray-700">Rol</label>
-          <select
-            id="rol"
-            [(ngModel)]="usuario.rolId"
-            class="w-full p-2 border border-gray-300 rounded"
-          >
-            <option [value]="0">Seleccione un rol</option>
-            <option *ngFor="let rol of roles" [value]="rol.id">{{ rol.nombre }}</option>
-          </select>
+
+        <div class="flex flex-col gap-2" *ngIf="esNuevo">
+          <label for="contrasena" class="font-medium text-surface-700">Contraseña</label>
+          <p-password 
+            id="contrasena" 
+            [(ngModel)]="usuario.contrasena"
+            [feedback]="false"
+            styleClass="w-full"
+            [inputStyle]="{'width':'100%'}"
+            placeholder="••••••••"
+            [toggleMask]="true"
+          ></p-password>
         </div>
+
+        <div class="flex flex-col gap-2">
+          <label for="rol" class="font-medium text-surface-700">Rol</label>
+          <p-select 
+            [options]="roles" 
+            [(ngModel)]="usuario.id_rol" 
+            optionLabel="nombre" 
+            optionValue="id"
+            placeholder="Seleccione un rol"
+            [style]="{'width':'100%'}"
+            appendTo="body"
+          ></p-select>
+        </div>
+
         <div class="flex flex-col gap-2" *ngIf="!esNuevo">
-          <label class="font-medium text-gray-700">Estado</label>
+          <label class="font-medium text-surface-700">Estado</label>
           <div class="flex items-center gap-4">
-            <label class="flex items-center gap-2">
-              <input type="checkbox" [(ngModel)]="usuario.estado" class="w-4 h-4" />
-              <span>Activo</span>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="usuario.estado" class="w-4 h-4 text-[#39A900] focus:ring-[#39A900]" />
+              <span class="text-surface-700">Usuario Activo</span>
             </label>
           </div>
         </div>
@@ -190,13 +204,15 @@ interface Rol {
           pButton
           label="Cancelar"
           (click)="displayDialog = false"
-          class="p-button-text"
+          class="p-button-text p-button-secondary"
         ></button>
         <button
           pButton
           label="Guardar"
           (click)="guardar()"
-          class="bg-[#39A900] border-[#39A900]"
+          styleClass="p-button-success"
+          [style]="{'background-color': '#39A900', 'border-color': '#39A900'}"
+          [loading]="saving"
         ></button>
       </ng-template>
     </p-dialog>
@@ -207,6 +223,7 @@ export class UsuariosComponent implements OnInit {
   private rolService = inject(RolService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
+  private authService = inject(AuthService);
 
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
@@ -215,40 +232,42 @@ export class UsuariosComponent implements OnInit {
 
   displayDialog = false;
   esNuevo = true;
+  loading = false;
+  saving = false;
+  isAdmin = false;
 
   usuario: Usuario = this.getNuevoUsuario();
 
-  estadoOptions = [
-    { label: 'Activo', value: true },
-    { label: 'Inactivo', value: false },
-  ];
-
   ngOnInit() {
-    this.cargarUsuarios();
+    this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
     this.cargarRoles();
+    this.cargarUsuarios();
   }
 
   cargarUsuarios() {
-    this.usuarioService.getUsuarios().subscribe({
+    this.loading = true;
+    this.usuarioService.getAll().subscribe({
       next: (res: any) => {
-        if (res?.data) {
-          this.usuarios = res.data;
-          this.usuariosFiltrados = res.data;
-        }
+        // Asume que el backend devuelve un array o { data: [] }
+        const data = Array.isArray(res) ? res : (res.data || []);
+        this.usuarios = data;
+        this.usuariosFiltrados = data;
+        this.loading = false;
       },
       error: () => {
         this.usuarios = [];
         this.usuariosFiltrados = [];
+        this.loading = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los usuarios' });
       },
     });
   }
 
   cargarRoles() {
-    this.rolService.getRoles().subscribe({
+    this.rolService.getAll().subscribe({
       next: (res: any) => {
-        if (res?.data) {
-          this.roles = res.data;
-        }
+        const data = Array.isArray(res) ? res : (res.data || []);
+        this.roles = data;
       },
       error: () => {
         this.roles = [];
@@ -260,6 +279,7 @@ export class UsuariosComponent implements OnInit {
     const filtroLower = this.filtro.toLowerCase();
     this.usuariosFiltrados = this.usuarios.filter(
       (u) =>
+        u.nombre?.toLowerCase().includes(filtroLower) ||
         u.nombreCompleto?.toLowerCase().includes(filtroLower) ||
         u.correo?.toLowerCase().includes(filtroLower),
     );
@@ -267,10 +287,11 @@ export class UsuariosComponent implements OnInit {
 
   getNuevoUsuario(): Usuario {
     return {
-      nombreCompleto: '',
+      nombre: '',
       correo: '',
+      contrasena: '',
       estado: true,
-      rolId: 0,
+      id_rol: 0,
     };
   }
 
@@ -280,69 +301,66 @@ export class UsuariosComponent implements OnInit {
     this.displayDialog = true;
   }
 
-  editar(usuario: Usuario) {
+  editar(u: Usuario) {
     this.esNuevo = false;
-    this.usuario = { ...usuario };
+    this.usuario = { ...u, nombre: u.nombre || u.nombreCompleto };
     this.displayDialog = true;
   }
 
   guardar() {
+    // Validaciones basicas
+    if (!this.usuario.nombre || !this.usuario.correo || !this.usuario.id_rol) {
+      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Por favor complete todos los campos requeridos' });
+      return;
+    }
+
+    if (this.esNuevo && !this.usuario.contrasena) {
+      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'La contraseña es requerida para nuevos usuarios' });
+      return;
+    }
+
+    this.saving = true;
+
     if (this.esNuevo) {
-      this.usuarioService.crearUsuario(this.usuario).subscribe({
+      this.usuarioService.create(this.usuario).subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Usuario creado correctamente',
-          });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado correctamente' });
           this.displayDialog = false;
+          this.saving = false;
           this.cargarUsuarios();
         },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo crear el usuario',
-          });
+        error: (err) => {
+          this.saving = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear el usuario' });
         },
       });
     } else {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Éxito',
-        detail: 'Usuario actualizado correctamente',
+      const { id, contrasena, ...updateData } = this.usuario as any;
+      
+      this.usuarioService.update(id!, updateData).subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente' });
+          this.displayDialog = false;
+          this.saving = false;
+          this.cargarUsuarios();
+        },
+        error: (err) => {
+          this.saving = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo actualizar el usuario' });
+        }
       });
-      this.displayDialog = false;
-      this.cargarUsuarios();
     }
   }
 
-  eliminar(usuario: Usuario) {
-    this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar el usuario ' + usuario.nombreCompleto + '?',
-      header: 'Confirmar Eliminación',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Usuario eliminado correctamente',
-        });
-        this.cargarUsuarios();
-      },
-    });
+  getRolNombre(id_rol: number): string {
+    const rol = this.roles.find(r => r.id === id_rol);
+    return rol ? rol.nombre : 'Desconocido';
   }
 
-  getRolSeverity(rolId: number): string {
-    switch (rolId) {
-      case 1:
-        return 'success';
-      case 2:
-        return 'info';
-      case 3:
-        return 'warning';
-      default:
-        return 'secondary';
-    }
+  getRolSeverity(id_rol: number): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    const nombre = this.getRolNombre(id_rol).toUpperCase();
+    if (nombre.includes('ADMIN')) return 'success';
+    if (nombre.includes('INSTRUCT')) return 'info';
+    return 'secondary';
   }
 }

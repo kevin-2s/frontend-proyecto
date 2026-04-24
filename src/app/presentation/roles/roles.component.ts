@@ -54,7 +54,9 @@ import { AuthService } from '../../infrastructure/services/auth.service';
             />
           </span>
         </div>
+      </div>
 
+      <div class="table-card">
         <p-table
           [value]="rolesFiltrados"
           [paginator]="true"
@@ -88,8 +90,10 @@ import { AuthService } from '../../infrastructure/services/auth.service';
       header="Nuevo Rol"
       [(visible)]="displayDialog"
       [modal]="true"
-      [style]="{ width: '400px' }"
+      [style]="{ minWidth: '400px', width: '400px' }"
       [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
     >
       <div class="flex flex-col gap-4 mt-2">
         <div class="flex flex-col gap-2">
@@ -101,6 +105,13 @@ import { AuthService } from '../../infrastructure/services/auth.service';
             class="w-full"
             placeholder="Ej: ADMINISTRADOR"
           />
+        </div>
+        <div class="form-field">
+          <label>Estado</label>
+          <div class="switch-container">
+            <p-toggleswitch [(ngModel)]="rol.estado"></p-toggleswitch>
+            <span class="switch-label">{{ rol.estado ? 'Activo' : 'Inactivo' }}</span>
+          </div>
         </div>
       </div>
       <ng-template pTemplate="footer">
@@ -121,6 +132,203 @@ import { AuthService } from '../../infrastructure/services/auth.service';
       </ng-template>
     </p-dialog>
   `,
+  styles: [
+    `
+      .module-container {
+        padding: 24px;
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 60px);
+      }
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .toolbar-left {
+        display: flex;
+        gap: 10px;
+      }
+      .btn-new {
+        background-color: #39a900 !important;
+        border-color: #39a900 !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+      }
+      .btn-new:hover {
+        background-color: #2d8600 !important;
+        border-color: #2d8600 !important;
+      }
+      .toolbar-center {
+        flex: 1;
+        text-align: center;
+      }
+      .page-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #212529;
+        margin: 0;
+      }
+      .toolbar-right {
+        min-width: 280px;
+      }
+      .search-box {
+        width: 100%;
+      }
+      .search-input {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+      }
+      .search-input:focus {
+        border-color: #39a900;
+        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+      }
+      .table-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+      .id-badge {
+        font-weight: 600;
+        color: #495057;
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .nombre-cell {
+        font-weight: 500;
+        color: #212529;
+      }
+      .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+      }
+      .btn-edit {
+        color: #fd7e14 !important;
+      }
+      .btn-edit:hover {
+        background-color: #fff3e0 !important;
+      }
+      .btn-delete {
+        color: #dc3545 !important;
+      }
+      .btn-delete:hover {
+        background-color: #ffe8e8 !important;
+      }
+      .empty-message {
+        text-align: center;
+        padding: 40px !important;
+        color: #6c757d;
+      }
+      .empty-message i {
+        display: block;
+        font-size: 48px;
+        margin-bottom: 10px;
+        color: #adb5bd;
+      }
+      .form-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .form-field label {
+        font-weight: 500;
+        color: #495057;
+        font-size: 14px;
+      }
+      .form-input {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 10px 12px;
+      }
+      .form-input:focus {
+        border-color: #39a900;
+        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+      }
+      .switch-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .switch-label {
+        font-weight: 400;
+        color: #495057;
+      }
+      .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        width: 100%;
+      }
+      .btn-cancel {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        border-radius: 8px !important;
+      }
+      .btn-cancel:hover {
+        background-color: #5a6268 !important;
+      }
+      .btn-save {
+        background-color: #39a900 !important;
+        border-color: #39a900 !important;
+        border-radius: 8px !important;
+      }
+      .btn-save:hover {
+        background-color: #2d8600 !important;
+      }
+      :host ::ng-deep .p-datatable .p-datatable-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+      }
+      :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+        background: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #39a900;
+        padding: 14px;
+      }
+      :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+        padding: 14px;
+        border-bottom: 1px solid #e9ecef;
+      }
+      :host ::ng-deep .p-paginator {
+        padding: 12px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-header {
+        background: #39a900;
+        color: white;
+        padding: 16px 24px;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-title {
+        color: white;
+        font-weight: 600;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-header .p-dialog-header-icon {
+        color: white;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-body {
+        padding: 24px;
+      }
+      :host ::ng-deep .form-dialog .p-dialog-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #dee2e6;
+      }
+    `,
+  ],
 })
 export class RolesComponent implements OnInit {
   private rolService = inject(RolService);

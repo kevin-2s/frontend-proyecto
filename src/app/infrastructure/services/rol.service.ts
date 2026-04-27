@@ -5,6 +5,7 @@ import { ApiService } from '../../core/services/api.service';
 export interface Rol {
   id: number;
   nombre: string;
+  estado?: string | boolean;
 }
 
 @Injectable({ providedIn: 'root' })

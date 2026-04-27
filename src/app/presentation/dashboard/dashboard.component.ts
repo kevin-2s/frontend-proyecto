@@ -24,12 +24,11 @@ import { map, catchError } from 'rxjs/operators';
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500 mb-1">Total Usuarios</p>
-              <ng-container *ngIf="loading(); else uTemplate">
+              @if (loading()) {
                 <p-skeleton width="3rem" height="2rem"></p-skeleton>
-              </ng-container>
-              <ng-template #uTemplate>
+              } @else {
                 <h3 class="text-3xl font-bold text-gray-800">{{ totalUsuarios() }}</h3>
-              </ng-template>
+              }
             </div>
             <div class="p-3 bg-green-50 rounded-full text-[#39A900]">
               <i class="pi pi-users text-2xl"></i>
@@ -41,12 +40,11 @@ import { map, catchError } from 'rxjs/operators';
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500 mb-1">Total Productos</p>
-              <ng-container *ngIf="loading(); else pTemplate">
+              @if (loading()) {
                 <p-skeleton width="3rem" height="2rem"></p-skeleton>
-              </ng-container>
-              <ng-template #pTemplate>
+              } @else {
                 <h3 class="text-3xl font-bold text-gray-800">{{ totalProductos() }}</h3>
-              </ng-template>
+              }
             </div>
             <div class="p-3 bg-green-50 rounded-full text-[#39A900]">
               <i class="pi pi-box text-2xl"></i>
@@ -58,12 +56,11 @@ import { map, catchError } from 'rxjs/operators';
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500 mb-1">Solicitudes Pendientes</p>
-              <ng-container *ngIf="loading(); else spTemplate">
+              @if (loading()) {
                 <p-skeleton width="3rem" height="2rem"></p-skeleton>
-              </ng-container>
-              <ng-template #spTemplate>
+              } @else {
                 <h3 class="text-3xl font-bold text-[#FD7E14]">{{ solicitudesPendientes() }}</h3>
-              </ng-template>
+              }
             </div>
             <div class="p-3 bg-orange-50 rounded-full text-[#FD7E14]">
               <i class="pi pi-clock text-2xl"></i>
@@ -75,12 +72,11 @@ import { map, catchError } from 'rxjs/operators';
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500 mb-1">Total Inventario</p>
-              <ng-container *ngIf="loading(); else invTemplate">
+              @if (loading()) {
                 <p-skeleton width="4rem" height="2rem"></p-skeleton>
-              </ng-container>
-              <ng-template #invTemplate>
+              } @else {
                 <h3 class="text-3xl font-bold text-[#28A745]">{{ totalInventario() | number }}</h3>
-              </ng-template>
+              }
             </div>
             <div class="p-3 bg-green-50 rounded-full text-[#28A745]">
               <i class="pi pi-warehouse text-2xl"></i>
@@ -94,82 +90,74 @@ import { map, catchError } from 'rxjs/operators';
         
         <!-- Gráfica 1: Stock bajo -->
         <div class="bg-white rounded-lg shadow border border-gray-200 p-4 min-h-[24rem] flex flex-col">
-          <ng-container *ngIf="loading(); else chart1">
+          @if (loading()) {
             <p-skeleton width="100%" height="20rem"></p-skeleton>
-          </ng-container>
-          <ng-template #chart1>
-            <ng-container *ngIf="chartError() || !chartStockData()?.labels?.length; else hasChart1">
+          } @else {
+            @if (chartError() || !chartStockData()?.labels?.length) {
               <div class="flex-1 flex flex-col items-center justify-center text-gray-500 min-h-[20rem]">
                 <i class="pi pi-chart-bar text-4xl mb-3 text-gray-300"></i>
                 <p>No hay datos de stock bajo</p>
               </div>
-            </ng-container>
-            <ng-template #hasChart1>
+            } @else {
               <div class="relative w-full h-[20rem]">
                 <p-chart type="bar" [data]="chartStockData()" [options]="chartStockOptions()"></p-chart>
               </div>
-            </ng-template>
-          </ng-template>
+            }
+          }
         </div>
 
         <!-- Gráfica 2: Próximos a vencer -->
         <div class="bg-white rounded-lg shadow border border-gray-200 p-4 min-h-[24rem] flex flex-col">
-          <ng-container *ngIf="loading(); else chart2">
+          @if (loading()) {
             <p-skeleton width="100%" height="20rem"></p-skeleton>
-          </ng-container>
-          <ng-template #chart2>
-            <ng-container *ngIf="chartError() || !chartVencimientoData()?.labels?.length; else hasChart2">
+          } @else {
+            @if (chartError() || !chartVencimientoData()?.labels?.length) {
               <div class="flex-1 flex flex-col items-center justify-center text-gray-500 min-h-[20rem]">
                 <i class="pi pi-calendar-times text-4xl mb-3 text-gray-300"></i>
                 <p>No hay productos próximos a vencer</p>
               </div>
-            </ng-container>
-            <ng-template #hasChart2>
+            } @else {
               <div class="relative w-full h-[20rem]">
                 <p-chart type="bar" [data]="chartVencimientoData()" [options]="chartVencimientoOptions()"></p-chart>
               </div>
-            </ng-template>
-          </ng-template>
+            }
+          }
         </div>
 
         <!-- Gráfica 3: Materiales por sitio/bodega -->
         <div class="bg-white rounded-lg shadow border border-gray-200 p-4 min-h-[24rem] flex flex-col">
-          <ng-container *ngIf="loading(); else chart3">
+          @if (loading()) {
             <p-skeleton width="100%" height="20rem"></p-skeleton>
-          </ng-container>
-          <ng-template #chart3>
-            <ng-container *ngIf="chartError() || !chartSitiosData()?.labels?.length; else hasChart3">
+          } @else {
+            @if (chartError() || !chartSitiosData()?.labels?.length) {
               <div class="flex-1 flex flex-col items-center justify-center text-gray-500 min-h-[20rem]">
                 <i class="pi pi-chart-pie text-4xl mb-3 text-gray-300"></i>
                 <p>No hay distribución de sitios para mostrar</p>
               </div>
-            </ng-container>
-            <ng-template #hasChart3>
+            } @else {
               <div class="relative flex items-center justify-center w-full h-[20rem]">
                 <p-chart type="doughnut" [data]="chartSitiosData()" [options]="chartSitiosOptions()"></p-chart>
               </div>
-            </ng-template>
-          </ng-template>
+            }
+          }
         </div>
 
         <!-- Gráfica 4: Estado de solicitudes -->
         <div class="bg-white rounded-lg shadow border border-gray-200 p-4 min-h-[24rem] flex flex-col">
-          <ng-container *ngIf="loading(); else chart4">
+          @if (loading()) {
             <p-skeleton width="100%" height="20rem"></p-skeleton>
-          </ng-container>
-          <ng-template #chart4>
-            <ng-container *ngIf="chartError() || !chartSolicitudesData()?.labels?.length; else hasChart4">
+          } @else {
+            @if (chartError() || !chartSolicitudesData()?.labels?.length) {
               <div class="flex-1 flex flex-col items-center justify-center text-gray-500 min-h-[20rem]">
                 <i class="pi pi-file text-4xl mb-3 text-gray-300"></i>
                 <p>No hay solicitudes registradas</p>
               </div>
-            </ng-container>
-            <ng-template #hasChart4>
+            } @else {
               <div class="relative flex items-center justify-center w-full h-[20rem]">
                 <p-chart type="pie" [data]="chartSolicitudesData()" [options]="chartSolicitudesOptions()"></p-chart>
               </div>
-            </ng-template>
-          </ng-template>
+            }
+          }
         </div>
 
       </div>

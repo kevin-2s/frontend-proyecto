@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -30,11 +31,17 @@ import { map, catchError } from 'rxjs/operators';
                 <h3 class="text-3xl font-bold text-gray-800">{{ totalUsuarios() }}</h3>
               }
             </div>
-            <div class="p-3 bg-green-50 rounded-full text-[#39A900]">
-              <i class="pi pi-users text-2xl"></i>
+            <div class="stat-right">
+              <canvas
+                baseChart
+                [data]="sparklineSolicitudesData"
+                [options]="sparklineOptions"
+                [type]="'line'"
+                height="50"
+              ></canvas>
             </div>
           </div>
-        </p-card>
+        </div>
 
         <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
           <div class="flex items-center justify-between">
@@ -46,11 +53,17 @@ import { map, catchError } from 'rxjs/operators';
                 <h3 class="text-3xl font-bold text-gray-800">{{ totalProductos() }}</h3>
               }
             </div>
-            <div class="p-3 bg-green-50 rounded-full text-[#39A900]">
-              <i class="pi pi-box text-2xl"></i>
+            <div class="stat-right">
+              <canvas
+                baseChart
+                [data]="sparklinePendientesData"
+                [options]="sparklineOptions"
+                [type]="'line'"
+                height="50"
+              ></canvas>
             </div>
           </div>
-        </p-card>
+        </div>
 
         <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
           <div class="flex items-center justify-between">
@@ -62,11 +75,18 @@ import { map, catchError } from 'rxjs/operators';
                 <h3 class="text-3xl font-bold text-[#FD7E14]">{{ solicitudesPendientes() }}</h3>
               }
             </div>
-            <div class="p-3 bg-orange-50 rounded-full text-[#FD7E14]">
-              <i class="pi pi-clock text-2xl"></i>
+            <div class="stat-right">
+              <canvas
+                baseChart
+                [data]="sparklineInventarioData"
+                [options]="sparklineOptions"
+                [type]="'line'"
+                height="50"
+              ></canvas>
             </div>
           </div>
-        </p-card>
+        </div>
+      </div>
 
         <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
           <div class="flex items-center justify-between">
@@ -78,11 +98,57 @@ import { map, catchError } from 'rxjs/operators';
                 <h3 class="text-3xl font-bold text-[#28A745]">{{ totalInventario() | number }}</h3>
               }
             </div>
-            <div class="p-3 bg-green-50 rounded-full text-[#28A745]">
-              <i class="pi pi-warehouse text-2xl"></i>
+            <div class="chart-value">
+              <span class="value-label">Total Salidas</span>
+              <span class="value-number red">{{ totalSalidas }}</span>
             </div>
           </div>
-        </p-card>
+          <div class="chart-container" *ngIf="!cargando && movimientosData.length > 0">
+            <canvas
+              baseChart
+              [data]="barLineChartData"
+              [options]="barLineChartOptions"
+              [type]="'bar'"
+            ></canvas>
+          </div>
+          <div class="chart-skeleton" *ngIf="cargando">
+            <p-skeleton width="100%" height="250px"></p-skeleton>
+          </div>
+          <div class="no-data" *ngIf="!cargando && movimientosData.length === 0">
+            <i class="pi pi-info-circle"></i>
+            <span>No hay datos de movimientos disponibles</span>
+          </div>
+        </div>
+
+        <!-- Columna Derecha 35% -->
+        <div class="chart-card right-col">
+          <div class="card-header">
+            <h3 class="card-title">Historial de Actividad</h3>
+          </div>
+          <div class="activity-list">
+            <div class="activity-item" *ngFor="let actividad of ultimasActividades; let i = index">
+              <div class="activity-dot" [ngClass]="getActivityColor(actividad.estadoSol)"></div>
+              <div class="activity-content">
+                <span class="activity-text">{{ actividad.justificacion }}</span>
+                <span class="activity-date">{{ actividad.fechaSol | date: 'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+            <div class="activity-skeleton" *ngIf="cargando">
+              <p-skeleton
+                width="100%"
+                height="50px"
+                *ngFor="let _ of [1, 2, 3, 4, 5, 6, 7, 8]"
+              ></p-skeleton>
+            </div>
+          </div>
+          <button
+            pButton
+            label="Ver todas las transacciones"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            class="view-all-btn"
+          ></button>
+        </div>
       </div>
 
       <!-- Gráficas Dashboard (Grid 2x2) -->
@@ -170,12 +236,12 @@ import { map, catchError } from 'rxjs/operators';
         
         <p-table [value]="ultimasSolicitudes()" [tableStyle]="{ 'min-width': '50rem' }" styleClass="p-datatable-striped" [loading]="loading()">
             <ng-template pTemplate="header">
-                <tr>
-                    <th class="!bg-white !text-gray-600">ID</th>
-                    <th class="!bg-white !text-gray-600">Justificación</th>
-                    <th class="!bg-white !text-gray-600">Fecha</th>
-                    <th class="!bg-white !text-gray-600">Estado</th>
-                </tr>
+              <tr>
+                <th class="table-header">ID</th>
+                <th class="table-header">Justificación</th>
+                <th class="table-header">Fecha</th>
+                <th class="table-header">Estado</th>
+              </tr>
             </ng-template>
             <ng-template pTemplate="body" let-sol>
                 <tr>
@@ -194,7 +260,16 @@ import { map, catchError } from 'rxjs/operators';
                     </td>
                 </tr>
             </ng-template>
-        </p-table>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="4" class="empty-message">
+                  <i class="pi pi-inbox"></i>
+                  <span>No hay solicitudes disponibles</span>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
       </div>
     </div>
   `,

@@ -44,7 +44,7 @@ interface Usuario {
   ],
   providers: [MessageService, ConfirmationService],
   template: `
-    <p-toast></p-toast>
+    <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
 
     <div class="animate-fade-in p-6">
@@ -77,7 +77,23 @@ interface Usuario {
             </span>
           </div>
         </div>
+        <div class="toolbar-right">
+          <span class="p-input-icon-left search-box">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="filtro"
+              (input)="filtrar()"
+              placeholder="Buscar usuarios..."
+              class="search-input"
+            />
+          </span>
+        </div>
+      </div>
 
+      <!-- Table -->
+      <div class="table-card">
         <p-table
           [value]="usuariosFiltrados"
           [paginator]="true"
@@ -106,6 +122,13 @@ interface Usuario {
                 <p-tag [value]="getRolNombre(u.id_rol)" [severity]="getRolSeverity(u.id_rol)"></p-tag>
               </td>
               <td>
+                <span class="nombre-cell">{{ usuario.nombreCompleto }}</span>
+              </td>
+              <td>
+                <span class="correo-cell">{{ usuario.correo }}</span>
+              </td>
+              <td><p-tag [value]="usuario.rolNombre || 'Sin rol'" severity="info"></p-tag></td>
+              <td>
                 <p-tag
                   [value]="u.estado ? 'Activo' : 'Inactivo'"
                   [severity]="u.estado ? 'success' : 'danger'"
@@ -132,12 +155,15 @@ interface Usuario {
       </div>
     </div>
 
+    <!-- Dialog Create/Edit -->
     <p-dialog
-      header="{{ esNuevo ? 'Nuevo Usuario' : 'Editar Usuario' }}"
+      [header]="esNuevo ? 'Nuevo Usuario' : 'Editar Usuario'"
       [(visible)]="displayDialog"
       [modal]="true"
-      [style]="{ width: '500px' }"
+      [style]="{ minWidth: '500px', width: '500px' }"
       [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
     >
       <div class="flex flex-col gap-4 mt-2">
         <div class="flex flex-col gap-2">
@@ -148,6 +174,7 @@ interface Usuario {
             [(ngModel)]="usuario.nombre"
             class="w-full"
             placeholder="Ingrese nombre completo"
+            class="form-input"
           />
         </div>
         
@@ -158,8 +185,8 @@ interface Usuario {
             id="correo"
             [(ngModel)]="usuario.correo"
             type="email"
-            class="w-full"
             placeholder="correo@ejemplo.com"
+            class="form-input"
           />
         </div>
 
@@ -199,6 +226,7 @@ interface Usuario {
           </div>
         </div>
       </div>
+
       <ng-template pTemplate="footer">
         <button
           pButton
@@ -217,6 +245,259 @@ interface Usuario {
       </ng-template>
     </p-dialog>
   `,
+  styles: [
+    `
+      .module-container {
+        padding: 24px;
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 60px);
+      }
+
+      /* Toolbar */
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .toolbar-left {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn-new {
+        background-color: #39a900 !important;
+        border-color: #39a900 !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+      }
+
+      .btn-new:hover {
+        background-color: #2d8600 !important;
+        border-color: #2d8600 !important;
+      }
+
+      .toolbar-center {
+        flex: 1;
+        text-align: center;
+      }
+
+      .page-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #212529;
+        margin: 0;
+      }
+
+      .toolbar-right {
+        min-width: 280px;
+      }
+
+      .search-box {
+        width: 100%;
+      }
+
+      .search-input {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+      }
+
+      .search-input:focus {
+        border-color: #39a900;
+        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+      }
+
+      /* Table Card */
+      .table-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+
+      .id-badge {
+        font-weight: 600;
+        color: #495057;
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+
+      .nombre-cell {
+        font-weight: 500;
+        color: #212529;
+      }
+
+      .correo-cell {
+        color: #6c757d;
+      }
+
+      .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+      }
+
+      .btn-edit {
+        color: #fd7e14 !important;
+      }
+
+      .btn-edit:hover {
+        background-color: #fff3e0 !important;
+      }
+
+      .btn-delete {
+        color: #dc3545 !important;
+      }
+
+      .btn-delete:hover {
+        background-color: #ffe8e8 !important;
+      }
+
+      .empty-message {
+        text-align: center;
+        padding: 40px !important;
+        color: #6c757d;
+      }
+
+      .empty-message i {
+        display: block;
+        font-size: 48px;
+        margin-bottom: 10px;
+        color: #adb5bd;
+      }
+
+      /* Form Styles */
+      .form-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .form-field label {
+        font-weight: 500;
+        color: #495057;
+        font-size: 14px;
+      }
+
+      .form-input {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 10px 12px;
+      }
+
+      .form-input:focus {
+        border-color: #39a900;
+        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
+      }
+
+      .form-select {
+        width: 100%;
+        border-radius: 8px;
+      }
+
+      .switch-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .switch-label {
+        font-weight: 400;
+        color: #495057;
+      }
+
+      /* Dialog Footer Buttons */
+      .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .btn-cancel {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        border-radius: 8px !important;
+      }
+
+      .btn-cancel:hover {
+        background-color: #5a6268 !important;
+      }
+
+      .btn-save {
+        background-color: #39a900 !important;
+        border-color: #39a900 !important;
+        border-radius: 8px !important;
+      }
+
+      .btn-save:hover {
+        background-color: #2d8600 !important;
+      }
+
+      /* PrimeNG Table Styles */
+      :host ::ng-deep .p-datatable .p-datatable-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+        background: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+        border-bottom: 2px solid #39a900;
+        padding: 14px;
+      }
+
+      :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+        padding: 14px;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      :host ::ng-deep .p-paginator {
+        padding: 12px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+      }
+
+      /* Dialog Styles */
+      :host ::ng-deep .form-dialog .p-dialog-header {
+        background: #39a900;
+        color: white;
+        padding: 16px 24px;
+      }
+
+      :host ::ng-deep .form-dialog .p-dialog-title {
+        color: white;
+        font-weight: 600;
+      }
+
+      :host ::ng-deep .form-dialog .p-dialog-header .p-dialog-header-icon {
+        color: white;
+      }
+
+      :host ::ng-deep .form-dialog .p-dialog-body {
+        padding: 24px;
+      }
+
+      :host ::ng-deep .form-dialog .p-dialog-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #dee2e6;
+      }
+    `,
+  ],
 })
 export class UsuariosComponent implements OnInit {
   private usuarioService = inject(UsuarioService);
@@ -229,7 +510,6 @@ export class UsuariosComponent implements OnInit {
   usuariosFiltrados: Usuario[] = [];
   roles: Rol[] = [];
   filtro = '';
-
   displayDialog = false;
   esNuevo = true;
   loading = false;
@@ -305,6 +585,13 @@ export class UsuariosComponent implements OnInit {
     this.esNuevo = false;
     this.usuario = { ...u, nombre: u.nombre || u.nombreCompleto };
     this.displayDialog = true;
+  }
+
+  onRolChange(event: any) {
+    const rol = this.roles.find((r) => r.id === this.usuario.rolId);
+    if (rol) {
+      this.usuario.rolNombre = rol.nombre;
+    }
   }
 
   guardar() {

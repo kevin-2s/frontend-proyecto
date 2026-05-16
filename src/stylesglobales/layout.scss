@@ -1,0 +1,58 @@
+/* Estilos para LayoutComponent con Flexbox Responsivo */
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.2s ease-out forwards;
+  transform-origin: bottom center;
+}
+
+/* Responsiveness for Layout */
+@media (max-width: 1024px) {
+  aside {
+    position: fixed !important;
+    height: 100vh !important;
+    z-index: 50 !important;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  main {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* Ensure content doesn't overflow */
+.flex-1 {
+  min-width: 0;
+}
+
+/* Fix for overlapping elements in main content area */
+.module-container {
+  max-width: 100%;
+  overflow-x: hidden;
+}

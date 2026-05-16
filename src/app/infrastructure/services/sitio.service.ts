@@ -10,12 +10,12 @@ export class SitioService {
     return this.api.get<any>('/sitios');
   }
 
-  crearSitio(data: { nombreSitio: string; tipo: string; responsableId: number }): Observable<any> {
+  crearSitio(data: { nombre: string; tipo: string; id_responsable?: number | null }): Observable<any> {
     return this.api.post<any>('/sitios', data);
   }
 
   actualizarSitio(id: number, data: any): Observable<any> {
-    return this.api.put<any>(`/sitios/${id}`, data);
+    return this.api.patch<any>(`/sitios/${id}`, data);
   }
 
   eliminarSitio(id: number): Observable<any> {

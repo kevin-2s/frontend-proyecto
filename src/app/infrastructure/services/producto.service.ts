@@ -15,7 +15,7 @@ export class ProductoService {
   }
 
   actualizarProducto(id: number, data: any): Observable<any> {
-    return this.api.put<any>(`/productos/${id}`, data);
+    return this.api.patch<any>(`/productos/${id}`, data);
   }
 
   eliminarProducto(id: number): Observable<any> {

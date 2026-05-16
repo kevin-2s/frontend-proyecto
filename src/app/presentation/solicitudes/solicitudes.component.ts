@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -34,333 +34,138 @@ interface Solicitud {
     ConfirmDialogModule,
     TooltipModule,
   ],
+  encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
   template: `
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <div class="module-container">
       <div class="toolbar">
-        <div class="toolbar-center"><h2 class="page-title">Gestionar Solicitudes</h2></div>
+        <div class="toolbar-center">
+          <h2 class="page-title">Gestión de Solicitudes de Materiales</h2>
+        </div>
         <div class="toolbar-right">
-          <span class="p-input-icon-left search-box"
-            ><i class="pi pi-search"></i
-            ><input
+           <div class="search-container">
+            <i class="pi pi-search search-icon"></i>
+            <input
               pInputText
               type="text"
               [(ngModel)]="filtro"
               (input)="filtrar()"
-              placeholder="Buscar solicitudes..."
+              placeholder="Buscar por justificación o estado..."
               class="search-input"
-          /></span>
+            />
+          </div>
         </div>
       </div>
+
       <div class="table-card">
         <p-table
           [value]="solicitudesFiltradas"
           [paginator]="true"
           [rows]="10"
-          [rowsPerPageOptions]="[5, 10, 25]"
-          [showCurrentPageReport]="true"
-          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} solicitudes"
-          [tableStyle]="{ 'min-width': '60rem' }"
-          [stripedRows]="true"
-          styleClass="p-datatable-gridlines"
+          styleClass="modern-table"
           [rowHover]="true"
         >
-          <ng-template pTemplate="header"
-            ><tr>
-              <th pSortableColumn="id" style="width:80px">
-                ID <p-sortIcon field="id"></p-sortIcon>
-              </th>
-              <th pSortableColumn="justificacion">
-                Justificación <p-sortIcon field="justificacion"></p-sortIcon>
-              </th>
-              <th pSortableColumn="fechaSol" style="width:120px">
-                Fecha <p-sortIcon field="fechaSol"></p-sortIcon>
-              </th>
-              <th pSortableColumn="estadoSol" style="width:120px">
-                Estado <p-sortIcon field="estadoSol"></p-sortIcon>
-              </th>
-              <th style="width:140px;text-align:center">Acciones</th>
-            </tr></ng-template
-          >
-          <ng-template pTemplate="body" let-sol
-            ><tr>
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width:100px">Folio</th>
+              <th>Justificación / Motivo</th>
+              <th style="width:150px">Fecha Solicitud</th>
+              <th style="width:180px">Estado Actual</th>
+              <th style="width:180px" class="text-center">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-sol>
+            <tr>
+              <td><span class="id-badge">#{{ sol.id }}</span></td>
+              <td><span class="nombre-cell" [pTooltip]="sol.justificacion">{{ sol.justificacion }}</span></td>
+              <td><span class="fecha-cell">{{ sol.fechaSol | date: 'MMM dd, yyyy' }}</span></td>
               <td>
-                <span class="id-badge">#{{ sol.id }}</span>
+                <span class="status-badge" [ngClass]="getStatusClass(sol.estadoSol)">
+                  {{ sol.estadoSol }}
+                </span>
               </td>
               <td>
-                <span class="nombre-cell">{{ sol.justificacion }}</span>
+                <div class="action-buttons justify-center">
+                  <button
+                    *ngIf="sol.estadoSol === 'PENDIENTE'"
+                    pButton
+                    icon="pi pi-check"
+                    class="p-button-text text-green-600 hover:bg-green-50"
+                    (click)="aprobar(sol)"
+                    pTooltip="Aprobar solicitud"
+                  ></button>
+                  <button
+                    *ngIf="sol.estadoSol === 'PENDIENTE'"
+                    pButton
+                    icon="pi pi-times"
+                    class="p-button-text text-red-600 hover:bg-red-50"
+                    (click)="rechazar(sol)"
+                    pTooltip="Rechazar solicitud"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    class="p-button-text text-blue-600 hover:bg-blue-50"
+                    (click)="ver(sol)"
+                    pTooltip="Ver detalles"
+                  ></button>
+                </div>
               </td>
-              <td>
-                <span class="fecha-cell">{{ sol.fechaSol | date: 'dd/MM/yyyy' }}</span>
-              </td>
-              <td>
-                <span class="status-badge" [ngClass]="getStatusClass(sol.estadoSol)">{{
-                  sol.estadoSol
-                }}</span>
-              </td>
-              <td class="action-buttons">
-                <button
-                  *ngIf="sol.estadoSol === 'PENDIENTE'"
-                  pButton
-                  icon="pi pi-check"
-                  class="btn-approve p-button-sm p-button-text"
-                  (click)="aprobar(sol)"
-                  pTooltip="Aprobar"
-                ></button
-                ><button
-                  *ngIf="sol.estadoSol === 'PENDIENTE'"
-                  pButton
-                  icon="pi pi-times"
-                  class="btn-reject p-button-sm p-button-text"
-                  (click)="rechazar(sol)"
-                  pTooltip="Rechazar"
-                ></button
-                ><button
-                  pButton
-                  icon="pi pi-eye"
-                  class="btn-view p-button-sm p-button-text"
-                  (click)="ver(sol)"
-                  pTooltip="Ver"
-                ></button>
-              </td></tr
-          ></ng-template>
-          <ng-template pTemplate="emptymessage"
-            ><tr>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
               <td colspan="5" class="empty-message">
-                <i class="pi pi-file"></i><span>No se encontraron solicitudes.</span>
+                <i class="pi pi-file"></i>
+                <p>No se encontraron solicitudes pendientes</p>
               </td>
-            </tr></ng-template
-          >
+            </tr>
+          </ng-template>
         </p-table>
       </div>
     </div>
+
     <p-dialog
-      [header]="'Detalles de Solicitud'"
+      header="📋 Detalles de la Solicitud"
       [(visible)]="displayDialog"
       [modal]="true"
-      [style]="{ minWidth: '500px', width: '500px' }"
+      [style]="{ width: '550px' }"
       [draggable]="false"
       [resizable]="false"
       styleClass="form-dialog"
     >
-      <div class="detail-container" *ngIf="solicitudView">
+      <div class="detail-container mt-4" *ngIf="solicitudView">
         <div class="detail-row">
-          <span class="detail-label">ID:</span
-          ><span class="detail-value">#{{ solicitudView.id }}</span>
+          <span class="detail-label">Número de Folio:</span>
+          <span class="id-badge">#{{ solicitudView.id }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Justificación:</span
-          ><span class="detail-value">{{ solicitudView.justificacion }}</span>
+          <span class="detail-label">Justificación:</span>
+          <span class="detail-value text-slate-600 italic">"{{ solicitudView.justificacion }}"</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Fecha:</span
-          ><span class="detail-value">{{ solicitudView.fechaSol | date: 'dd/MM/yyyy HH:mm' }}</span>
+          <span class="detail-label">Fecha y Hora:</span>
+          <span class="detail-value font-bold">{{ solicitudView.fechaSol | date: 'dd/MM/yyyy HH:mm a' }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Estado:</span
-          ><span class="status-badge" [ngClass]="getStatusClass(solicitudView.estadoSol)">{{
-            solicitudView.estadoSol
-          }}</span>
+          <span class="detail-label">Estado de Gestión:</span>
+          <span class="status-badge" [ngClass]="getStatusClass(solicitudView.estadoSol)">
+            {{ solicitudView.estadoSol }}
+          </span>
         </div>
       </div>
-      <ng-template pTemplate="footer"
-        ><div class="dialog-footer">
-          <button
-            pButton
-            label="Cerrar"
-            icon="pi pi-times"
-            class="btn-cancel"
-            (click)="displayDialog = false"
-          ></button></div
-      ></ng-template>
+      <ng-template pTemplate="footer">
+        <button
+          pButton
+          label="Entendido"
+          class="btn-primary"
+          (click)="displayDialog = false"
+        ></button>
+      </ng-template>
     </p-dialog>
-  `,
-  styles: [
-    `
-      .module-container {
-        padding: 24px;
-        background-color: #f8f9fa;
-        min-height: calc(100vh - 60px);
-      }
-      .toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-        gap: 16px;
-      }
-      .toolbar-center {
-        flex: 1;
-        text-align: center;
-      }
-      .page-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #212529;
-        margin: 0;
-      }
-      .toolbar-right {
-        min-width: 280px;
-      }
-      .search-box {
-        width: 100%;
-      }
-      .search-input {
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-      }
-      .search-input:focus {
-        border-color: #39a900;
-        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
-      }
-      .table-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-      }
-      .id-badge {
-        font-weight: 600;
-        color: #495057;
-        background: #f8f9fa;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-      }
-      .nombre-cell {
-        font-weight: 500;
-        color: #212529;
-      }
-      .fecha-cell {
-        color: #6c757d;
-      }
-      .status-badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-      }
-      .status-pendiente {
-        background: #fef3c7;
-        color: #d97706;
-      }
-      .status-aprobada {
-        background: #d1fae5;
-        color: #059669;
-      }
-      .status-rechazada {
-        background: #fee2e2;
-        color: #dc2626;
-      }
-      .action-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 4px;
-      }
-      .btn-approve {
-        color: #39a900 !important;
-      }
-      .btn-approve:hover {
-        background-color: #d1fae5 !important;
-      }
-      .btn-reject {
-        color: #dc3545 !important;
-      }
-      .btn-reject:hover {
-        background-color: #fee2e2 !important;
-      }
-      .btn-view {
-        color: #0d6efd !important;
-      }
-      .btn-view:hover {
-        background-color: #e7f1ff !important;
-      }
-      .empty-message {
-        text-align: center;
-        padding: 40px !important;
-        color: #6c757d;
-      }
-      .empty-message i {
-        display: block;
-        font-size: 48px;
-        margin-bottom: 10px;
-        color: #adb5bd;
-      }
-      .detail-container {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .detail-row {
-        display: flex;
-        gap: 12px;
-      }
-      .detail-label {
-        font-weight: 600;
-        color: #495057;
-        min-width: 100px;
-      }
-      .detail-value {
-        color: #212529;
-      }
-      .dialog-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        width: 100%;
-      }
-      .btn-cancel {
-        background-color: #6c757d !important;
-        border-color: #6c757d !important;
-        border-radius: 8px !important;
-      }
-      :host ::ng-deep .p-datatable .p-datatable-header {
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-      }
-      :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-        background: #f8f9fa;
-        color: #212529;
-        font-weight: 600;
-        border-bottom: 2px solid #39a900;
-        padding: 14px;
-      }
-      :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-        padding: 14px;
-        border-bottom: 1px solid #e9ecef;
-      }
-      :host ::ng-deep .p-paginator {
-        padding: 12px;
-        background: #f8f9fa;
-        border-top: 1px solid #dee2e6;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-header {
-        background: #39a900;
-        color: white;
-        padding: 16px 24px;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-title {
-        color: white;
-        font-weight: 600;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-header .p-dialog-header-icon {
-        color: white;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-body {
-        padding: 24px;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-footer {
-        padding: 16px 24px;
-        border-top: 1px solid #dee2e6;
-      }
-    `,
-  ],
+  `
 })
 export class SolicitudesComponent implements OnInit {
   private solicitudService = inject(SolicitudService);

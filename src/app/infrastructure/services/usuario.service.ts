@@ -23,4 +23,8 @@ export class UsuarioService {
   update(id: number, usuario: Partial<Usuario>): Observable<Usuario> {
     return this.api.patch<Usuario>(`${this.endpoint}/${id}`, usuario);
   }
+
+  delete(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.endpoint}/${id}`);
+  }
 }

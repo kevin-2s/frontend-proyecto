@@ -7,18 +7,18 @@ export class CategoriaService {
   private readonly api = inject(ApiService);
 
   getCategorias(): Observable<any> {
-    return this.api.get<any>('/categoria');
+    return this.api.get<any>('/categorias');
   }
 
-  crearCategoria(data: { nombreCat: string }): Observable<any> {
-    return this.api.post<any>('/categoria', data);
+  crearCategoria(data: { nombre: string }): Observable<any> {
+    return this.api.post<any>('/categorias', data);
   }
 
   actualizarCategoria(id: number, data: any): Observable<any> {
-    return this.api.put<any>(`/categoria/${id}`, data);
+    return this.api.patch<any>(`/categorias/${id}`, data);
   }
 
   eliminarCategoria(id: number): Observable<any> {
-    return this.api.delete<any>(`/categoria/${id}`);
+    return this.api.delete<any>(`/categorias/${id}`);
   }
 }

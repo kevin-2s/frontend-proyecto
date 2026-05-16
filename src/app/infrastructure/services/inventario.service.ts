@@ -15,7 +15,7 @@ export class InventarioService {
   }
 
   actualizarInventario(id: number, data: any): Observable<any> {
-    return this.api.put<any>(`/inventario/${id}`, data);
+    return this.api.patch<any>(`/inventario/${id}`, data);
   }
 
   eliminarInventario(id: number): Observable<any> {

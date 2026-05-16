@@ -1,0 +1,48 @@
+/* Cleaned & Modern Styles for Inventario Module */
+@use './modern-table.scss' as *;
+
+.module-container {
+  padding: 1.5rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+
+  .toolbar-center {
+    flex: 1;
+    .page-title {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #1e293b;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      margin: 0;
+      text-align: center;
+      i { color: #39A900; }
+    }
+  }
+}
+
+.nombre-cell {
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.num-cell {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}

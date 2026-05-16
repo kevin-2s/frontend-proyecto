@@ -52,13 +52,16 @@ interface Usuario {
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
 
-    <div class="usuario-page">
-      <div class="toolbar">
-        <div class="toolbar-left">
-           <h2 class="page-title">USUARIOS</h2>
-        </div>
-        <div class="toolbar-right flex items-center gap-4">
-          <div class="search-container">
+    <div class="module-container">
+
+      <!-- Header -->
+      <div class="module-header">
+        <h3 class="page-title">
+          <i class="pi pi-users"></i> Usuarios
+        </h3>
+        <div class="header-actions">
+          <div class="search-wrapper">
+            <i class="pi pi-search"></i>
             <input
               pInputText
               type="text"
@@ -67,11 +70,10 @@ interface Usuario {
               placeholder="Buscar usuario..."
               class="search-input"
             />
-            <i class="pi pi-search search-icon"></i>
           </div>
           <button
             pButton
-            label="AGREGAR USUARIO"
+            label="Agregar"
             icon="pi pi-plus"
             (click)="openNew()"
             class="btn-add"
@@ -79,8 +81,8 @@ interface Usuario {
         </div>
       </div>
 
-      <!-- Table Container -->
-      <div class="table-card mt-6">
+      <!-- Table -->
+      <div class="data-table-wrapper">
         <p-table
           [value]="usuariosFiltrados"
           [paginator]="true"
@@ -91,55 +93,43 @@ interface Usuario {
         >
           <ng-template pTemplate="header">
             <tr>
-              <th style="width: 80px">ID</th>
-              <th>NOMBRE</th>
-              <th>ROL</th>
-              <th>CORREO</th>
-              <th>ESTADO</th>
-              <th class="text-center">ACCIONES</th>
+              <th style="width:64px">ID</th>
+              <th>Nombre</th>
+              <th>Rol</th>
+              <th>Correo</th>
+              <th>Estado</th>
+              <th style="text-align:center">Acciones</th>
             </tr>
           </ng-template>
 
           <ng-template pTemplate="body" let-u>
             <tr>
-              <td><span class="text-slate-400 font-bold text-xs">#{{ u.id }}</span></td>
-              <td><span class="font-bold text-slate-700">{{ u.nombre }} {{ u.apellidos }}</span></td>
-              <td><span class="text-slate-600">{{ getRolNombre(u.id_rol) }}</span></td>
-              <td><span class="text-slate-500">{{ u.correo }}</span></td>
+              <td><span class="text-slate-400 text-xs font-bold">#{{ u.id }}</span></td>
+              <td><span class="font-semibold text-slate-800">{{ u.nombre }} {{ u.apellidos }}</span></td>
+              <td><span class="text-slate-500 text-sm">{{ getRolNombre(u.id_rol) }}</span></td>
+              <td><span class="text-slate-500 text-sm">{{ u.correo }}</span></td>
               <td>
                 <span class="status-badge" [ngClass]="u.estado ? 'status-active' : 'status-inactive'">
-                  {{ u.estado ? 'ACTIVO' : 'INACTIVO' }}
+                  {{ u.estado ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
               <td>
-                <div class="action-buttons justify-center gap-2">
-                  <button
-                    pButton
-                    label="EDITOR"
-                    (click)="editar(u)"
-                    class="btn-table-action btn-editor"
-                  ></button>
-                  <button
-                    pButton
-                    label="ELIMINAR"
-                    (click)="eliminar(u)"
-                    class="btn-table-action btn-eliminar"
-                  ></button>
+                <div class="action-buttons justify-center">
+                  <button pButton icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top"
+                    (click)="editar(u)" class="btn-table-action btn-editor"></button>
+                  <button pButton icon="pi pi-trash" pTooltip="Eliminar" tooltipPosition="top"
+                    (click)="eliminar(u)" class="btn-table-action btn-eliminar"></button>
                 </div>
               </td>
             </tr>
           </ng-template>
 
           <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="6" class="empty-message">
-                <i class="pi pi-users"></i>
-                <p>No se encontraron usuarios</p>
-              </td>
-            </tr>
+            <tr><td colspan="6" class="empty-message">
+              <i class="pi pi-users"></i><p>No se encontraron usuarios</p>
+            </td></tr>
           </ng-template>
         </p-table>
-
       </div>
     </div>
 

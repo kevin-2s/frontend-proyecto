@@ -1,65 +1,14 @@
-/* Cleaned & Modern Styles for Fichas Module */
+/* Fichas Module — delegates all design to modern-table.scss */
 @use './modern-table.scss' as *;
 
-.module-container {
-  padding: 1.5rem;
-  animation: fadeIn 0.5s ease-out;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-
-  .toolbar-center {
-    flex: 1;
-    .page-title {
-      font-size: 2rem;
-      font-weight: 900;
-      color: #1e293b;
-      text-transform: uppercase;
-      letter-spacing: -0.01em;
-      margin: 0;
-      text-align: center;
-      i { color: #39A900; }
-    }
-  }
-}
-
+/* Ficha-specific cell styles */
 .nombre-cell {
-  font-weight: 800;
+  font-weight: 700;
   color: #39A900;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
-
 .correo-cell {
-  font-weight: 600;
+  font-weight: 500;
   color: #475569;
-}
-
-.form-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 1rem 0;
-}
-
-.switch-container {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-
-  .switch-label {
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    color: #39A900;
-  }
+  font-size: 0.875rem;
 }

@@ -42,26 +42,20 @@ interface Inventario {
   template: `
     <p-toast position="top-right"></p-toast>
     <div class="module-container">
-      <div class="toolbar">
-        <div class="toolbar-center">
-          <h2 class="page-title">Control de Existencias (Inventario)</h2>
-        </div>
-        <div class="toolbar-right">
-           <div class="search-container">
-            <i class="pi pi-search search-icon"></i>
-            <input
-              pInputText
-              type="text"
-              [(ngModel)]="filtro"
-              (input)="filtrar()"
-              placeholder="Buscar por producto o ID..."
-              class="search-input"
-            />
+      <div class="module-header">
+        <h3 class="page-title">
+          <i class="pi pi-warehouse"></i> Inventario
+        </h3>
+        <div class="header-actions">
+          <div class="search-wrapper">
+            <i class="pi pi-search"></i>
+            <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
+              placeholder="Buscar producto..." class="search-input" />
           </div>
         </div>
       </div>
 
-      <div class="table-card">
+      <div class="data-table-wrapper">
         <p-table
           [value]="inventarioFiltrado"
           [paginator]="true"
@@ -95,7 +89,7 @@ interface Inventario {
                   <button
                     pButton
                     icon="pi pi-pencil"
-                    class="p-button-text btn-edit"
+                    class="btn-table-action btn-editor"
                     (click)="editar(inv)"
                     pTooltip="Ajustar stock"
                   ></button>

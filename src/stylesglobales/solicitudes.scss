@@ -1,0 +1,77 @@
+/* Cleaned & Modern Styles for Solicitudes Module */
+@use './modern-table.scss' as *;
+
+.module-container {
+  padding: 1.5rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+
+  .toolbar-center {
+    flex: 1;
+    .page-title {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #1e293b;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      margin: 0;
+      text-align: center;
+      i { color: #39A900; }
+    }
+  }
+}
+
+.nombre-cell {
+  font-weight: 800;
+  color: #1e293b;
+  display: block;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fecha-cell {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.detail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+
+    .detail-label {
+      font-weight: 700;
+      color: #64748b;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      min-width: 120px;
+    }
+
+    .detail-value {
+      font-weight: 600;
+      color: #0f172a;
+      text-align: right;
+    }
+  }
+}

@@ -1,0 +1,57 @@
+/* Modern Styles for Usuarios Module - Matching Reference Image 1 */
+@use './modern-table.scss' as *;
+
+.usuario-page {
+  padding: 2rem;
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  
+  .page-title {
+    font-size: 2.25rem;
+    font-weight: 900;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Specific Table Cell Formatting */
+.modern-table {
+  th {
+    background: #f8fafc !important;
+    color: #94a3b8 !important;
+    font-weight: 800 !important;
+    font-size: 0.85rem !important;
+    padding: 1.25rem !important;
+    text-transform: uppercase;
+  }
+  
+  td {
+    padding: 1.5rem 1.25rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+  }
+}
+
+/* Dialog Title Styling - Image 2 */
+.form-dialog {
+  .p-dialog-header {
+    border-bottom: none !important;
+    padding: 1.5rem 1.5rem 0 1.5rem !important;
+    
+    .p-dialog-header-icon {
+      color: #94a3b8 !important;
+      &:hover { background: #f1f5f9 !important; }
+    }
+  }
+  
+  .p-dialog-content {
+    padding: 0 !important;
+  }
+}

@@ -15,272 +15,116 @@ import { map, catchError } from 'rxjs/operators';
   standalone: true,
   imports: [CommonModule, CardModule, TableModule, SkeletonModule, TagModule, ChartModule],
   template: `
-    <div class="animate-fade-in">
-      <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Resumen</h2>
+    <div class="animate-fade-in px-2">
+      <h2 class="text-[28px] font-bold text-gray-900 mb-8">Dashboard Resumen</h2>
 
-      <!-- Tarjetas de Resumen -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Tarjetas de Resumen (Stat Cards) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
         
-        <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500 mb-1">Total Usuarios</p>
-              @if (loading()) {
-                <p-skeleton width="3rem" height="2rem"></p-skeleton>
-              } @else {
-                <h3 class="text-3xl font-bold text-gray-800">{{ totalUsuarios() }}</h3>
-              }
-            </div>
-            <div class="stat-right">
-              <canvas
-                baseChart
-                [data]="sparklineSolicitudesData"
-                [options]="sparklineOptions"
-                [type]="'line'"
-                height="50"
-              ></canvas>
-            </div>
-          </div>
-        </div>
-
-        <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500 mb-1">Total Productos</p>
-              @if (loading()) {
-                <p-skeleton width="3rem" height="2rem"></p-skeleton>
-              } @else {
-                <h3 class="text-3xl font-bold text-gray-800">{{ totalProductos() }}</h3>
-              }
-            </div>
-            <div class="stat-right">
-              <canvas
-                baseChart
-                [data]="sparklinePendientesData"
-                [options]="sparklineOptions"
-                [type]="'line'"
-                height="50"
-              ></canvas>
-            </div>
-          </div>
-        </div>
-
-        <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500 mb-1">Solicitudes Pendientes</p>
-              @if (loading()) {
-                <p-skeleton width="3rem" height="2rem"></p-skeleton>
-              } @else {
-                <h3 class="text-3xl font-bold text-[#FD7E14]">{{ solicitudesPendientes() }}</h3>
-              }
-            </div>
-            <div class="stat-right">
-              <canvas
-                baseChart
-                [data]="sparklineInventarioData"
-                [options]="sparklineOptions"
-                [type]="'line'"
-                height="50"
-              ></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-
-        <p-card styleClass="shadow border-t-4 border-[#39A900] hover:shadow-lg transition-shadow">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500 mb-1">Total Inventario</p>
-              @if (loading()) {
-                <p-skeleton width="4rem" height="2rem"></p-skeleton>
-              } @else {
-                <h3 class="text-3xl font-bold text-[#28A745]">{{ totalInventario() | number }}</h3>
-              }
-            </div>
-            <div class="chart-value">
-              <span class="value-label">Total Salidas</span>
-              <span class="value-number red">{{ totalSalidas }}</span>
-            </div>
-          </div>
-          <div class="chart-container" *ngIf="!cargando && movimientosData.length > 0">
-            <canvas
-              baseChart
-              [data]="barLineChartData"
-              [options]="barLineChartOptions"
-              [type]="'bar'"
-            ></canvas>
-          </div>
-          <div class="chart-skeleton" *ngIf="cargando">
-            <p-skeleton width="100%" height="250px"></p-skeleton>
-          </div>
-          <div class="no-data" *ngIf="!cargando && movimientosData.length === 0">
-            <i class="pi pi-info-circle"></i>
-            <span>No hay datos de movimientos disponibles</span>
-          </div>
-        </div>
-
-        <!-- Columna Derecha 35% -->
-        <div class="chart-card right-col">
-          <div class="card-header">
-            <h3 class="card-title">Historial de Actividad</h3>
-          </div>
-          <div class="activity-list">
-            <div class="activity-item" *ngFor="let actividad of ultimasActividades; let i = index">
-              <div class="activity-dot" [ngClass]="getActivityColor(actividad.estadoSol)"></div>
-              <div class="activity-content">
-                <span class="activity-text">{{ actividad.justificacion }}</span>
-                <span class="activity-date">{{ actividad.fechaSol | date: 'dd/MM/yyyy' }}</span>
-              </div>
-            </div>
-            <div class="activity-skeleton" *ngIf="cargando">
-              <p-skeleton
-                width="100%"
-                height="50px"
-                *ngFor="let _ of [1, 2, 3, 4, 5, 6, 7, 8]"
-              ></p-skeleton>
-            </div>
-          </div>
-          <button
-            pButton
-            label="Ver todas las transacciones"
-            icon="pi pi-arrow-right"
-            iconPos="right"
-            class="view-all-btn"
-          ></button>
-        </div>
-      </div>
-
-      <!-- Gráficas Dashboard (Grid 2x2) -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        
-        <!-- Gráfica 1: Stock bajo -->
-        <div class="bg-white rounded-lg shadow border border-gray-200 p-4 min-h-[24rem] flex flex-col">
-          @if (loading()) {
-            <p-skeleton width="100%" height="20rem"></p-skeleton>
-          } @else {
-            @if (chartError() || !chartStockData()?.labels?.length) {
-              <div class="flex-1 flex flex-col items-center justify-center text-gray-500 min-h-[20rem]">
-                <i class="pi pi-chart-bar text-4xl mb-3 text-gray-300"></i>
-                <p>No hay datos de stock bajo</p>
-              </div>
+        <!-- Total Usuarios -->
+        <div class="bg-white rounded-xl shadow-sm border-t-[3px] border-[#39A900] p-6 hover:shadow-md transition-all duration-300">
+          <p class="text-[13px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Total Usuarios</p>
+          <div class="flex items-end justify-between">
+            @if (loading()) {
+              <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
-              <div class="relative w-full h-[20rem]">
-                <p-chart type="bar" [data]="chartStockData()" [options]="chartStockOptions()"></p-chart>
-              </div>
+              <h3 class="text-[42px] font-bold text-gray-900 leading-none">{{ totalUsuarios() }}</h3>
             }
-          }
+          </div>
         </div>
 
-        <!-- Gráfica 2: Próximos a vencer -->
-        <div class="bg-white rounded-lg shadow border border-gray-200 p-4 min-h-[24rem] flex flex-col">
-          @if (loading()) {
-            <p-skeleton width="100%" height="20rem"></p-skeleton>
-          } @else {
-            @if (chartError() || !chartVencimientoData()?.labels?.length) {
-              <div class="flex-1 flex flex-col items-center justify-center text-gray-500 min-h-[20rem]">
-                <i class="pi pi-calendar-times text-4xl mb-3 text-gray-300"></i>
-                <p>No hay productos próximos a vencer</p>
-              </div>
+        <!-- Total Productos -->
+        <div class="bg-white rounded-xl shadow-sm border-t-[3px] border-[#39A900] p-6 hover:shadow-md transition-all duration-300">
+          <p class="text-[13px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Total Productos</p>
+          <div class="flex items-end justify-between">
+            @if (loading()) {
+              <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
-              <div class="relative w-full h-[20rem]">
-                <p-chart type="bar" [data]="chartVencimientoData()" [options]="chartVencimientoOptions()"></p-chart>
-              </div>
+              <h3 class="text-[42px] font-bold text-gray-900 leading-none">{{ totalProductos() }}</h3>
             }
-          }
+          </div>
         </div>
 
-        <!-- Gráfica 3: Materiales por sitio/bodega -->
-        <div class="bg-white rounded-lg shadow border border-gray-200 p-4 min-h-[24rem] flex flex-col">
-          @if (loading()) {
-            <p-skeleton width="100%" height="20rem"></p-skeleton>
-          } @else {
-            @if (chartError() || !chartSitiosData()?.labels?.length) {
-              <div class="flex-1 flex flex-col items-center justify-center text-gray-500 min-h-[20rem]">
-                <i class="pi pi-chart-pie text-4xl mb-3 text-gray-300"></i>
-                <p>No hay distribución de sitios para mostrar</p>
-              </div>
+        <!-- Solicitudes Pendientes -->
+        <div class="bg-white rounded-xl shadow-sm border-t-[3px] border-[#39A900] p-6 hover:shadow-md transition-all duration-300">
+          <p class="text-[13px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Solicitudes Pendientes</p>
+          <div class="flex items-end justify-between">
+            @if (loading()) {
+              <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
-              <div class="relative flex items-center justify-center w-full h-[20rem]">
-                <p-chart type="doughnut" [data]="chartSitiosData()" [options]="chartSitiosOptions()"></p-chart>
-              </div>
+              <h3 class="text-[42px] font-bold text-[#FD7E14] leading-none">{{ solicitudesPendientes() }}</h3>
             }
-          }
+          </div>
         </div>
 
-        <!-- Gráfica 4: Estado de solicitudes -->
-        <div class="bg-white rounded-lg shadow border border-gray-200 p-4 min-h-[24rem] flex flex-col">
-          @if (loading()) {
-            <p-skeleton width="100%" height="20rem"></p-skeleton>
-          } @else {
-            @if (chartError() || !chartSolicitudesData()?.labels?.length) {
-              <div class="flex-1 flex flex-col items-center justify-center text-gray-500 min-h-[20rem]">
-                <i class="pi pi-file text-4xl mb-3 text-gray-300"></i>
-                <p>No hay solicitudes registradas</p>
-              </div>
+        <!-- Total Inventario -->
+        <div class="bg-white rounded-xl shadow-sm border-t-[3px] border-[#39A900] p-6 hover:shadow-md transition-all duration-300">
+          <p class="text-[13px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Total Inventario</p>
+          <div class="flex items-end justify-between">
+            @if (loading()) {
+              <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
-              <div class="relative flex items-center justify-center w-full h-[20rem]">
-                <p-chart type="pie" [data]="chartSolicitudesData()" [options]="chartSolicitudesOptions()"></p-chart>
-              </div>
+              <h3 class="text-[42px] font-bold text-[#28A745] leading-none">{{ totalInventario() }}</h3>
             }
-          }
+          </div>
         </div>
 
       </div>
 
-      <!-- Tabla Últimas Solicitudes -->
-      <div class="bg-white rounded-lg shadow border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200 bg-[#F8F9FA] flex justify-between items-center rounded-t-lg">
-          <h3 class="text-lg font-semibold text-gray-800">Últimas 5 Solicitudes</h3>
-        </div>
+      <!-- Gráficas Dashboard (Large Cards) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
         
-        <p-table [value]="ultimasSolicitudes()" [tableStyle]="{ 'min-width': '50rem' }" styleClass="p-datatable-striped" [loading]="loading()">
-            <ng-template pTemplate="header">
-              <tr>
-                <th class="table-header">ID</th>
-                <th class="table-header">Justificación</th>
-                <th class="table-header">Fecha</th>
-                <th class="table-header">Estado</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-sol>
-                <tr>
-                    <td class="font-medium text-gray-900">#{{ sol.id }}</td>
-                    <td>{{ sol.justificacion || 'Sin justificación' }}</td>
-                    <td>{{ sol.fechaSol || sol.fecha | date:'mediumDate' }}</td>
-                    <td>
-                      <p-tag [value]="sol.estadoSol || sol.estado" [severity]="getSeverity(sol.estadoSol || sol.estado)"></p-tag>
-                    </td>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-                <tr>
-                    <td colspan="4" class="text-center py-8 text-gray-500">
-                        {{ loading() ? 'Cargando datos...' : 'No hay solicitudes recientes.' }}
-                    </td>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td colspan="4" class="empty-message">
-                  <i class="pi pi-inbox"></i>
-                  <span>No hay solicitudes disponibles</span>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
+        <!-- Card 1 -->
+        <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-8 min-h-[380px] flex flex-col items-center justify-center">
+          @if (loading()) {
+            <p-skeleton width="100%" height="300px"></p-skeleton>
+          } @else {
+            <div class="flex flex-col items-center justify-center text-gray-300">
+              <i class="pi pi-chart-bar text-[40px] mb-4"></i>
+              <p class="text-[15px] font-medium text-gray-400">No hay datos de stock bajo</p>
+            </div>
+          }
         </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-8 min-h-[380px] flex flex-col items-center justify-center">
+          @if (loading()) {
+            <p-skeleton width="100%" height="300px"></p-skeleton>
+          } @else {
+            <div class="flex flex-col items-center justify-center text-gray-300">
+              <i class="pi pi-calendar text-[40px] mb-4"></i>
+              <p class="text-[15px] font-medium text-gray-400">No hay productos próximos a vencer</p>
+            </div>
+          }
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-8 min-h-[380px] flex flex-col items-center justify-center">
+          @if (loading()) {
+            <p-skeleton width="100%" height="300px"></p-skeleton>
+          } @else {
+            <div class="flex flex-col items-center justify-center text-gray-300">
+              <i class="pi pi-compass text-[40px] mb-4"></i>
+              <p class="text-[15px] font-medium text-gray-400">No hay distribución de sitios para mostrar</p>
+            </div>
+          }
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-8 min-h-[380px] flex flex-col items-center justify-center">
+          @if (loading()) {
+            <p-skeleton width="100%" height="300px"></p-skeleton>
+          } @else {
+            <div class="flex flex-col items-center justify-center text-gray-300">
+              <i class="pi pi-file text-[40px] mb-4"></i>
+              <p class="text-[15px] font-medium text-gray-400">No hay solicitudes registradas</p>
+            </div>
+          }
+        </div>
+
       </div>
     </div>
-  `,
-  styles: [`
-    /* Asegurar que el canvas tome el contenedor completo para el resize responsive */
-    p-chart {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-  `]
+  `
 })
 export class DashboardComponent implements OnInit {
   private readonly apiService = inject(ApiService);

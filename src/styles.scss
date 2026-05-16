@@ -1,1 +1,16 @@
 @use 'tailwindcss';
+@use './stylesglobales/layout.scss';
+@use './stylesglobales/dashboard.scss';
+@use './stylesglobales/login.scss';
+@use './stylesglobales/usuarios.scss';
+@use './stylesglobales/roles.scss';
+@use './stylesglobales/productos.scss';
+@use './stylesglobales/solicitudes.scss';
+@use './stylesglobales/categoria.scss';
+@use './stylesglobales/sitios.scss';
+@use './stylesglobales/fichas.scss';
+@use './stylesglobales/inventario.scss';
+@use './stylesglobales/modern-table.scss';
+
+/* CSS Imports must go after @use */
+@import "primeicons/primeicons.css";

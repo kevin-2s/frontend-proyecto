@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -14,13 +14,16 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService, Rol } from '../../infrastructure/services/rol.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { TooltipModule } from 'primeng/tooltip';
 
 interface Usuario {
   id?: number;
   nombre?: string;
-  nombreCompleto?: string;
+  apellidos?: string;
   correo: string;
-  contrasena?: string;
+  telefono?: string;
+  documento?: string;
+  password?: string;
   estado: boolean;
   id_rol: number;
   rolNombre?: string;
@@ -40,464 +43,185 @@ interface Usuario {
     ConfirmDialogModule,
     TagModule,
     Select,
-    PasswordModule
+    PasswordModule,
+    TooltipModule
   ],
+  encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
   template: `
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
 
-    <div class="animate-fade-in p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-surface-800">Gestión de Usuarios</h2>
-        <button
-          *ngIf="isAdmin"
-          pButton
-          label="Nuevo Usuario"
-          icon="pi pi-plus"
-          (click)="openNew()"
-          styleClass="p-button-success"
-          [style]="{'background-color': '#39A900', 'border-color': '#39A900'}"
-        ></button>
-      </div>
-
-      <div class="bg-white rounded-lg shadow-sm border border-surface-200">
-        <div class="p-4 border-b border-surface-200">
-          <div class="flex gap-4">
-            <span class="p-input-icon-left w-full sm:w-auto">
-              <i class="pi pi-search"></i>
-              <input
-                pInputText
-                type="text"
-                [(ngModel)]="filtro"
-                (input)="filtrar()"
-                placeholder="Buscar usuario..."
-                class="w-full sm:w-64"
-              />
-            </span>
-          </div>
+    <div class="usuario-page">
+      <div class="toolbar">
+        <div class="toolbar-left">
+           <h2 class="page-title">USUARIOS</h2>
         </div>
-        <div class="toolbar-right">
-          <span class="p-input-icon-left search-box">
-            <i class="pi pi-search"></i>
+        <div class="toolbar-right flex items-center gap-4">
+          <div class="search-container">
             <input
               pInputText
               type="text"
               [(ngModel)]="filtro"
               (input)="filtrar()"
-              placeholder="Buscar usuarios..."
+              placeholder="Buscar usuario..."
               class="search-input"
             />
-          </span>
+            <i class="pi pi-search search-icon"></i>
+          </div>
+          <button
+            pButton
+            label="AGREGAR USUARIO"
+            icon="pi pi-plus"
+            (click)="openNew()"
+            class="btn-add"
+          ></button>
         </div>
       </div>
 
-      <!-- Table -->
-      <div class="table-card">
+      <!-- Table Container -->
+      <div class="table-card mt-6">
         <p-table
           [value]="usuariosFiltrados"
           [paginator]="true"
           [rows]="10"
-          [rowsPerPageOptions]="[5, 10, 25]"
-          [tableStyle]="{ 'min-width': '50rem' }"
-          styleClass="p-datatable-striped"
+          styleClass="modern-table"
           [loading]="loading"
+          [rowHover]="true"
         >
           <ng-template pTemplate="header">
             <tr>
-              <th class="!bg-surface-50 !text-surface-700">ID</th>
-              <th class="!bg-surface-50 !text-surface-700">Nombre Completo</th>
-              <th class="!bg-surface-50 !text-surface-700">Correo</th>
-              <th class="!bg-surface-50 !text-surface-700">Rol</th>
-              <th class="!bg-surface-50 !text-surface-700">Estado</th>
-              <th *ngIf="isAdmin" class="!bg-surface-50 !text-surface-700 text-center">Acciones</th>
+              <th style="width: 80px">ID</th>
+              <th>NOMBRE</th>
+              <th>ROL</th>
+              <th>CORREO</th>
+              <th>ESTADO</th>
+              <th class="text-center">ACCIONES</th>
             </tr>
           </ng-template>
+
           <ng-template pTemplate="body" let-u>
             <tr>
-              <td class="font-medium text-surface-900">#{{ u.id }}</td>
-              <td class="font-medium text-surface-900">{{ u.nombre || u.nombreCompleto }}</td>
-              <td>{{ u.correo }}</td>
+              <td><span class="text-slate-400 font-bold text-xs">#{{ u.id }}</span></td>
+              <td><span class="font-bold text-slate-700">{{ u.nombre }} {{ u.apellidos }}</span></td>
+              <td><span class="text-slate-600">{{ getRolNombre(u.id_rol) }}</span></td>
+              <td><span class="text-slate-500">{{ u.correo }}</span></td>
               <td>
-                <p-tag [value]="getRolNombre(u.id_rol)" [severity]="getRolSeverity(u.id_rol)"></p-tag>
+                <span class="status-badge" [ngClass]="u.estado ? 'status-active' : 'status-inactive'">
+                  {{ u.estado ? 'ACTIVO' : 'INACTIVO' }}
+                </span>
               </td>
               <td>
-                <span class="nombre-cell">{{ usuario.nombreCompleto }}</span>
-              </td>
-              <td>
-                <span class="correo-cell">{{ usuario.correo }}</span>
-              </td>
-              <td><p-tag [value]="usuario.rolNombre || 'Sin rol'" severity="info"></p-tag></td>
-              <td>
-                <p-tag
-                  [value]="u.estado ? 'Activo' : 'Inactivo'"
-                  [severity]="u.estado ? 'success' : 'danger'"
-                ></p-tag>
-              </td>
-              <td *ngIf="isAdmin" class="text-center">
-                <button
-                  pButton
-                  icon="pi pi-pencil"
-                  (click)="editar(u)"
-                  class="p-button-text p-button-sm text-[#39A900] mr-2"
-                ></button>
+                <div class="action-buttons justify-center gap-2">
+                  <button
+                    pButton
+                    label="EDITOR"
+                    (click)="editar(u)"
+                    class="btn-table-action btn-editor"
+                  ></button>
+                  <button
+                    pButton
+                    label="ELIMINAR"
+                    (click)="eliminar(u)"
+                    class="btn-table-action btn-eliminar"
+                  ></button>
+                </div>
               </td>
             </tr>
           </ng-template>
+
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td [attr.colspan]="isAdmin ? 6 : 5" class="text-center py-8 text-surface-500">
-                No se encontraron usuarios.
+              <td colspan="6" class="empty-message">
+                <i class="pi pi-users"></i>
+                <p>No se encontraron usuarios</p>
               </td>
             </tr>
           </ng-template>
         </p-table>
+
       </div>
     </div>
 
-    <!-- Dialog Create/Edit -->
+    <!-- Form Dialog - Matching reference image -->
     <p-dialog
-      [header]="esNuevo ? 'Nuevo Usuario' : 'Editar Usuario'"
       [(visible)]="displayDialog"
       [modal]="true"
-      [style]="{ minWidth: '500px', width: '500px' }"
+      [style]="{ width: '90vw', maxWidth: '800px' }"
       [draggable]="false"
       [resizable]="false"
       styleClass="form-dialog"
+      appendTo="body"
+      [closable]="true"
     >
-      <div class="flex flex-col gap-4 mt-2">
-        <div class="flex flex-col gap-2">
-          <label for="nombreCompleto" class="font-medium text-surface-700">Nombre Completo</label>
-          <input
-            pInputText
-            id="nombreCompleto"
-            [(ngModel)]="usuario.nombre"
-            class="w-full"
-            placeholder="Ingrese nombre completo"
-            class="form-input"
-          />
+      <ng-template pTemplate="header">
+        <div class="w-full text-center py-4">
+           <h2 class="text-3xl font-black text-slate-800 uppercase tracking-tight">
+            {{ esNuevo ? 'AÑADIR USUARIO' : 'EDITAR USUARIO' }}
+           </h2>
         </div>
-        
-        <div class="flex flex-col gap-2">
-          <label for="correo" class="font-medium text-surface-700">Correo Electrónico</label>
-          <input
-            pInputText
-            id="correo"
-            [(ngModel)]="usuario.correo"
-            type="email"
-            placeholder="correo@ejemplo.com"
-            class="form-input"
-          />
-        </div>
+      </ng-template>
 
-        <div class="flex flex-col gap-2" *ngIf="esNuevo">
-          <label for="contrasena" class="font-medium text-surface-700">Contraseña</label>
-          <p-password 
-            id="contrasena" 
-            [(ngModel)]="usuario.contrasena"
-            [feedback]="false"
-            styleClass="w-full"
-            [inputStyle]="{'width':'100%'}"
-            placeholder="••••••••"
-            [toggleMask]="true"
-          ></p-password>
+      <div class="form-grid-3 mt-4">
+        <div class="form-field">
+          <label>Nombres</label>
+          <input pInputText [(ngModel)]="usuario.nombre" placeholder="Nombres" />
         </div>
-
-        <div class="flex flex-col gap-2">
-          <label for="rol" class="font-medium text-surface-700">Rol</label>
+        <div class="form-field">
+          <label>Apellidos</label>
+          <input pInputText [(ngModel)]="usuario.apellidos" placeholder="Apellidos" />
+        </div>
+        <div class="form-field">
+          <label>Rol</label>
           <p-select 
             [options]="roles" 
             [(ngModel)]="usuario.id_rol" 
             optionLabel="nombre" 
             optionValue="id"
-            placeholder="Seleccione un rol"
-            [style]="{'width':'100%'}"
+            placeholder="Usuario"
+            styleClass="w-full"
             appendTo="body"
           ></p-select>
         </div>
 
-        <div class="flex flex-col gap-2" *ngIf="!esNuevo">
-          <label class="font-medium text-surface-700">Estado</label>
-          <div class="flex items-center gap-4">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" [(ngModel)]="usuario.estado" class="w-4 h-4 text-[#39A900] focus:ring-[#39A900]" />
-              <span class="text-surface-700">Usuario Activo</span>
-            </label>
-          </div>
+        <div class="form-field">
+          <label>Teléfono</label>
+          <input pInputText [(ngModel)]="usuario.telefono" placeholder="Teléfono" />
+        </div>
+        <div class="form-field">
+          <label>Número Documento</label>
+          <input pInputText [(ngModel)]="usuario.documento" placeholder="Documento" />
+        </div>
+        <div class="form-field">
+          <label>Gmail</label>
+          <input pInputText [(ngModel)]="usuario.correo" placeholder="Correo" type="email" />
+        </div>
+
+        <div class="form-field">
+          <label>Contraseña</label>
+          <p-password 
+            [(ngModel)]="usuario.password"
+            [feedback]="false"
+            styleClass="w-full"
+            [inputStyle]="{'width':'100%'}"
+            placeholder="Contraseña"
+            [toggleMask]="true"
+            appendTo="body"
+          ></p-password>
+        </div>
+
+        <div class="flex items-end col-span-2 pb-[2px]">
+          <button
+            pButton
+            label="Aceptar"
+            (click)="guardar()"
+            class="btn-primary"
+            [loading]="saving"
+          ></button>
         </div>
       </div>
-
-      <ng-template pTemplate="footer">
-        <button
-          pButton
-          label="Cancelar"
-          (click)="displayDialog = false"
-          class="p-button-text p-button-secondary"
-        ></button>
-        <button
-          pButton
-          label="Guardar"
-          (click)="guardar()"
-          styleClass="p-button-success"
-          [style]="{'background-color': '#39A900', 'border-color': '#39A900'}"
-          [loading]="saving"
-        ></button>
-      </ng-template>
     </p-dialog>
-  `,
-  styles: [
-    `
-      .module-container {
-        padding: 24px;
-        background-color: #f8f9fa;
-        min-height: calc(100vh - 60px);
-      }
-
-      /* Toolbar */
-      .toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-        gap: 16px;
-      }
-
-      .toolbar-left {
-        display: flex;
-        gap: 10px;
-      }
-
-      .btn-new {
-        background-color: #39a900 !important;
-        border-color: #39a900 !important;
-        border-radius: 8px !important;
-        padding: 8px 16px !important;
-      }
-
-      .btn-new:hover {
-        background-color: #2d8600 !important;
-        border-color: #2d8600 !important;
-      }
-
-      .toolbar-center {
-        flex: 1;
-        text-align: center;
-      }
-
-      .page-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #212529;
-        margin: 0;
-      }
-
-      .toolbar-right {
-        min-width: 280px;
-      }
-
-      .search-box {
-        width: 100%;
-      }
-
-      .search-input {
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-      }
-
-      .search-input:focus {
-        border-color: #39a900;
-        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
-      }
-
-      /* Table Card */
-      .table-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-      }
-
-      .id-badge {
-        font-weight: 600;
-        color: #495057;
-        background: #f8f9fa;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-      }
-
-      .nombre-cell {
-        font-weight: 500;
-        color: #212529;
-      }
-
-      .correo-cell {
-        color: #6c757d;
-      }
-
-      .action-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 4px;
-      }
-
-      .btn-edit {
-        color: #fd7e14 !important;
-      }
-
-      .btn-edit:hover {
-        background-color: #fff3e0 !important;
-      }
-
-      .btn-delete {
-        color: #dc3545 !important;
-      }
-
-      .btn-delete:hover {
-        background-color: #ffe8e8 !important;
-      }
-
-      .empty-message {
-        text-align: center;
-        padding: 40px !important;
-        color: #6c757d;
-      }
-
-      .empty-message i {
-        display: block;
-        font-size: 48px;
-        margin-bottom: 10px;
-        color: #adb5bd;
-      }
-
-      /* Form Styles */
-      .form-container {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .form-field label {
-        font-weight: 500;
-        color: #495057;
-        font-size: 14px;
-      }
-
-      .form-input {
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-        padding: 10px 12px;
-      }
-
-      .form-input:focus {
-        border-color: #39a900;
-        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
-      }
-
-      .form-select {
-        width: 100%;
-        border-radius: 8px;
-      }
-
-      .switch-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .switch-label {
-        font-weight: 400;
-        color: #495057;
-      }
-
-      /* Dialog Footer Buttons */
-      .dialog-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        width: 100%;
-      }
-
-      .btn-cancel {
-        background-color: #6c757d !important;
-        border-color: #6c757d !important;
-        border-radius: 8px !important;
-      }
-
-      .btn-cancel:hover {
-        background-color: #5a6268 !important;
-      }
-
-      .btn-save {
-        background-color: #39a900 !important;
-        border-color: #39a900 !important;
-        border-radius: 8px !important;
-      }
-
-      .btn-save:hover {
-        background-color: #2d8600 !important;
-      }
-
-      /* PrimeNG Table Styles */
-      :host ::ng-deep .p-datatable .p-datatable-header {
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-      }
-
-      :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-        background: #f8f9fa;
-        color: #212529;
-        font-weight: 600;
-        border-bottom: 2px solid #39a900;
-        padding: 14px;
-      }
-
-      :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-        padding: 14px;
-        border-bottom: 1px solid #e9ecef;
-      }
-
-      :host ::ng-deep .p-paginator {
-        padding: 12px;
-        background: #f8f9fa;
-        border-top: 1px solid #dee2e6;
-      }
-
-      /* Dialog Styles */
-      :host ::ng-deep .form-dialog .p-dialog-header {
-        background: #39a900;
-        color: white;
-        padding: 16px 24px;
-      }
-
-      :host ::ng-deep .form-dialog .p-dialog-title {
-        color: white;
-        font-weight: 600;
-      }
-
-      :host ::ng-deep .form-dialog .p-dialog-header .p-dialog-header-icon {
-        color: white;
-      }
-
-      :host ::ng-deep .form-dialog .p-dialog-body {
-        padding: 24px;
-      }
-
-      :host ::ng-deep .form-dialog .p-dialog-footer {
-        padding: 16px 24px;
-        border-top: 1px solid #dee2e6;
-      }
-    `,
-  ],
+  `
 })
 export class UsuariosComponent implements OnInit {
   private usuarioService = inject(UsuarioService);
@@ -505,6 +229,7 @@ export class UsuariosComponent implements OnInit {
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
 
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
@@ -515,6 +240,7 @@ export class UsuariosComponent implements OnInit {
   loading = false;
   saving = false;
   isAdmin = false;
+  stats = { total: 0, activos: 0, inactivos: 0, admins: 0 };
 
   usuario: Usuario = this.getNuevoUsuario();
 
@@ -532,7 +258,9 @@ export class UsuariosComponent implements OnInit {
         const data = Array.isArray(res) ? res : (res.data || []);
         this.usuarios = data;
         this.usuariosFiltrados = data;
+        this.calcularEstadisticas();
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.usuarios = [];
@@ -548,6 +276,8 @@ export class UsuariosComponent implements OnInit {
       next: (res: any) => {
         const data = Array.isArray(res) ? res : (res.data || []);
         this.roles = data;
+        this.calcularEstadisticas();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.roles = [];
@@ -555,12 +285,24 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
+  calcularEstadisticas() {
+    this.stats = {
+      total: this.usuarios.length,
+      activos: this.usuarios.filter(u => u.estado).length,
+      inactivos: this.usuarios.filter(u => !u.estado).length,
+      admins: this.usuarios.filter(u => {
+        const rol = this.getRolNombre(u.id_rol).toUpperCase();
+        return rol.includes('ADMIN');
+      }).length
+    };
+  }
+
   filtrar() {
     const filtroLower = this.filtro.toLowerCase();
     this.usuariosFiltrados = this.usuarios.filter(
       (u) =>
         u.nombre?.toLowerCase().includes(filtroLower) ||
-        u.nombreCompleto?.toLowerCase().includes(filtroLower) ||
+        u.apellidos?.toLowerCase().includes(filtroLower) ||
         u.correo?.toLowerCase().includes(filtroLower),
     );
   }
@@ -568,8 +310,11 @@ export class UsuariosComponent implements OnInit {
   getNuevoUsuario(): Usuario {
     return {
       nombre: '',
+      apellidos: '',
       correo: '',
-      contrasena: '',
+      telefono: '',
+      documento: '',
+      password: '',
       estado: true,
       id_rol: 0,
     };
@@ -583,12 +328,17 @@ export class UsuariosComponent implements OnInit {
 
   editar(u: Usuario) {
     this.esNuevo = false;
-    this.usuario = { ...u, nombre: u.nombre || u.nombreCompleto };
+    this.usuario = { 
+      ...u, 
+      nombre: u.nombre,
+      apellidos: u.apellidos,
+      password: '' // Clear password field on edit for security
+    };
     this.displayDialog = true;
   }
 
   onRolChange(event: any) {
-    const rol = this.roles.find((r) => r.id === this.usuario.rolId);
+    const rol = this.roles.find((r) => r.id === this.usuario.id_rol);
     if (rol) {
       this.usuario.rolNombre = rol.nombre;
     }
@@ -601,15 +351,21 @@ export class UsuariosComponent implements OnInit {
       return;
     }
 
-    if (this.esNuevo && !this.usuario.contrasena) {
+    if (this.esNuevo && !this.usuario.password) {
       this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'La contraseña es requerida para nuevos usuarios' });
       return;
     }
 
     this.saving = true;
 
+    // Clonamos para no modificar el objeto de la vista y limpiamos campos
+    const datosEnvio = { ...this.usuario };
+    if (!this.esNuevo && !datosEnvio.password) {
+      delete datosEnvio.password; // No enviar password si está vacío en edición
+    }
+
     if (this.esNuevo) {
-      this.usuarioService.create(this.usuario).subscribe({
+      this.usuarioService.create(datosEnvio).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado correctamente' });
           this.displayDialog = false;
@@ -622,7 +378,7 @@ export class UsuariosComponent implements OnInit {
         },
       });
     } else {
-      const { id, contrasena, ...updateData } = this.usuario as any;
+      const { id, ...updateData } = datosEnvio as any;
       
       this.usuarioService.update(id!, updateData).subscribe({
         next: () => {
@@ -639,8 +395,8 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  getRolNombre(id_rol: number): string {
-    const rol = this.roles.find(r => r.id === id_rol);
+  getRolNombre(id_rol: any): string {
+    const rol = this.roles.find(r => Number(r.id) === Number(id_rol));
     return rol ? rol.nombre : 'Desconocido';
   }
 
@@ -649,5 +405,40 @@ export class UsuariosComponent implements OnInit {
     if (nombre.includes('ADMIN')) return 'success';
     if (nombre.includes('INSTRUCT')) return 'info';
     return 'secondary';
+  }
+
+  eliminar(u: Usuario) {
+    this.confirmationService.confirm({
+      message: `¿Estás seguro de que deseas eliminar a ${u.nombre}?`,
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.usuarioService.delete(u.id!).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario eliminado' });
+            this.cargarUsuarios();
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el usuario' });
+          }
+        });
+      }
+    });
+  }
+
+  actualizarEstado(u: Usuario) {
+    this.usuarioService.update(u.id!, { estado: u.estado }).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Estado actualizado' });
+        this.calcularEstadisticas();
+      },
+      error: () => {
+        u.estado = !u.estado; // Revertir en caso de error
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cambiar el estado' });
+      }
+    });
   }
 }

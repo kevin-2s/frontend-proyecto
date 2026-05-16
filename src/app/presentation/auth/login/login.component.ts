@@ -13,44 +13,13 @@ import { CheckboxModule } from 'primeng/checkbox';
   selector: 'app-login',
   standalone: true,
   imports: [
-    ReactiveFormsModule, 
-    CommonModule, 
-    InputTextModule, 
-    PasswordModule, 
-    ButtonModule, 
+    ReactiveFormsModule,
+    CommonModule,
+    InputTextModule,
+    PasswordModule,
+    ButtonModule,
     CheckboxModule
   ],
-  styles: [`
-    :host ::ng-deep .p-password {
-      width: 100% !important;
-      display: block !important;
-    }
-    :host ::ng-deep .p-password-icon {
-      color: #9ca3af !important;
-      right: 1.25rem !important;
-    }
-    :host ::ng-deep .p-checkbox .p-checkbox-box {
-      width: 1.25rem !important;
-      height: 1.25rem !important;
-      background-color: #f3f4f6 !important;
-      border: 2px solid #d1d5db !important;
-      border-radius: 0.25rem !important;
-    }
-    :host ::ng-deep .p-checkbox .p-checkbox-icon {
-      font-size: 0.875rem !important;
-    }
-    :host ::ng-deep .p-checkbox:not(.p-checkbox-disabled) .p-checkbox-box:hover {
-      border-color: #39A900 !important;
-    }
-    :host ::ng-deep .p-checkbox.p-highlight .p-checkbox-box {
-      background-color: #39A900 !important;
-      border-color: #39A900 !important;
-    }
-    :host ::ng-deep input.ng-invalid.ng-touched,
-    :host ::ng-deep .p-password.ng-invalid.ng-touched .p-password-input {
-      border-color: #ef4444 !important;
-    }
-  `],
   template: `
     <div class="min-h-screen flex items-center justify-center relative overflow-hidden">
       <!-- Fondo estático detrás del contenedor -->
@@ -63,9 +32,9 @@ import { CheckboxModule } from 'primeng/checkbox';
         <!-- Lado Izquierdo: Carrusel de Imagen (Mitad de ancho) -->
         <div class="hidden md:flex w-1/2 relative p-10 flex-col justify-between overflow-hidden">
           <div *ngFor="let img of images; let i = index" 
-               class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out"
-               [ngClass]="{'opacity-100': currentImageIndex() === i, 'opacity-0': currentImageIndex() !== i}"
-               [style.background-image]="'url(' + img + ')'">
+              class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out"
+              [ngClass]="{'opacity-100': currentImageIndex() === i, 'opacity-0': currentImageIndex() !== i}"
+              [style.background-image]="'url(' + img + ')'">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40"></div>
           </div>
           
@@ -80,17 +49,16 @@ import { CheckboxModule } from 'primeng/checkbox';
             <!-- Indicadores de carrusel -->
             <div class="flex gap-2 mb-8">
               <div *ngFor="let img of images; let i = index" 
-                   class="h-1.5 rounded-full transition-all duration-500 cursor-pointer"
-                   (click)="setCurrentImage(i)"
-                   [ngClass]="currentImageIndex() === i ? 'w-12 bg-[#39A900]' : 'w-5 bg-white/40 hover:bg-white/70'">
+                  class="h-1.5 rounded-full transition-all duration-500 cursor-pointer"
+                  (click)="setCurrentImage(i)"
+                  [ngClass]="currentImageIndex() === i ? 'w-12 bg-[#39A900]' : 'w-5 bg-white/40 hover:bg-white/70'">
               </div>
             </div>
             <h2 class="text-white text-5xl font-extrabold mb-4 leading-tight drop-shadow-md">
-              Control <br>Inteligente
+              Control <br>bodegas
             </h2>
             <p class="text-white/90 text-base leading-relaxed max-w-[350px] drop-shadow-md font-medium">
-              Software especializado para la gestión y control de inventarios. 
-              Precisión, tecnología y eficiencia en un solo lugar.
+              Software especializado para la gestión y control de inventarios
             </p>
           </div>
         </div>

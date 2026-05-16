@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -16,7 +16,7 @@ import { SitioService } from '../../infrastructure/services/sitio.service';
 
 interface Sitio {
   id?: number;
-  nombreSitio: string;
+  nombre: string;
   tipo: string;
   estado?: boolean;
 }
@@ -38,6 +38,7 @@ interface Sitio {
     TooltipModule,
     SelectModule,
   ],
+  encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
   template: `
     <p-toast position="top-right"></p-toast>
@@ -47,356 +48,159 @@ interface Sitio {
         <div class="toolbar-left">
           <button
             pButton
-            label="Nuevo"
+            label="Nuevo Sitio"
             icon="pi pi-plus"
-            class="btn-new"
+            class="btn-add"
             (click)="openNew()"
           ></button>
         </div>
-        <div class="toolbar-center"><h2 class="page-title">Gestionar Sitios</h2></div>
+        <div class="toolbar-center">
+          <h2 class="page-title">Gestión de Sitios y Bodegas</h2>
+        </div>
         <div class="toolbar-right">
-          <span class="p-input-icon-left search-box"
-            ><i class="pi pi-search"></i
-            ><input
+           <div class="search-container">
+            <i class="pi pi-search search-icon"></i>
+            <input
               pInputText
               type="text"
               [(ngModel)]="filtro"
               (input)="filtrar()"
-              placeholder="Buscar sitios..."
+              placeholder="Buscar sitio por nombre o tipo..."
               class="search-input"
-          /></span>
+            />
+          </div>
         </div>
       </div>
+
       <div class="table-card">
         <p-table
           [value]="sitiosFiltrados"
           [paginator]="true"
           [rows]="10"
-          [rowsPerPageOptions]="[5, 10, 25]"
-          [showCurrentPageReport]="true"
-          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} sitios"
-          [tableStyle]="{ 'min-width': '50rem' }"
-          [stripedRows]="true"
-          styleClass="p-datatable-gridlines"
+          styleClass="modern-table"
           [rowHover]="true"
         >
-          <ng-template pTemplate="header"
-            ><tr>
-              <th pSortableColumn="id" style="width:80px">
-                ID <p-sortIcon field="id"></p-sortIcon>
-              </th>
-              <th pSortableColumn="nombreSitio">
-                Nombre del Sitio <p-sortIcon field="nombreSitio"></p-sortIcon>
-              </th>
-              <th pSortableColumn="tipo">Tipo <p-sortIcon field="tipo"></p-sortIcon></th>
-              <th pSortableColumn="estado" style="width:100px">
-                Estado <p-sortIcon field="estado"></p-sortIcon>
-              </th>
-              <th style="width:100px;text-align:center">Acciones</th>
-            </tr></ng-template
-          >
-          <ng-template pTemplate="body" let-sitio
-            ><tr>
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width:120px">ID</th>
+              <th>Nombre del Sitio</th>
+              <th>Categoría / Tipo</th>
+              <th style="width:150px">Estado</th>
+              <th style="width:150px" class="text-center">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-sitio>
+            <tr>
+              <td><span class="id-badge">#{{ sitio.id }}</span></td>
+              <td><span class="nombre-cell">{{ sitio.nombre }}</span></td>
               <td>
-                <span class="id-badge">#{{ sitio.id }}</span>
-              </td>
-              <td>
-                <span class="nombre-cell">{{ sitio.nombreSitio }}</span>
-              </td>
-              <td><p-tag [value]="sitio.tipo" [severity]="getTipoSeverity(sitio.tipo)"></p-tag></td>
-              <td>
-                <p-tag
-                  [value]="sitio.estado ? 'Activo' : 'Inactivo'"
-                  [severity]="sitio.estado ? 'success' : 'danger'"
+                <p-tag 
+                  [value]="sitio.tipo.toUpperCase()" 
+                  [severity]="getTipoSeverity(sitio.tipo)"
+                  styleClass="px-3 py-1 font-bold rounded-lg"
                 ></p-tag>
               </td>
-              <td class="action-buttons">
-                <button
-                  pButton
-                  icon="pi pi-pencil"
-                  class="btn-edit p-button-sm p-button-text"
-                  (click)="editar(sitio)"
-                  pTooltip="Editar"
-                ></button
-                ><button
-                  pButton
-                  icon="pi pi-trash"
-                  class="btn-delete p-button-sm p-button-text"
-                  (click)="eliminar(sitio)"
-                  pTooltip="Eliminar"
-                ></button>
-              </td></tr
-          ></ng-template>
-          <ng-template pTemplate="emptymessage"
-            ><tr>
-              <td colspan="5" class="empty-message">
-                <i class="pi pi-map-marker"></i><span>No se encontraron sitios.</span>
+              <td>
+                <p-tag
+                  [value]="sitio.estado ? 'DISPONIBLE' : 'INACTIVO'"
+                  [severity]="sitio.estado ? 'success' : 'danger'"
+                  styleClass="px-3 py-1 font-bold rounded-lg"
+                ></p-tag>
               </td>
-            </tr></ng-template
-          >
+              <td>
+                <div class="action-buttons justify-center">
+                  <button
+                    pButton
+                    icon="pi pi-pencil"
+                    class="p-button-text btn-edit"
+                    (click)="editar(sitio)"
+                    pTooltip="Editar sitio"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-trash"
+                    class="p-button-text btn-delete"
+                    (click)="eliminar(sitio)"
+                    pTooltip="Eliminar sitio"
+                  ></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="5" class="empty-message">
+                <i class="pi pi-map-marker"></i>
+                <p>No se encontraron sitios registrados</p>
+              </td>
+            </tr>
+          </ng-template>
         </p-table>
       </div>
     </div>
+
     <p-dialog
-      [header]="esNuevo ? 'Nuevo Sitio' : 'Editar Sitio'"
+      [header]="esNuevo ? '✨ Registrar Nuevo Sitio' : '📝 Editar Ubicación'"
       [(visible)]="displayDialog"
       [modal]="true"
-      [style]="{ minWidth: '450px', width: '450px' }"
+      [style]="{ width: '90vw', maxWidth: '500px' }"
       [draggable]="false"
       [resizable]="false"
       styleClass="form-dialog"
+      appendTo="body"
     >
-      <div class="form-container">
+      <div class="form-grid mt-2">
         <div class="form-field">
-          <label for="nombreSitio">Nombre del Sitio *</label
-          ><input
+          <label for="nombre">Nombre de la Ubicación *</label>
+          <input
             pInputText
-            id="nombreSitio"
-            [(ngModel)]="sitio.nombreSitio"
-            placeholder="Ej: Bodega Central"
-            class="form-input"
+            id="nombre"
+            [(ngModel)]="sitio.nombre"
+            placeholder="Ej: Bodega de Electrónica"
           />
         </div>
+        
         <div class="form-field">
-          <label for="tipo">Tipo de Sitio *</label
-          ><p-select
+          <label for="tipo">Tipo de Ambiente *</label>
+          <p-select
             id="tipo"
             [(ngModel)]="sitio.tipo"
             [options]="tipos"
             optionLabel="label"
             optionValue="value"
             placeholder="Seleccione tipo"
-            styleClass="form-select"
+            styleClass="w-full"
+            appendTo="body"
           ></p-select>
         </div>
+
         <div class="form-field">
-          <label>Estado</label>
-          <div class="switch-container">
-            <p-toggleswitch [(ngModel)]="sitio.estado"></p-toggleswitch
-            ><span class="switch-label">{{ sitio.estado ? 'Activo' : 'Inactivo' }}</span>
+          <label>Estado Operativo</label>
+          <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <p-toggleSwitch [(ngModel)]="sitio.estado"></p-toggleSwitch>
+            <span class="font-bold text-sm" [class.text-green-600]="sitio.estado" [class.text-red-600]="!sitio.estado">
+               {{ sitio.estado ? 'SITIO ACTIVO' : 'SITIO INACTIVO' }}
+            </span>
           </div>
         </div>
       </div>
-      <ng-template pTemplate="footer"
-        ><div class="dialog-footer">
-          <button
-            pButton
-            label="Cancelar"
-            icon="pi pi-times"
-            class="btn-cancel"
-            (click)="displayDialog = false"
-          ></button
-          ><button
-            pButton
-            label="Guardar"
-            icon="pi pi-check"
-            class="btn-save"
-            (click)="guardar()"
-          ></button></div
-      ></ng-template>
+
+      <ng-template pTemplate="footer">
+        <button
+          pButton
+          label="Cancelar"
+          class="btn-secondary"
+          (click)="displayDialog = false"
+        ></button>
+        <button
+          pButton
+          label="Guardar Ubicación"
+          class="btn-primary"
+          (click)="guardar()"
+        ></button>
+      </ng-template>
     </p-dialog>
-  `,
-  styles: [
-    `
-      .module-container {
-        padding: 24px;
-        background-color: #f8f9fa;
-        min-height: calc(100vh - 60px);
-      }
-      .toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-        gap: 16px;
-      }
-      .toolbar-left {
-        display: flex;
-        gap: 10px;
-      }
-      .btn-new {
-        background-color: #39a900 !important;
-        border-color: #39a900 !important;
-        border-radius: 8px !important;
-        padding: 8px 16px !important;
-      }
-      .btn-new:hover {
-        background-color: #2d8600 !important;
-        border-color: #2d8600 !important;
-      }
-      .toolbar-center {
-        flex: 1;
-        text-align: center;
-      }
-      .page-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #212529;
-        margin: 0;
-      }
-      .toolbar-right {
-        min-width: 280px;
-      }
-      .search-box {
-        width: 100%;
-      }
-      .search-input {
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-      }
-      .search-input:focus {
-        border-color: #39a900;
-        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
-      }
-      .table-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-      }
-      .id-badge {
-        font-weight: 600;
-        color: #495057;
-        background: #f8f9fa;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-      }
-      .nombre-cell {
-        font-weight: 500;
-        color: #212529;
-      }
-      .action-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 4px;
-      }
-      .btn-edit {
-        color: #fd7e14 !important;
-      }
-      .btn-edit:hover {
-        background-color: #fff3e0 !important;
-      }
-      .btn-delete {
-        color: #dc3545 !important;
-      }
-      .btn-delete:hover {
-        background-color: #ffe8e8 !important;
-      }
-      .empty-message {
-        text-align: center;
-        padding: 40px !important;
-        color: #6c757d;
-      }
-      .empty-message i {
-        display: block;
-        font-size: 48px;
-        margin-bottom: 10px;
-        color: #adb5bd;
-      }
-      .form-container {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .form-field label {
-        font-weight: 500;
-        color: #495057;
-        font-size: 14px;
-      }
-      .form-input {
-        width: 100%;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-        padding: 10px 12px;
-      }
-      .form-input:focus {
-        border-color: #39a900;
-        box-shadow: 0 0 0 2px rgba(57, 169, 0, 0.2);
-      }
-      .form-select {
-        width: 100%;
-        border-radius: 8px;
-      }
-      .switch-container {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .switch-label {
-        font-weight: 400;
-        color: #495057;
-      }
-      .dialog-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        width: 100%;
-      }
-      .btn-cancel {
-        background-color: #6c757d !important;
-        border-color: #6c757d !important;
-        border-radius: 8px !important;
-      }
-      .btn-cancel:hover {
-        background-color: #5a6268 !important;
-      }
-      .btn-save {
-        background-color: #39a900 !important;
-        border-color: #39a900 !important;
-        border-radius: 8px !important;
-      }
-      .btn-save:hover {
-        background-color: #2d8600 !important;
-      }
-      :host ::ng-deep .p-datatable .p-datatable-header {
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-      }
-      :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-        background: #f8f9fa;
-        color: #212529;
-        font-weight: 600;
-        border-bottom: 2px solid #39a900;
-        padding: 14px;
-      }
-      :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-        padding: 14px;
-        border-bottom: 1px solid #e9ecef;
-      }
-      :host ::ng-deep .p-paginator {
-        padding: 12px;
-        background: #f8f9fa;
-        border-top: 1px solid #dee2e6;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-header {
-        background: #39a900;
-        color: white;
-        padding: 16px 24px;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-title {
-        color: white;
-        font-weight: 600;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-header .p-dialog-header-icon {
-        color: white;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-body {
-        padding: 24px;
-      }
-      :host ::ng-deep .form-dialog .p-dialog-footer {
-        padding: 16px 24px;
-        border-top: 1px solid #dee2e6;
-      }
-    `,
-  ],
+  `
 })
 export class SitiosComponent implements OnInit {
   private sitioService = inject(SitioService);
@@ -434,11 +238,11 @@ export class SitiosComponent implements OnInit {
   filtrar() {
     const f = this.filtro.toLowerCase();
     this.sitiosFiltrados = this.sitios.filter(
-      (s) => s.nombreSitio?.toLowerCase().includes(f) || s.tipo?.toLowerCase().includes(f),
+      (s) => s.nombre?.toLowerCase().includes(f) || s.tipo?.toLowerCase().includes(f),
     );
   }
   getNuevoSitio(): Sitio {
-    return { nombreSitio: '', tipo: '', estado: true };
+    return { nombre: '', tipo: '', estado: true };
   }
   openNew() {
     this.esNuevo = true;
@@ -451,7 +255,7 @@ export class SitiosComponent implements OnInit {
     this.displayDialog = true;
   }
   guardar() {
-    if (!this.sitio.nombreSitio || !this.sitio.tipo) {
+    if (!this.sitio.nombre || !this.sitio.tipo) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Advertencia',
@@ -462,9 +266,9 @@ export class SitiosComponent implements OnInit {
     if (this.esNuevo) {
       this.sitioService
         .crearSitio({
-          nombreSitio: this.sitio.nombreSitio,
+          nombre: this.sitio.nombre,
           tipo: this.sitio.tipo,
-          responsableId: 1,
+          id_responsable: 1,
         })
         .subscribe({
           next: () => {
@@ -507,7 +311,7 @@ export class SitiosComponent implements OnInit {
   }
   eliminar(s: Sitio) {
     this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar el sitio ' + s.nombreSitio + '?',
+      message: '¿Está seguro de eliminar el sitio ' + s.nombre + '?',
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',

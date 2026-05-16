@@ -29,26 +29,38 @@ import { AuthService } from '../../infrastructure/services/auth.service';
   template: `
     <p-toast></p-toast>
 
-    <div class="roles-page">
-      <div class="toolbar mb-8">
-        <div class="toolbar-left">
-           <h2 class="page-title flex items-center gap-4">
-             <i class="pi pi-users text-3xl"></i>
-             GESTIÓN DE USUARIOS Y ROLES
-           </h2>
-        </div>
-        <div class="toolbar-right">
-          <div class="search-container">
+    <div class="module-container">
+
+      <!-- Header -->
+      <div class="module-header">
+        <h3 class="page-title">
+          <i class="pi pi-shield"></i> Roles y Usuarios
+        </h3>
+        <div class="header-actions">
+          <div class="search-wrapper">
+            <i class="pi pi-search"></i>
             <input
               pInputText
               type="text"
               [(ngModel)]="filtro"
               (input)="filtrar()"
-              placeholder="Buscar usuario o rol..."
+              placeholder="Buscar..."
               class="search-input"
             />
-            <i class="pi pi-search search-icon"></i>
           </div>
+          <!-- Nav buttons -->
+          <button pButton label="Roles" icon="pi pi-shield"
+            [class.btn-add]="currentView === 'roles'"
+            class="p-button-outlined p-button-sm rounded-xl"
+            (click)="setView('roles')"></button>
+          <button pButton label="Usuarios" icon="pi pi-users"
+            [class.btn-add]="currentView === 'usuarios'"
+            class="p-button-outlined p-button-sm rounded-xl"
+            (click)="setView('usuarios')"></button>
+          <button pButton label="Permisos" icon="pi pi-lock"
+            [class.btn-add]="currentView === 'permisos'"
+            class="p-button-outlined p-button-sm rounded-xl"
+            (click)="setView('permisos')"></button>
         </div>
       </div>
 
@@ -102,8 +114,8 @@ import { AuthService } from '../../infrastructure/services/auth.service';
           </div>
         </div>
 
-        <!-- Table - Matching Image 2 -->
-        <div class="table-card">
+        <!-- Roles Table -->
+        <div class="data-table-wrapper">
           <p-table
             [value]="rolesFiltrados"
             [paginator]="true"
@@ -113,39 +125,23 @@ import { AuthService } from '../../infrastructure/services/auth.service';
           >
             <ng-template pTemplate="header">
               <tr>
-                <th style="width: 80px">#</th>
-                <th>NOMBRE</th>
-                <th>CORREO</th>
-                <th>ROL</th>
-                <th>ESTADO</th>
-                <th class="text-center">ACCIONES</th>
+                <th style="width:56px">#</th>
+                <th>Nombre del Rol</th>
+                <th>Descripción</th>
+                <th style="text-align:center">Acciones</th>
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-r let-i="rowIndex">
               <tr>
-                <td><span class="text-slate-400 font-bold">{{ i + 1 }}</span></td>
-                <td><span class="font-bold text-slate-700">{{ r.nombre }}</span></td>
-                <td><span class="text-slate-500">ejemplo&#64;sena.edu.co</span></td>
+                <td><span class="text-slate-400 text-xs font-bold">{{ i + 1 }}</span></td>
+                <td><span class="font-semibold text-slate-800">{{ r.nombre }}</span></td>
+                <td><span class="text-slate-400 text-sm italic">Sin descripción</span></td>
                 <td>
-                  <span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[11px] font-bold uppercase">
-                    Administrador
-                  </span>
-                </td>
-                <td>
-                  <span class="status-badge status-active">ACTIVO</span>
-                </td>
-                <td>
-                  <div class="action-buttons justify-center gap-2">
-                    <button
-                      pButton
-                      label="EDITOR"
-                      class="btn-table-action btn-editor"
-                    ></button>
-                    <button
-                      pButton
-                      label="ELIMINAR"
-                      class="btn-table-action btn-eliminar"
-                    ></button>
+                  <div class="action-buttons justify-center">
+                    <button pButton icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top"
+                      class="btn-table-action btn-editor"></button>
+                    <button pButton icon="pi pi-trash" pTooltip="Eliminar" tooltipPosition="top"
+                      class="btn-table-action btn-eliminar"></button>
                   </div>
                 </td>
               </tr>

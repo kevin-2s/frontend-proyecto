@@ -40,26 +40,20 @@ interface Solicitud {
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <div class="module-container">
-      <div class="toolbar">
-        <div class="toolbar-center">
-          <h2 class="page-title">Gestión de Solicitudes de Materiales</h2>
-        </div>
-        <div class="toolbar-right">
-           <div class="search-container">
-            <i class="pi pi-search search-icon"></i>
-            <input
-              pInputText
-              type="text"
-              [(ngModel)]="filtro"
-              (input)="filtrar()"
-              placeholder="Buscar por justificación o estado..."
-              class="search-input"
-            />
+      <div class="module-header">
+        <h3 class="page-title">
+          <i class="pi pi-inbox"></i> Solicitudes de Materiales
+        </h3>
+        <div class="header-actions">
+          <div class="search-wrapper">
+            <i class="pi pi-search"></i>
+            <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
+              placeholder="Buscar solicitud..." class="search-input" />
           </div>
         </div>
       </div>
 
-      <div class="table-card">
+      <div class="data-table-wrapper">
         <p-table
           [value]="solicitudesFiltradas"
           [paginator]="true"

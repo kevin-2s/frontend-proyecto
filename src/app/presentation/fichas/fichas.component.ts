@@ -42,35 +42,21 @@ interface Ficha {
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <div class="module-container">
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <button
-            pButton
-            label="Nueva Ficha"
-            icon="pi pi-plus"
-            class="btn-add"
-            (click)="openNew()"
-          ></button>
-        </div>
-        <div class="toolbar-center">
-          <h2 class="page-title">Gestión de Fichas de Formación</h2>
-        </div>
-        <div class="toolbar-right">
-           <div class="search-container">
-            <i class="pi pi-search search-icon"></i>
-            <input
-              pInputText
-              type="text"
-              [(ngModel)]="filtro"
-              (input)="filtrar()"
-              placeholder="Buscar por número o programa..."
-              class="search-input"
-            />
+      <div class="module-header">
+        <h3 class="page-title">
+          <i class="pi pi-id-card"></i> Fichas de Formación
+        </h3>
+        <div class="header-actions">
+          <div class="search-wrapper">
+            <i class="pi pi-search"></i>
+            <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
+              placeholder="Buscar ficha..." class="search-input" />
           </div>
+          <button pButton label="Nueva" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
 
-      <div class="table-card">
+      <div class="data-table-wrapper">
         <p-table
           [value]="fichasFiltradas"
           [paginator]="true"
@@ -104,14 +90,14 @@ interface Ficha {
                   <button
                     pButton
                     icon="pi pi-pencil"
-                    class="p-button-text btn-edit"
+                    class="btn-table-action btn-editor"
                     (click)="editar(ficha)"
                     pTooltip="Editar ficha"
                   ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
-                    class="p-button-text btn-delete"
+                    class="btn-table-action btn-eliminar"
                     (click)="eliminar(ficha)"
                     pTooltip="Eliminar ficha"
                   ></button>

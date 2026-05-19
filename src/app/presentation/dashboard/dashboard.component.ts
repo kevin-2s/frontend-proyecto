@@ -1,11 +1,23 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
+// PrimeNG
 import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
 import { ChartModule } from 'primeng/chart';
+
+// Angular Material
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+
+// Taiga UI
+import { TuiButton, TuiIcon } from '@taiga-ui/core';
+import { TuiBadge } from '@taiga-ui/kit';
+
 import { ApiService } from '../../core/services/api.service';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -13,115 +25,128 @@ import { map, catchError } from 'rxjs/operators';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, CardModule, TableModule, SkeletonModule, TagModule, ChartModule],
+  imports: [
+    CommonModule, 
+    CardModule, 
+    TableModule, 
+    SkeletonModule, 
+    TagModule, 
+    ChartModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    TuiButton,
+    TuiBadge,
+    TuiIcon
+  ],
   template: `
     <div class="animate-fade-in px-2">
-      <h2 class="text-[28px] font-bold text-gray-900 mb-8">Dashboard Resumen</h2>
+      
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+          <!-- Angular Material Icon -->
+          <mat-icon class="text-[#39A900] scale-150 mr-2">dashboard</mat-icon>
+          <h2 class="text-[28px] font-black text-gray-900 tracking-tight m-0">Dashboard Resumen</h2>
+          <!-- Taiga UI Badge -->
+          <span tuiBadge size="m" appearance="info" class="ml-2">Live v2.0</span>
+        </div>
+        
+        <!-- Taiga UI Button -->
+        <button
+          tuiButton
+          type="button"
+          appearance="secondary"
+          size="m"
+          class="rounded-xl"
+          (click)="cargarDatos()"
+        >
+          <tui-icon icon="@tui.refresh-cw" class="mr-2"></tui-icon>
+          Actualizar Datos
+        </button>
+      </div>
 
       <!-- Tarjetas de Resumen (Stat Cards) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         
         <!-- Total Usuarios -->
-        <div class="bg-white rounded-xl shadow-sm border-t-[3px] border-[#39A900] p-6 hover:shadow-md transition-all duration-300">
-          <p class="text-[13px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Total Usuarios</p>
-          <div class="flex items-end justify-between">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all relative overflow-hidden">
+          <p class="text-[12px] font-black text-gray-400 mb-3 uppercase tracking-widest">Total Usuarios</p>
+          <div class="flex items-center justify-between mb-4">
             @if (loading()) {
               <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
-              <h3 class="text-[42px] font-bold text-gray-900 leading-none">{{ totalUsuarios() }}</h3>
+              <h3 class="text-[40px] font-black text-slate-900 leading-none">{{ totalUsuarios() }}</h3>
+              <mat-icon class="text-blue-500 opacity-20 scale-[2.5]">groups</mat-icon>
             }
           </div>
+          <!-- Angular Material Progress Bar -->
+          <mat-progress-bar mode="determinate" value="70" color="primary" class="rounded-full"></mat-progress-bar>
         </div>
 
         <!-- Total Productos -->
-        <div class="bg-white rounded-xl shadow-sm border-t-[3px] border-[#39A900] p-6 hover:shadow-md transition-all duration-300">
-          <p class="text-[13px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Total Productos</p>
-          <div class="flex items-end justify-between">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all relative overflow-hidden">
+          <p class="text-[12px] font-black text-gray-400 mb-3 uppercase tracking-widest">Total Productos</p>
+          <div class="flex items-center justify-between mb-4">
             @if (loading()) {
               <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
-              <h3 class="text-[42px] font-bold text-gray-900 leading-none">{{ totalProductos() }}</h3>
+              <h3 class="text-[40px] font-black text-slate-900 leading-none">{{ totalProductos() }}</h3>
+              <mat-icon class="text-[#39A900] opacity-20 scale-[2.5]">inventory_2</mat-icon>
             }
           </div>
+          <mat-progress-bar mode="determinate" value="85" class="rounded-full"></mat-progress-bar>
         </div>
 
         <!-- Solicitudes Pendientes -->
-        <div class="bg-white rounded-xl shadow-sm border-t-[3px] border-[#39A900] p-6 hover:shadow-md transition-all duration-300">
-          <p class="text-[13px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Solicitudes Pendientes</p>
-          <div class="flex items-end justify-between">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all relative overflow-hidden">
+          <p class="text-[12px] font-black text-gray-400 mb-3 uppercase tracking-widest">Pendientes</p>
+          <div class="flex items-center justify-between mb-4">
             @if (loading()) {
               <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
-              <h3 class="text-[42px] font-bold text-[#FD7E14] leading-none">{{ solicitudesPendientes() }}</h3>
+              <h3 class="text-[40px] font-black text-orange-500 leading-none">{{ solicitudesPendientes() }}</h3>
+              <mat-icon class="text-orange-500 opacity-20 scale-[2.5]">pending_actions</mat-icon>
             }
           </div>
+          <mat-progress-bar mode="determinate" value="40" color="warn" class="rounded-full"></mat-progress-bar>
         </div>
 
         <!-- Total Inventario -->
-        <div class="bg-white rounded-xl shadow-sm border-t-[3px] border-[#39A900] p-6 hover:shadow-md transition-all duration-300">
-          <p class="text-[13px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Total Inventario</p>
-          <div class="flex items-end justify-between">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all relative overflow-hidden">
+          <p class="text-[12px] font-black text-gray-400 mb-3 uppercase tracking-widest">Items Globales</p>
+          <div class="flex items-center justify-between mb-4">
             @if (loading()) {
               <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
-              <h3 class="text-[42px] font-bold text-[#28A745] leading-none">{{ totalInventario() }}</h3>
+              <h3 class="text-[40px] font-black text-emerald-600 leading-none">{{ totalInventario() }}</h3>
+              <mat-icon class="text-emerald-500 opacity-20 scale-[2.5]">layers</mat-icon>
             }
           </div>
+          <mat-progress-bar mode="determinate" value="65" color="accent" class="rounded-full"></mat-progress-bar>
         </div>
 
       </div>
 
-      <!-- Gráficas Dashboard (Large Cards) -->
+      <!-- Gráficas Dashboard (PrimeNG ChartModule) -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
         
-        <!-- Card 1 -->
-        <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-8 min-h-[380px] flex flex-col items-center justify-center">
+        <!-- Stock Card (PrimeNG) -->
+        <div class="bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 min-h-[400px]">
           @if (loading()) {
-            <p-skeleton width="100%" height="300px"></p-skeleton>
+            <p-skeleton width="100%" height="320px"></p-skeleton>
           } @else {
-            <div class="flex flex-col items-center justify-center text-gray-300">
-              <i class="pi pi-chart-bar text-[40px] mb-4"></i>
-              <p class="text-[15px] font-medium text-gray-400">No hay datos de stock bajo</p>
-            </div>
+            <p-chart type="bar" [data]="chartStockData()" [options]="chartStockOptions()" height="320px"></p-chart>
           }
         </div>
 
-        <!-- Card 2 -->
-        <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-8 min-h-[380px] flex flex-col items-center justify-center">
+        <!-- Donut Card (PrimeNG) -->
+        <div class="bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 min-h-[400px]">
           @if (loading()) {
-            <p-skeleton width="100%" height="300px"></p-skeleton>
+            <p-skeleton width="100%" height="320px"></p-skeleton>
           } @else {
-            <div class="flex flex-col items-center justify-center text-gray-300">
-              <i class="pi pi-calendar text-[40px] mb-4"></i>
-              <p class="text-[15px] font-medium text-gray-400">No hay productos próximos a vencer</p>
-            </div>
+            <p-chart type="doughnut" [data]="chartSitiosData()" [options]="chartSitiosOptions()" height="320px"></p-chart>
           }
         </div>
-
-        <!-- Card 3 -->
-        <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-8 min-h-[380px] flex flex-col items-center justify-center">
-          @if (loading()) {
-            <p-skeleton width="100%" height="300px"></p-skeleton>
-          } @else {
-            <div class="flex flex-col items-center justify-center text-gray-300">
-              <i class="pi pi-compass text-[40px] mb-4"></i>
-              <p class="text-[15px] font-medium text-gray-400">No hay distribución de sitios para mostrar</p>
-            </div>
-          }
-        </div>
-
-        <!-- Card 4 -->
-        <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-8 min-h-[380px] flex flex-col items-center justify-center">
-          @if (loading()) {
-            <p-skeleton width="100%" height="300px"></p-skeleton>
-          } @else {
-            <div class="flex flex-col items-center justify-center text-gray-300">
-              <i class="pi pi-file text-[40px] mb-4"></i>
-              <p class="text-[15px] font-medium text-gray-400">No hay solicitudes registradas</p>
-            </div>
-          }
-        </div>
-
       </div>
     </div>
   `

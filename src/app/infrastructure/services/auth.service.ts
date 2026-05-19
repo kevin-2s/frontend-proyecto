@@ -43,7 +43,7 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
     
-    // We send refresh token to an endpoint, assuming it might be /auth/refresh
+    // Enviamos el token de actualización al endpoint, asumiendo que podría ser /auth/refresh
     return this.apiService.post<LoginResponse>('/auth/refresh', { refreshToken }).pipe(
       tap(res => {
         if (res?.data?.accessToken) {
@@ -84,7 +84,7 @@ export class AuthService {
     try {
       const payload = token.split('.')[1];
       const decoded = JSON.parse(atob(payload));
-      return decoded.rol || decoded.role || null; // Assume 'rol' or 'role' is in payload
+      return decoded.rol || decoded.role || null; // Asume que 'rol' o 'role' está en la carga útil (payload)
     } catch (e) {
       return null;
     }

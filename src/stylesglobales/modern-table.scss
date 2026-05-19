@@ -1,21 +1,16 @@
-/* =====================================================
-   SGM – Global Design System (modern-table.scss)
-   ===================================================== */
-
-/* ── Variables ─────────────────────────────────────── */
 $green:      #39A900;
 $navy:       #0F172A;
 $slate-mid:  #475569;
 $border:     #E2E8F0;
 $bg-soft:    #F8FAFC;
 
-/* ── Animations ────────────────────────────────────── */
+/* ── Animations  */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Module container (card) ───────────────────────── */
+/* ── Module container (card)  */
 .module-container {
   background: #ffffff;
   border-radius: 20px;
@@ -26,7 +21,7 @@ $bg-soft:    #F8FAFC;
   min-height: calc(100vh - 8rem);
 }
 
-/* ── Module header / toolbar ───────────────────────── */
+/* ── Module header / toolbar  */
 .module-header {
   display: flex;
   align-items: center;
@@ -58,7 +53,7 @@ $bg-soft:    #F8FAFC;
   }
 }
 
-/* ── Search input ──────────────────────────────────── */
+/* ── Search input  */
 .search-wrapper {
   position: relative;
   display: flex;
@@ -95,7 +90,7 @@ $bg-soft:    #F8FAFC;
   }
 }
 
-/* ── Add / primary action button ───────────────────── */
+/* ── Add / primary action button  */
 .btn-add {
   background: $green !important;
   color: #fff !important;
@@ -119,7 +114,7 @@ $bg-soft:    #F8FAFC;
   i { font-size: 0.85rem !important; }
 }
 
-/* ── Modern striped table ──────────────────────────── */
+/* ── Modern striped table  */
 .data-table-wrapper {
   overflow-x: auto;
   border-radius: 14px;
@@ -186,7 +181,7 @@ $bg-soft:    #F8FAFC;
   }
 }
 
-/* ── Status badges ─────────────────────────────────── */
+/* ── Status badges  */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -203,7 +198,7 @@ $bg-soft:    #F8FAFC;
 .status-pendiente                                       { background: #DBEAFE; color: #2563EB; }
 .status-bajo, .status-bajo-stock, .status-sin-stock    { background: #FEF9C3; color: #CA8A04; }
 
-/* ── Icon action buttons ───────────────────────────── */
+/* ── Icon action buttons  */
 .action-buttons {
   display: flex;
   gap: 0.4rem;
@@ -238,7 +233,7 @@ $bg-soft:    #F8FAFC;
   }
 }
 
-/* ── Form dialog ───────────────────────────────────── */
+/* ── Form dialog  */
 .form-dialog {
   border-radius: 24px !important;
   overflow: hidden !important;
@@ -253,7 +248,7 @@ $bg-soft:    #F8FAFC;
   .p-dialog-footer  { background: #fff !important; border-top: none !important; padding: 0 !important; }
 }
 
-/* ── Form grid ─────────────────────────────────────── */
+/* ── Form grid  */
 .form-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -308,7 +303,7 @@ $bg-soft:    #F8FAFC;
   }
 }
 
-/* ── Save button ───────────────────────────────────── */
+/* ── Save button  */
 .btn-primary {
   background: $green !important;
   color: #fff !important;
@@ -332,7 +327,7 @@ $bg-soft:    #F8FAFC;
   }
 }
 
-/* ── Empty state ───────────────────────────────────── */
+/* ── Empty state  */
 .empty-message {
   text-align: center !important;
   padding: 3rem 1rem !important;
@@ -340,4 +335,44 @@ $bg-soft:    #F8FAFC;
 
   .pi { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; color: #cbd5e1; }
   p   { font-size: 0.9rem; margin: 0; }
+}
+
+/* ── RESPONSIVE ADAPTATIONS  */
+@media (max-width: 768px) {
+  .module-container {
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+  }
+
+  .module-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+    
+    .header-actions {
+      width: 100%;
+      flex-direction: column-reverse;
+      align-items: stretch;
+      gap: 1rem;
+
+      .search-wrapper {
+        width: 100%;
+        .search-input {
+          width: 100% !important;
+        }
+      }
+
+      button, .btn-add {
+        width: 100% !important;
+        justify-content: center;
+      }
+    }
+  }
+
+  .data-table-wrapper {
+    margin: 0 -1rem; // Expande la tabla al borde en móviles
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
 }

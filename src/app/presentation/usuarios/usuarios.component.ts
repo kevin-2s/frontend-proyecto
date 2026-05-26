@@ -11,6 +11,7 @@ import { TagModule } from 'primeng/tag';
 import { Select } from 'primeng/select';
 import { PasswordModule } from 'primeng/password';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { forkJoin } from 'rxjs';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService, Rol } from '../../infrastructure/services/rol.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
@@ -48,6 +49,16 @@ interface Usuario {
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
+  styles: [`
+    :host ::ng-deep .custom-dialog-usuario-clean {
+      border-radius: 12px !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      border: none !important;
+    }
+    :host ::ng-deep .custom-dialog-usuario-clean .p-dialog-content {
+      background-color: #ffffff !important;
+    }
+  `],
   template: `
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
@@ -133,82 +144,79 @@ interface Usuario {
       </div>
     </div>
 
-    <!-- Form Dialog - Matching reference image -->
+    <!-- Form Dialog -->
     <p-dialog
+      [header]="esNuevo ? 'Añadir Usuario' : 'Editar Usuario'"
       [(visible)]="displayDialog"
       [modal]="true"
-      [style]="{ width: '90vw', maxWidth: '800px' }"
+      [style]="{ width: '700px' }"
       [draggable]="false"
-      [resizable]="false"
-      styleClass="form-dialog"
-      appendTo="body"
-      [closable]="true"
+      styleClass="custom-dialog-usuario-clean"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
+      [showHeader]="false"
     >
-      <ng-template pTemplate="header">
-        <div class="w-full text-center py-4">
-           <h2 class="text-3xl font-black text-slate-800 uppercase tracking-tight">
-            {{ esNuevo ? 'AÑADIR USUARIO' : 'EDITAR USUARIO' }}
-           </h2>
-        </div>
-      </ng-template>
+      <div class="flex flex-col bg-white rounded-xl p-8 pt-6">
+        
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">
+          {{ esNuevo ? 'Registro de Usuario' : 'Editar Usuario' }}
+        </h2>
 
-      <div class="form-grid-3 mt-4">
-        <div class="form-field">
-          <label>Nombres</label>
-          <input pInputText [(ngModel)]="usuario.nombre" placeholder="Nombres" />
-        </div>
-        <div class="form-field">
-          <label>Apellidos</label>
-          <input pInputText [(ngModel)]="usuario.apellidos" placeholder="Apellidos" />
-        </div>
-        <div class="form-field">
-          <label>Rol</label>
-          <p-select 
-            [options]="roles" 
-            [(ngModel)]="usuario.id_rol" 
-            optionLabel="nombre" 
-            optionValue="id"
-            placeholder="Usuario"
-            styleClass="w-full"
-            appendTo="body"
-          ></p-select>
-        </div>
+        <div class="flex flex-col gap-5">
+          <!-- Primera Fila: Nombres y Apellidos -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Nombres</label>
+              <input pInputText [(ngModel)]="usuario.nombre" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Nombres" />
+            </div>
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Apellidos</label>
+              <input pInputText [(ngModel)]="usuario.apellidos" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Apellidos" />
+            </div>
+          </div>
 
-        <div class="form-field">
-          <label>Teléfono</label>
-          <input pInputText [(ngModel)]="usuario.telefono" placeholder="Teléfono" />
-        </div>
-        <div class="form-field">
-          <label>Número Documento</label>
-          <input pInputText [(ngModel)]="usuario.documento" placeholder="Documento" />
-        </div>
-        <div class="form-field">
-          <label>Gmail</label>
-          <input pInputText [(ngModel)]="usuario.correo" placeholder="Correo" type="email" />
-        </div>
+          <!-- Segunda Fila: Correo y Rol -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Correo Electrónico</label>
+              <input pInputText [(ngModel)]="usuario.correo" type="email" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="correo@ejemplo.com" />
+            </div>
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Rol</label>
+              <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id" placeholder="Selecciona un rol" styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all" [style]="{'width':'100%'}" appendTo="body"></p-select>
+            </div>
+          </div>
 
-        <div class="form-field">
-          <label>Contraseña</label>
-          <p-password 
-            [(ngModel)]="usuario.password"
-            [feedback]="false"
-            styleClass="w-full"
-            [inputStyle]="{'width':'100%'}"
-            placeholder="Contraseña"
-            [toggleMask]="true"
-            appendTo="body"
-          ></p-password>
+          <!-- Tercera Fila: Teléfono y Documento -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Teléfono</label>
+              <input pInputText [(ngModel)]="usuario.telefono" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Número de teléfono" />
+            </div>
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Documento</label>
+              <input pInputText [(ngModel)]="usuario.documento" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Número de documento" />
+            </div>
+          </div>
+
+          <!-- Cuarta Fila: Contraseña -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex flex-col gap-1.5 flex-1" *ngIf="esNuevo">
+              <label class="text-sm font-bold text-gray-900">Contraseña</label>
+              <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Contraseña segura" [toggleMask]="true" appendTo="body"></p-password>
+            </div>
+          </div>
         </div>
 
-        <div class="flex items-end col-span-2 pb-[2px]">
-          <button
-            pButton
-            label="Aceptar"
-            (click)="guardar()"
-            class="btn-primary"
-            [loading]="saving"
-          ></button>
+        <!-- Botones (Footer) -->
+        <div class="flex justify-end gap-3 mt-8">
+          <button class="px-5 py-2 text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors outline-none cursor-pointer" (click)="displayDialog = false">
+            Cancelar
+          </button>
+          <button class="px-5 py-2 text-sm font-bold text-white bg-gray-900 hover:bg-black rounded-md transition-all outline-none disabled:opacity-50 cursor-pointer" (click)="guardar()" [disabled]="saving">
+            {{ saving ? 'Guardando...' : 'Guardar' }}
+          </button>
         </div>
+
       </div>
     </p-dialog>
   `
@@ -236,18 +244,34 @@ export class UsuariosComponent implements OnInit {
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
-    this.cargarRoles();
-    this.cargarUsuarios();
+    this.cargarDatos();
   }
 
-  cargarUsuarios() {
+  cargarDatos() {
     this.loading = true;
-    this.usuarioService.getAll().subscribe({
-      next: (res: any) => {
-        // Asume que el backend devuelve un array o { data: [] }
-        const data = Array.isArray(res) ? res : (res.data || []);
-        this.usuarios = data;
-        this.usuariosFiltrados = data;
+    forkJoin({
+      roles: this.rolService.getAll(),
+      usuarios: this.usuarioService.getAll()
+    }).subscribe({
+      next: ({ roles, usuarios }) => {
+        // Mapear Roles
+        const rolesData = Array.isArray(roles) ? roles : (roles as any).data || [];
+        this.roles = rolesData;
+
+        // Mapear Usuarios
+        const usuariosData = Array.isArray(usuarios) ? usuarios : (usuarios as any).data || [];
+        this.usuarios = usuariosData.map((u: any) => {
+          const mappedRolId = Number(u.rolId || u.id_rol || (u.rol ? u.rol.id : 0));
+          const rolObj = rolesData.find((r: any) => Number(r.id_rol || r.id) === mappedRolId);
+          return {
+            ...u,
+            id: u.id_usuario || u.id,
+            id_rol: mappedRolId,
+            rolNombre: rolObj ? (rolObj.nombreRol || rolObj.nombre) : 'Sin rol'
+          };
+        });
+
+        this.usuariosFiltrados = this.usuarios;
         this.calcularEstadisticas();
         this.loading = false;
         this.cdr.detectChanges();
@@ -255,23 +279,10 @@ export class UsuariosComponent implements OnInit {
       error: () => {
         this.usuarios = [];
         this.usuariosFiltrados = [];
-        this.loading = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los usuarios' });
-      },
-    });
-  }
-
-  cargarRoles() {
-    this.rolService.getAll().subscribe({
-      next: (res: any) => {
-        const data = Array.isArray(res) ? res : (res.data || []);
-        this.roles = data;
-        this.calcularEstadisticas();
-        this.cdr.detectChanges();
-      },
-      error: () => {
         this.roles = [];
-      },
+        this.loading = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los datos' });
+      }
     });
   }
 
@@ -360,7 +371,7 @@ export class UsuariosComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado correctamente' });
           this.displayDialog = false;
           this.saving = false;
-          this.cargarUsuarios();
+          this.cargarDatos();
         },
         error: (err) => {
           this.saving = false;
@@ -375,7 +386,7 @@ export class UsuariosComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente' });
           this.displayDialog = false;
           this.saving = false;
-          this.cargarUsuarios();
+          this.cargarDatos();
         },
         error: (err) => {
           this.saving = false;
@@ -409,7 +420,7 @@ export class UsuariosComponent implements OnInit {
         this.usuarioService.delete(u.id!).subscribe({
           next: () => {
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario eliminado' });
-            this.cargarUsuarios();
+            this.cargarDatos();
           },
           error: () => {
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el usuario' });

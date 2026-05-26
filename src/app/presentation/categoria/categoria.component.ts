@@ -216,7 +216,7 @@ export class CategoriaComponent implements OnInit {
       return;
     }
     if (this.esNuevo) {
-      this.categoriaService.crearCategoria({ nombre: this.categoria.nombre }).subscribe({
+      this.categoriaService.crearCategoria({ nombreCat: this.categoria.nombre }).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',

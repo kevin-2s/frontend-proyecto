@@ -25,4 +25,12 @@ export class ProductoService {
   eliminarMultiples(ids: number[]): Observable<any> {
     return this.api.post<any>('/productos/bulk-delete', { ids });
   }
+
+  getItemsByProducto(id_producto: number): Observable<any> {
+    return this.api.get<any>(`/items?id_producto=${id_producto}`);
+  }
+
+  getAllItems(): Observable<any> {
+    return this.api.get<any>('/items');
+  }
 }

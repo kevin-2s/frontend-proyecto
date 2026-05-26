@@ -12,6 +12,8 @@ npm-debug.log
 yarn-error.log
 
 # IDEs and editors
+Enum.md
+Cont.md
 .idea/
 .project
 .classpath

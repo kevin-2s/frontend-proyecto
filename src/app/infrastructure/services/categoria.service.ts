@@ -10,8 +10,8 @@ export class CategoriaService {
     return this.api.get<any>('/categorias');
   }
 
-  crearCategoria(data: { nombre: string }): Observable<any> {
-    return this.api.post<any>('/categorias', data);
+  crearCategoria(data: { nombreCat: string }): Observable<any> {
+    return this.api.post<any>('/categorias', { nombre: data.nombreCat });
   }
 
   actualizarCategoria(id: number, data: any): Observable<any> {

@@ -13,8 +13,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Si el error es 401 (No autorizado) y no es el endpoint de refresh o login
-      if (error.status === 401 && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
+      const isUnauthorized = error.status === 401 || (error.status === 400 && error.error?.error === 'UnauthorizedException');
+      if (isUnauthorized && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
         return authService.refreshTokenRequest().pipe(
           switchMap((res) => {
             // Reintentar la petición original con el nuevo token

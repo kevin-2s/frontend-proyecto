@@ -12,20 +12,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { PasswordModule } from 'primeng/password';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { TooltipModule } from 'primeng/tooltip';
-
-// Angular Material
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-
-// Taiga UI
-import { TuiButton } from '@taiga-ui/core';
-import { TuiBadge } from '@taiga-ui/kit';
-
+import { forkJoin } from 'rxjs';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService, Rol } from '../../infrastructure/services/rol.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
@@ -69,6 +56,16 @@ interface Usuario {
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
+  styles: [`
+    :host ::ng-deep .custom-dialog-usuario-clean {
+      border-radius: 12px !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      border: none !important;
+    }
+    :host ::ng-deep .custom-dialog-usuario-clean .p-dialog-content {
+      background-color: #ffffff !important;
+    }
+  `],
   template: `
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
@@ -171,128 +168,81 @@ interface Usuario {
       </div>
     </div>
 
-    <!-- [PrimeNG] p-dialog: Estructura de modal -->
-    <p-dialog [(visible)]="displayDialog" [modal]="true" 
-      [style]="{ width: '90vw', maxWidth: '650px' }" [draggable]="false" 
-      [resizable]="false" styleClass="modern-dialog" appendTo="body">
-      
-      <ng-template pTemplate="header">
-        <div class="flex flex-col gap-1 w-full">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-[#39A900]">
-              <mat-icon class="scale-110">{{ esNuevo ? 'person_add' : 'manage_accounts' }}</mat-icon>
+    <!-- Form Dialog -->
+    <p-dialog
+      [header]="esNuevo ? 'Añadir Usuario' : 'Editar Usuario'"
+      [(visible)]="displayDialog"
+      [modal]="true"
+      [style]="{ width: '700px' }"
+      [draggable]="false"
+      styleClass="custom-dialog-usuario-clean"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
+      [showHeader]="false"
+    >
+      <div class="flex flex-col bg-white rounded-xl p-8 pt-6">
+        
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">
+          {{ esNuevo ? 'Registro de Usuario' : 'Editar Usuario' }}
+        </h2>
+
+        <div class="flex flex-col gap-5">
+          <!-- Primera Fila: Nombres y Apellidos -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Nombres</label>
+              <input pInputText [(ngModel)]="usuario.nombre" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Nombres" />
             </div>
-            <div class="flex flex-col">
-              <span class="text-lg font-black text-slate-800 uppercase tracking-tight leading-tight">
-                {{ esNuevo ? 'Registrar Usuario' : 'editar Usuario' }}
-              </span>
-              <span class="text-xs text-slate-400 font-medium">
-              </span>
-            </div>
-          </div>
-        </div>
-      </ng-template>
-
-      <div class="mt-2 px-1 max-h-[70vh] overflow-y-auto overflow-x-hidden">
-        <div class="flex flex-col gap-6">
-          
-          <!-- SECCIÓN: Información Personal -->
-          <div class="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-            <div class="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
-              <mat-icon class="text-[#39A900] scale-90">contact_page</mat-icon>
-              <span class="text-xs font-black text-slate-500 uppercase tracking-wider">Información Personal</span>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Nombres</mat-label>
-                <input matInput [(ngModel)]="usuario.nombre" placeholder="Ej. Juan Carlos" required>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Apellidos</mat-label>
-                <input matInput [(ngModel)]="usuario.apellidos" placeholder="Ej. Pérez">
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Documento Identidad</mat-label>
-                <input matInput [(ngModel)]="usuario.documento" placeholder="Ej. 1098765432">
-                <mat-icon matSuffix class="text-slate-400 scale-90">badge</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Teléfono</mat-label>
-                <input matInput [(ngModel)]="usuario.telefono" placeholder="Ej. 3123456789">
-                <mat-icon matSuffix class="text-slate-400 scale-90">phone</mat-icon>
-              </mat-form-field>
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Apellidos</label>
+              <input pInputText [(ngModel)]="usuario.apellidos" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Apellidos" />
             </div>
           </div>
 
-          <!-- SECCIÓN: Configuración de Cuenta y Seguridad -->
-          <div class="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-            <div class="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
-              <mat-icon class="text-blue-500 scale-90">lock_person</mat-icon>
-              <span class="text-xs font-black text-slate-500 uppercase tracking-wider">Cuenta y Seguridad</span>
+          <!-- Segunda Fila: Correo y Rol -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Correo Electrónico</label>
+              <input pInputText [(ngModel)]="usuario.correo" type="email" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="correo@ejemplo.com" />
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <mat-form-field appearance="outline" class="w-full col-span-1 md:col-span-2">
-                <mat-label>Correo Electrónico</mat-label>
-                <input matInput [(ngModel)]="usuario.correo" type="email" placeholder="usuario@sena.edu.co" required>
-                <mat-icon matSuffix class="text-slate-400 scale-90">email</mat-icon>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Rol</mat-label>
-                <mat-select [(ngModel)]="usuario.id_rol" placeholder="Seleccione rol" required>
-                  <mat-option *ngFor="let rol of roles" [value]="rol.id_rol">
-                    {{ rol.nombre }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline" class="w-full" *ngIf="esNuevo || usuario.password">
-                <mat-label>Contraseña</mat-label>
-                <input matInput [(ngModel)]="usuario.password" [type]="hidePassword ? 'password' : 'text'" placeholder="Mín. 6 caracteres">
-                <button type="button" mat-icon-button matSuffix (click)="hidePassword = !hidePassword" class="text-slate-400">
-                  <mat-icon class="scale-90">{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-                </button>
-              </mat-form-field>
-
-              <div class="col-span-1 md:col-span-2 flex items-center justify-between p-4 rounded-2xl border transition-all duration-300"
-                [ngClass]="usuario.estado ? 'bg-green-50/50 border-green-100/50' : 'bg-slate-50 border-slate-200/50'">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
-                    [ngClass]="usuario.estado ? 'bg-green-500/10 text-green-600' : 'bg-slate-200/50 text-slate-400'">
-                    <mat-icon>{{ usuario.estado ? 'how_to_reg' : 'person_off' }}</mat-icon>
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="font-black text-slate-700 text-xs uppercase tracking-tight">Estado</span>
-                  </div>
-                </div>
-                <!-- [Material] mat-slide-toggle: Interruptor elegante -->
-                <mat-slide-toggle [(ngModel)]="usuario.estado" color="primary"></mat-slide-toggle>
-              </div>
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Rol</label>
+              <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id" placeholder="Selecciona un rol" styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all" [style]="{'width':'100%'}" appendTo="body"></p-select>
             </div>
           </div>
-          
+
+          <!-- Tercera Fila: Teléfono y Documento -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Teléfono</label>
+              <input pInputText [(ngModel)]="usuario.telefono" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Número de teléfono" />
+            </div>
+            <div class="flex flex-col gap-1.5 flex-1">
+              <label class="text-sm font-bold text-gray-900">Documento</label>
+              <input pInputText [(ngModel)]="usuario.documento" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Número de documento" />
+            </div>
+          </div>
+
+          <!-- Cuarta Fila: Contraseña -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex flex-col gap-1.5 flex-1" *ngIf="esNuevo">
+              <label class="text-sm font-bold text-gray-900">Contraseña</label>
+              <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Contraseña segura" [toggleMask]="true" appendTo="body"></p-password>
+            </div>
+          </div>
         </div>
       </div>
 
-      <ng-template pTemplate="footer">
-        <div class="flex justify-end items-center gap-3 w-full border-t border-slate-100 pt-4 mt-2">
-          <button mat-button (click)="displayDialog = false" class="text-slate-500 font-bold hover:bg-slate-100 rounded-xl px-5 py-2">
+        <!-- Botones (Footer) -->
+        <div class="flex justify-end gap-3 mt-8">
+          <button class="px-5 py-2 text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors outline-none cursor-pointer" (click)="displayDialog = false">
             Cancelar
           </button>
-          <button mat-raised-button color="primary" (click)="guardar()" [disabled]="saving"
-            class="bg-[#39A900] text-white font-bold hover:bg-[#2e8800] rounded-xl shadow-md shadow-green-500/10 px-6 py-2 flex items-center gap-2">
-            <span class="flex items-center gap-2">
-              <mat-icon class="scale-90" *ngIf="!saving">save</mat-icon>
-              <span>{{ saving ? 'Guardando' : 'Guardar' }}</span>
-            </span>
+          <button class="px-5 py-2 text-sm font-bold text-white bg-gray-900 hover:bg-black rounded-md transition-all outline-none disabled:opacity-50 cursor-pointer" (click)="guardar()" [disabled]="saving">
+            {{ saving ? 'Guardando...' : 'Guardar' }}
           </button>
         </div>
-      </ng-template>
+
+      </div>
     </p-dialog>
   `
 })
@@ -320,18 +270,34 @@ export class UsuariosComponent implements OnInit {
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
-    this.cargarRoles();
-    this.cargarUsuarios();
+    this.cargarDatos();
   }
 
-  cargarUsuarios() {
+  cargarDatos() {
     this.loading = true;
-    this.usuarioService.getAll().subscribe({
-      next: (res: any) => {
-        // Asume que el backend devuelve un array o { data: [] }
-        const data = Array.isArray(res) ? res : (res.data || []);
-        this.usuarios = data;
-        this.usuariosFiltrados = data;
+    forkJoin({
+      roles: this.rolService.getAll(),
+      usuarios: this.usuarioService.getAll()
+    }).subscribe({
+      next: ({ roles, usuarios }) => {
+        // Mapear Roles
+        const rolesData = Array.isArray(roles) ? roles : (roles as any).data || [];
+        this.roles = rolesData;
+
+        // Mapear Usuarios
+        const usuariosData = Array.isArray(usuarios) ? usuarios : (usuarios as any).data || [];
+        this.usuarios = usuariosData.map((u: any) => {
+          const mappedRolId = Number(u.rolId || u.id_rol || (u.rol ? u.rol.id : 0));
+          const rolObj = rolesData.find((r: any) => Number(r.id_rol || r.id) === mappedRolId);
+          return {
+            ...u,
+            id: u.id_usuario || u.id,
+            id_rol: mappedRolId,
+            rolNombre: rolObj ? (rolObj.nombreRol || rolObj.nombre) : 'Sin rol'
+          };
+        });
+
+        this.usuariosFiltrados = this.usuarios;
         this.calcularEstadisticas();
         this.loading = false;
         this.cdr.detectChanges();
@@ -339,23 +305,10 @@ export class UsuariosComponent implements OnInit {
       error: () => {
         this.usuarios = [];
         this.usuariosFiltrados = [];
-        this.loading = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar los usuarios' });
-      },
-    });
-  }
-
-  cargarRoles() {
-    this.rolService.getAll().subscribe({
-      next: (res: any) => {
-        const data = Array.isArray(res) ? res : (res.data || []);
-        this.roles = data;
-        this.calcularEstadisticas();
-        this.cdr.detectChanges();
-      },
-      error: () => {
         this.roles = [];
-      },
+        this.loading = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los datos' });
+      }
     });
   }
 
@@ -444,7 +397,7 @@ export class UsuariosComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado correctamente' });
           this.displayDialog = false;
           this.saving = false;
-          this.cargarUsuarios();
+          this.cargarDatos();
         },
         error: (err) => {
           this.saving = false;
@@ -459,7 +412,7 @@ export class UsuariosComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente' });
           this.displayDialog = false;
           this.saving = false;
-          this.cargarUsuarios();
+          this.cargarDatos();
         },
         error: (err) => {
           this.saving = false;
@@ -493,7 +446,7 @@ export class UsuariosComponent implements OnInit {
         this.usuarioService.delete(u.id_usuario!).subscribe({
           next: () => {
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario eliminado' });
-            this.cargarUsuarios();
+            this.cargarDatos();
           },
           error: () => {
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el usuario' });

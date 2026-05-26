@@ -5,12 +5,13 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideTaiga } from '@taiga-ui/core';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { backendFallbackInterceptor } from './core/interceptors/backend-fallback.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
-    provideAnimations(),
-    provideTaiga()
+    provideHttpClient(withInterceptors([backendFallbackInterceptor, authInterceptor])),
+    provideAnimations()
+
   ]
 };

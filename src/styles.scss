@@ -14,3 +14,54 @@
 
 /* CSS Imports must go after @use */
 @import "primeicons/primeicons.css";
+@import "@angular/material/prebuilt-themes/indigo-pink.css";
+
+/* Parche para Diálogos Híbridos (PrimeNG + Material) */
+.modern-dialog {
+  .p-dialog-content {
+    background: white !important;
+    padding: 1.5rem !important;
+  }
+  .p-dialog-header {
+    background: white !important;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1.5rem !important;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+  .p-dialog-footer {
+    background: #f8fafc !important;
+    padding: 1rem 1.5rem !important;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25) !important;
+}
+
+/* Ajuste para inputs de Material dentro de la Grid */
+.mat-mdc-form-field {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+/* Parche para Paneles Desplegables de PrimeNG (Select, Dropdown, Calendarios) */
+.p-select-overlay, 
+.p-datepicker-panel, 
+.p-dropdown-panel,
+.p-overlaypanel {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  border-radius: 12px !important;
+  z-index: 9999 !important; /* Asegura que esté por encima de todo */
+}
+
+/* Estilo para las opciones dentro del selector */
+.p-select-item {
+  background: white !important;
+  &:hover {
+    background: #f1f5f9 !important;
+  }
+}

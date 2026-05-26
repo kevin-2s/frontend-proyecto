@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 
 export interface Rol {
-  id: number;
+  id_rol: number;
   nombre: string;
   estado?: string | boolean;
 }

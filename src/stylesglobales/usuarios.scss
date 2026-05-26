@@ -1,2 +1,27 @@
 /* Usuarios Module — delegates all design to modern-table.scss */
 @use './modern-table.scss' as *;
+
+.modern-dialog {
+  .mat-mdc-text-field-wrapper {
+    border-radius: 16px !important;
+    background-color: #ffffff !important;
+  }
+  .mdc-notched-outline__leading {
+    border-radius: 16px 0 0 16px !important;
+    border-color: #e2e8f0 !important;
+  }
+  .mdc-notched-outline__trailing {
+    border-radius: 0 16px 16px 0 !important;
+    border-color: #e2e8f0 !important;
+  }
+  .mdc-notched-outline__notch {
+    border-color: #e2e8f0 !important;
+  }
+  /* Efecto al hacer foco (focus) */
+  .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+  .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+  .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+    border-color: #39A900 !important;
+    border-width: 2px !important;
+  }
+}

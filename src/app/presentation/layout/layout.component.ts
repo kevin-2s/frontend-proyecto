@@ -28,26 +28,68 @@ import { FormsModule } from '@angular/forms';
         <nav class="flex-1 overflow-y-auto py-3 px-4">
           <ul class="space-y-1">
             <li *ngFor="let item of menuItems">
-              <a [routerLink]="item.path" 
-                 routerLinkActive="active"
-                 #rla="routerLinkActive"
-                 [class.bg-[#111827]]="rla.isActive"
-                 [class.text-white]="rla.isActive"
-                 [class.text-slate-500]="!rla.isActive"
-                 class="flex items-center px-4 py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold hover:bg-slate-50">
-               <i [class]="'pi ' + item.icon + ' mr-3 text-base'"
-                  [class.text-white]="rla.isActive"
-                  [class.text-slate-400]="!rla.isActive"></i>
-               {{ item.title }}
-               <span *ngIf="item.title === 'Solicitudes'" 
-                     class="ml-auto flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
-                     [class.bg-[#3b82f6]]="!rla.isActive"
-                     [class.bg-white]="rla.isActive"
-                     [class.text-white]="!rla.isActive"
-                     [class.text-[#111827]]="rla.isActive">
-                 3
-               </span>
-              </a>
+              <!-- Item sin sub-ítems -->
+              <ng-container *ngIf="!item.children">
+                <a [routerLink]="item.path" 
+                   routerLinkActive="active"
+                   #rla="routerLinkActive"
+                   [class.bg-[#111827]]="rla.isActive"
+                   [class.text-white]="rla.isActive"
+                   [class.text-slate-500]="!rla.isActive"
+                   class="flex items-center px-4 py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold hover:bg-slate-50">
+                 <i [class]="'pi ' + item.icon + ' mr-3 text-base'"
+                    [class.text-white]="rla.isActive"
+                    [class.text-slate-400]="!rla.isActive"></i>
+                 {{ item.title }}
+                 <span *ngIf="item.title === 'Solicitudes'" 
+                       class="ml-auto flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
+                       [class.bg-[#3b82f6]]="!rla.isActive"
+                       [class.bg-white]="rla.isActive"
+                       [class.text-white]="!rla.isActive"
+                       [class.text-[#111827]]="rla.isActive">
+                   3
+                 </span>
+                </a>
+              </ng-container>
+
+              <!-- Item con sub-ítems expandibles (Inventario) -->
+              <ng-container *ngIf="item.children">
+                <div (click)="toggleMenuItem(item)"
+                   [routerLink]="item.path"
+                   routerLinkActive="active"
+                   #rla="routerLinkActive"
+                   [class.bg-slate-50]="rla.isActive"
+                   class="flex items-center justify-between px-4 py-3 rounded-xl text-[13.5px] text-slate-500 hover:text-gray-900 transition-all cursor-pointer font-semibold hover:bg-slate-50">
+                  <div class="flex items-center">
+                    <i [class]="'pi ' + item.icon + ' mr-3 text-base'"
+                       [class.text-[#39A900]]="rla.isActive"
+                       [class.text-slate-400]="!rla.isActive"></i>
+                    <span [class.text-[#39A900]]="rla.isActive">{{ item.title }}</span>
+                  </div>
+                  <i class="pi transition-transform duration-200" 
+                     [class.pi-chevron-down]="!item.expanded" 
+                     [class.pi-chevron-up]="item.expanded"
+                     class="text-xs text-slate-400"></i>
+                </div>
+
+                <!-- Sub-ítems colapsables -->
+                <ul *ngIf="item.expanded" class="pl-4 mt-1 space-y-1 border-l border-slate-200 ml-6 transition-all duration-300">
+                  <li *ngFor="let child of item.children">
+                    <a [routerLink]="child.path"
+                       routerLinkActive="active"
+                       #rlac="routerLinkActive"
+                       [class.bg-[#111827]]="rlac.isActive"
+                       [class.text-white]="rlac.isActive"
+                       [class.text-slate-500]="!rlac.isActive"
+                       class="flex items-center px-4 py-2 rounded-xl text-[13px] transition-all cursor-pointer font-semibold hover:bg-slate-50">
+                      <i [class]="'pi ' + child.icon + ' mr-2.5 text-sm'"
+                         [class.text-white]="rlac.isActive"
+                         [class.text-slate-400]="!rlac.isActive"></i>
+                      {{ child.title }}
+                    </a>
+                  </li>
+                </ul>
+              </ng-container>
             </li>
           </ul>
         </nav>
@@ -117,18 +159,29 @@ export class LayoutComponent {
   isProfileMenuOpen = signal(false);
   globalSearch = '';
 
-  menuItems = [
+  menuItems: any[] = [
     { title: 'Dashboard',   path: '/dashboard',   icon: 'pi-home' },
     { title: 'Usuarios',    path: '/usuarios',    icon: 'pi-users' },
     { title: 'Roles',       path: '/roles',       icon: 'pi-shield' },
-    { title: 'Productos',   path: '/productos',   icon: 'pi-box' },
-    { title: 'Categorías',  path: '/categoria',   icon: 'pi-tag' },
+    { 
+      title: 'Inventario',  
+      path: '/inventario',  
+      icon: 'pi-warehouse',
+      expanded: false,
+      children: [
+        { title: 'Productos',   path: '/inventario/productos',   icon: 'pi-box' },
+        { title: 'Categorías',  path: '/inventario/categoria',   icon: 'pi-tag' }
+      ]
+    },
     { title: 'Fichas',      path: '/fichas',      icon: 'pi-id-card' },
     { title: 'Sitios',      path: '/sitios',      icon: 'pi-map-marker' },
-    { title: 'Inventario',  path: '/inventario',  icon: 'pi-warehouse' },
     { title: 'Solicitudes', path: '/solicitudes', icon: 'pi-inbox' },
     { title: 'Movimientos', path: '/movimientos', icon: 'pi-arrows-h' }
   ];
+
+  toggleMenuItem(item: any): void {
+    item.expanded = !item.expanded;
+  }
 
   onGlobalSearch(term: string) {
     const lower = term.toLowerCase().trim();

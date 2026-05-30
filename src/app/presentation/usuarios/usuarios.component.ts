@@ -1,6 +1,8 @@
 import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
+// PrimeNG
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -8,17 +10,15 @@ import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
-import { Select } from 'primeng/select';
 import { PasswordModule } from 'primeng/password';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService, Rol } from '../../infrastructure/services/rol.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
-import { TooltipModule } from 'primeng/tooltip';
 
 interface Usuario {
-  id?: number;
+  id_usuario?: number;
   nombre?: string;
   apellidos?: string;
   correo: string;
@@ -43,9 +43,16 @@ interface Usuario {
     ToastModule,
     ConfirmDialogModule,
     TagModule,
-    Select,
     PasswordModule,
-    TooltipModule
+    TooltipModule,
+    MatIconModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    TuiButton,
+    TuiBadge
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
@@ -63,81 +70,98 @@ interface Usuario {
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
 
+    <!-- [StylesGlobales] .module-container: El contenedor principal blanco -->
     <div class="module-container">
 
-      <!-- Header -->
+      <!-- [StylesGlobales] .module-header: Encabezado estandarizado -->
       <div class="module-header">
-        <h3 class="page-title">
-          <i class="pi pi-users"></i> Usuarios
-        </h3>
+        <div class="flex items-center gap-3">
+          <!-- [Material] mat-icon: Iconografía premium -->
+          
+          <h3 class="page-title m-0">Usuarios</h3>
+        </div>
+
         <div class="header-actions">
+          <!-- [StylesGlobales] .search-wrapper: Buscador pill-shaped -->
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
-            <input
-              pInputText
-              type="text"
-              [(ngModel)]="filtro"
-              (input)="filtrar()"
-              placeholder="Buscar usuario..."
-              class="search-input"
-            />
+            <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
+              placeholder="Nombre" class="search-input" />
           </div>
-          <button
-            pButton
-            label="Agregar"
-            icon="pi pi-plus"
-            (click)="openNew()"
-            class="btn-add"
-          ></button>
+          
+          <!-- [Taiga UI] tuiButton: El botón más moderno del ecosistema -->
+          <button tuiButton type="button" size="m" appearance="primary"
+            class="rounded-xl font-bold flex items-center gap-1" (click)="openNew()">
+            <mat-icon class="scale-90">person_add</mat-icon>
+            Crear Usuario
+          </button>
         </div>
       </div>
 
-      <!-- Table -->
+      <!-- [PrimeNG] p-table: La potencia de manejo de datos -->
       <div class="data-table-wrapper">
-        <p-table
-          [value]="usuariosFiltrados"
-          [paginator]="true"
-          [rows]="10"
-          styleClass="modern-table"
-          [loading]="loading"
-          [rowHover]="true"
-        >
+        <p-table [value]="usuariosFiltrados" [paginator]="true" [rows]="10"
+          styleClass="modern-table" [loading]="loading" [rowHover]="true">
+          
           <ng-template pTemplate="header">
             <tr>
               <th style="width:64px">ID</th>
-              <th>Nombre</th>
+              <th>Usuario</th>
               <th>Rol</th>
-              <th>Correo</th>
-              <th>Estado</th>
-              <th style="text-align:center">Acciones</th>
+              <th>Contacto</th>
+              <th style="width:120px">Estado</th>
+              <th style="width:120px; text-align:center">Acciones</th>
             </tr>
           </ng-template>
 
           <ng-template pTemplate="body" let-u>
             <tr>
-              <td><span class="text-slate-400 text-xs font-bold">#{{ u.id }}</span></td>
-              <td><span class="font-semibold text-slate-800">{{ u.nombre }} {{ u.apellidos }}</span></td>
-              <td><span class="text-slate-500 text-sm">{{ getRolNombre(u.id_rol) }}</span></td>
-              <td><span class="text-slate-500 text-sm">{{ u.correo }}</span></td>
+              <td><span class="text-slate-400 text-xs font-black">#{{ u.id_usuario }}</span></td>
               <td>
-                <span class="status-badge" [ngClass]="u.estado ? 'status-active' : 'status-inactive'">
-                  {{ u.estado ? 'Activo' : 'Inactivo' }}
-                </span>
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
+                    <mat-icon class="text-slate-300 scale-75">person</mat-icon>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="font-bold text-slate-800 leading-tight">{{ u.nombre }} {{ u.apellidos }}</span>
+                    <span class="text-[11px] text-slate-400 font-medium">CC: {{ u.documento || '---' }}</span>
+                  </div>
+                </div>
               </td>
               <td>
-                <div class="action-buttons justify-center">
-                  <button pButton icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top"
-                    (click)="editar(u)" class="btn-table-action btn-editor"></button>
-                  <button pButton icon="pi pi-trash" pTooltip="Eliminar" tooltipPosition="top"
-                    (click)="eliminar(u)" class="btn-table-action btn-eliminar"></button>
+                <!-- [PrimeNG] p-tag: Para etiquetas de rol rápidas -->
+                <p-tag [value]="getRolNombre(u.id_rol)" [severity]="getRolSeverity(u.id_rol)"></p-tag>
+              </td>
+              <td>
+                <div class="flex flex-col">
+                  <span class="text-slate-600 text-sm font-medium">{{ u.correo }}</span>
+                  <span class="text-slate-400 text-[11px]">{{ u.telefono || 'Sin teléfono' }}</span>
+                </div>
+              </td>
+              <td>
+                <!-- [PrimeNG] p-tag: Estado con color semántico -->
+                <p-tag [value]="u.estado ? 'ACTIVO' : 'INACTIVO'" 
+                      [severity]="u.estado ? 'success' : 'danger'"
+                      styleClass="font-bold px-3 py-1 text-xs rounded-lg"></p-tag>
+              </td>
+              <td>
+                <div class="flex items-center justify-center gap-1">
+                  <!-- [Material] mat-icon-button: Acciones circulares limpias -->
+                  <button mat-icon-button (click)="editar(u)" class="text-blue-500 hover:bg-blue-50">
+                    <mat-icon>edit_note</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="eliminar(u)" class="text-red-400 hover:bg-red-50">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
                 </div>
               </td>
             </tr>
           </ng-template>
 
           <ng-template pTemplate="emptymessage">
-            <tr><td colspan="6" class="empty-message">
-              <i class="pi pi-users"></i><p>No se encontraron usuarios</p>
+            <tr><td colspan="6" class="empty-message py-20">
+              <mat-icon class="scale-[4] opacity-5 mb-10">person_off</mat-icon>
+              <p class="text-slate-400 font-bold text-lg">No hay usuarios registrados</p>
             </td></tr>
           </ng-template>
         </p-table>
@@ -206,6 +230,7 @@ interface Usuario {
             </div>
           </div>
         </div>
+      </div>
 
         <!-- Botones (Footer) -->
         <div class="flex justify-end gap-3 mt-8">
@@ -239,6 +264,7 @@ export class UsuariosComponent implements OnInit {
   saving = false;
   isAdmin = false;
   stats = { total: 0, activos: 0, inactivos: 0, admins: 0 };
+  hidePassword = true;
 
   usuario: Usuario = this.getNuevoUsuario();
 
@@ -333,13 +359,13 @@ export class UsuariosComponent implements OnInit {
       ...u, 
       nombre: u.nombre,
       apellidos: u.apellidos,
-      password: '' // Clear password field on edit for security
+      password: '' // Limpiar el campo de contraseña al editar por seguridad
     };
     this.displayDialog = true;
   }
 
   onRolChange(event: any) {
-    const rol = this.roles.find((r) => r.id === this.usuario.id_rol);
+    const rol = this.roles.find((r) => r.id_rol === this.usuario.id_rol);
     if (rol) {
       this.usuario.rolNombre = rol.nombre;
     }
@@ -379,9 +405,9 @@ export class UsuariosComponent implements OnInit {
         },
       });
     } else {
-      const { id, ...updateData } = datosEnvio as any;
+      const { id_usuario, ...updateData } = datosEnvio as any;
       
-      this.usuarioService.update(id!, updateData).subscribe({
+      this.usuarioService.update(id_usuario!, updateData).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente' });
           this.displayDialog = false;
@@ -397,7 +423,7 @@ export class UsuariosComponent implements OnInit {
   }
 
   getRolNombre(id_rol: any): string {
-    const rol = this.roles.find(r => Number(r.id) === Number(id_rol));
+    const rol = this.roles.find(r => Number(r.id_rol) === Number(id_rol));
     return rol ? rol.nombre : 'Desconocido';
   }
 
@@ -417,7 +443,7 @@ export class UsuariosComponent implements OnInit {
       rejectLabel: 'Cancelar',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.usuarioService.delete(u.id!).subscribe({
+        this.usuarioService.delete(u.id_usuario!).subscribe({
           next: () => {
             this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario eliminado' });
             this.cargarDatos();
@@ -431,7 +457,7 @@ export class UsuariosComponent implements OnInit {
   }
 
   actualizarEstado(u: Usuario) {
-    this.usuarioService.update(u.id!, { estado: u.estado }).subscribe({
+    this.usuarioService.update(u.id_usuario!, { estado: u.estado }).subscribe({
       next: () => {
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Estado actualizado' });
         this.calcularEstadisticas();

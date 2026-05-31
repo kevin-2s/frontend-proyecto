@@ -1,6 +1,12 @@
 export interface Sitio { 
-  id: number; 
-  nombreSitio: string; 
+  id_sitio?: number; 
+  nombre: string; 
   tipo: string; 
-  responsableId: number; 
+  id_responsable?: number; 
+  responsable?: {
+    id_usuario: number;
+    nombre: string;
+    correo: string;
+  };
+  estado?: boolean; 
 }

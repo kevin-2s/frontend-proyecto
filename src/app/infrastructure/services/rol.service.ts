@@ -1,12 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
-
-export interface Rol {
-  id_rol: number;
-  nombre: string;
-  estado?: string | boolean;
-}
+import { Rol } from '../../domain/models/rol.model';
 
 @Injectable({ providedIn: 'root' })
 export class RolService {

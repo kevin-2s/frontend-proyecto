@@ -7,12 +7,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { TagModule } from 'primeng/tag';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { MessageService } from 'primeng/api';
-import { RolService, Rol } from '../../infrastructure/services/rol.service';
+import { RolService } from '../../infrastructure/services/rol.service';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { Rol } from '../../domain/models/rol.model';
 
 @Component({
   selector: 'app-roles',
@@ -26,8 +26,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
     DialogModule,
     ToastModule,
     TagModule,
-    MatIconModule,
-    MatSlideToggleModule
+    ToggleSwitchModule
   ],
   providers: [MessageService],
   template: `
@@ -53,6 +52,10 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
             />
           </div>
           <!-- Nav buttons -->
+          <button pButton label="Roles" icon="pi pi-shield"
+            [class.btn-add]="currentView === 'roles'"
+            class="p-button-outlined p-button-sm rounded-xl"
+            (click)="setView('roles')"></button>
           <button pButton label="Usuarios" icon="pi pi-users"
             [class.btn-add]="currentView === 'usuarios'"
             class="p-button-outlined p-button-sm rounded-xl"
@@ -61,56 +64,44 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
             [class.btn-add]="currentView === 'permisos'"
             class="p-button-outlined p-button-sm rounded-xl"
             (click)="setView('permisos')"></button>
+          <button 
+            *ngIf="currentView === 'roles'"
+            pButton 
+            label="Crear Rol" 
+            icon="pi pi-plus"
+            class="rounded-xl font-bold bg-[#39A900] text-white hover:bg-green-700 outline-none cursor-pointer border-none h-[42px] ml-2"
+            (click)="openNewRolDialog()"></button>
         </div>
       </div>
 
       <!-- ROLES VIEW -->
       <div *ngIf="currentView === 'roles'" class="view-content">
-        <!-- Integrated Form - Matching Image 2 Style -->
-        <div class="integrated-form-card mb-10" *ngIf="isAdmin">
-          <div class="w-full text-center py-6">
-            <h3 class="text-2xl font-black text-slate-800 uppercase tracking-tight">AÑADIR USUARIO</h3>
+        <!-- Integrated Form for Creating Role -->
+        <div class="integrated-form-card mb-8 p-6 bg-white border border-slate-100 rounded-2xl shadow-sm" *ngIf="isAdmin">
+          <div class="w-full text-center py-4 mb-4">
+            <h3 class="text-xl font-extrabold text-slate-800 uppercase tracking-tight">Crear Nuevo Rol</h3>
+            <p class="text-slate-400 text-xs mt-1">Define un nuevo rol con sus respectivos accesos del sistema</p>
           </div>
           
-          <div class="form-grid-3">
-            <div class="form-field">
-              <label>Nombres</label>
-              <input pInputText placeholder="Nombres" />
+          <div class="flex flex-col sm:flex-row gap-4 items-end max-w-xl mx-auto">
+            <div class="flex-1 flex flex-col gap-1.5">
+              <label class="text-xs font-bold text-gray-900 uppercase tracking-wider">Nombre del Rol *</label>
+              <input 
+                pInputText 
+                [(ngModel)]="rol.nombre" 
+                placeholder="Ej. INSTRUCTOR, GESTOR..." 
+                class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-4 !rounded-xl transition-all outline-none" 
+              />
             </div>
-            <div class="form-field">
-              <label>Apellidos</label>
-              <input pInputText placeholder="Apellidos" />
-            </div>
-            <div class="form-field">
-              <label>Rol</label>
-              <input pInputText placeholder="Instructor" />
-            </div>
-
-            <div class="form-field">
-              <label>Teléfono</label>
-              <input pInputText placeholder="Teléfono" />
-            </div>
-            <div class="form-field">
-              <label>Número Documento</label>
-              <input pInputText placeholder="Documento" />
-            </div>
-            <div class="form-field">
-              <label>Gmail</label>
-              <input pInputText placeholder="Correo" />
-            </div>
-
-            <div class="form-field">
-              <label>Contraseña</label>
-              <input pInputText type="password" placeholder="Contraseña" />
-            </div>
-
-            <div class="flex items-end col-span-2 pb-[2px]">
-              <button
-                pButton
-                label="Aceptar"
-                class="btn-primary"
-              ></button>
-            </div>
+            
+            <button
+              pButton
+              label="Guardar Rol"
+              icon="pi pi-check"
+              class="px-5 py-2.5 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl transition-all outline-none border-none cursor-pointer flex items-center gap-2 h-[42px]"
+              (click)="guardar()"
+              [disabled]="saving"
+            ></button>
           </div>
         </div>
 
@@ -232,7 +223,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
                    class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
                 
                 <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 border border-slate-200">
-                  <mat-icon class="text-slate-400">person</mat-icon>
+                  <i class="pi pi-user text-slate-400 text-lg"></i>
                 </div>
                 <div class="flex flex-col min-w-0 flex-1">
                   <span class="font-bold text-slate-800 text-sm truncate leading-tight">{{ u.nombre || u.nombreCompleto }}</span>
@@ -254,7 +245,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
             
             <div *ngIf="!usuarioSeleccionado" class="flex-1 flex flex-col items-center justify-center text-center p-8">
               <div class="w-16 h-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center mb-4">
-                <mat-icon class="text-slate-300 scale-150">fingerprint</mat-icon>
+                <i class="pi pi-key text-slate-300 text-2xl"></i>
               </div>
               <h4 class="text-slate-800 font-extrabold text-lg uppercase tracking-tight">Gestión de Accesos Granulares</h4>
               <p class="text-slate-400 max-w-sm text-sm mt-1">
@@ -267,7 +258,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
               <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4 flex-shrink-0">
                 <div class="flex items-center gap-3">
                   <div class="w-12 h-12 rounded-full bg-[#39A900]/10 flex items-center justify-center border border-[#39A900]/20">
-                    <mat-icon class="text-[#39A900] scale-125">verified_user</mat-icon>
+                    <i class="pi pi-verified text-[#39A900] text-xl"></i>
                   </div>
                   <div class="flex flex-col">
                     <div class="flex items-center gap-2">
@@ -296,7 +287,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
                   <!-- Iteramos por cada módulo / categoría de permisos -->
                   <div *ngFor="let key of getKeys(permisosAgrupados)" class="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-4">
                     <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200/50">
-                      <mat-icon class="text-slate-400 scale-90">folder_open</mat-icon>
+                      <i class="pi pi-folder-open text-slate-400 text-sm"></i>
                       <span class="text-xs font-black text-slate-700 uppercase tracking-widest">{{ key }}</span>
                     </div>
 
@@ -312,11 +303,10 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
                           <span *ngIf="p.heredado_de_rol" class="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase">
                             Heredado
                           </span>
-                          <!-- Material slide toggle para activación en tiempo real -->
-                          <mat-slide-toggle [checked]="p.tiene_permiso" 
-                                            (change)="togglePermiso(p, $event.checked)" 
-                                            color="primary">
-                          </mat-slide-toggle>
+                          <!-- PrimeNG toggleSwitch para activación en tiempo real -->
+                          <p-toggleSwitch [ngModel]="p.tiene_permiso" 
+                                          (onChange)="togglePermiso(p, $event.checked)">
+                          </p-toggleSwitch>
                         </div>
                       </div>
                     </div>
@@ -332,6 +322,46 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
         </div>
       </div>
     </div>
+
+    <!-- Dialog para Crear/Editar Rol -->
+    <p-dialog
+      header="Crear Nuevo Rol"
+      [(visible)]="displayRolDialog"
+      [modal]="true"
+      [style]="{ width: '400px' }"
+      [draggable]="false"
+      styleClass="custom-dialog-usuario-clean"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
+      [showHeader]="true"
+    >
+      <div class="flex flex-col gap-4 mt-2">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm font-bold text-gray-900">Nombre del Rol *</label>
+          <input 
+            pInputText 
+            [(ngModel)]="rol.nombre" 
+            placeholder="Ej. INSTRUCTOR, GESTOR" 
+            class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" 
+          />
+        </div>
+        
+        <div class="dialog-footer">
+          <button
+            pButton
+            label="Cancelar"
+            class="btn-cancelar"
+            (click)="displayRolDialog = false"
+          ></button>
+          <button
+            pButton
+            [label]="saving ? 'Guardando...' : 'Guardar'"
+            class="btn-guardar"
+            (click)="guardar()"
+            [disabled]="saving"
+          ></button>
+        </div>
+      </div>
+    </p-dialog>
   `
 })
 export class RolesComponent implements OnInit {
@@ -341,7 +371,7 @@ export class RolesComponent implements OnInit {
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
-  currentView: 'roles' | 'usuarios' | 'permisos' = 'usuarios';
+  currentView: 'roles' | 'usuarios' | 'permisos' = 'roles';
   
   roles: Rol[] = [];
   rolesFiltrados: Rol[] = [];
@@ -361,11 +391,17 @@ export class RolesComponent implements OnInit {
   usuarioSeleccionado: any = null;
   permisosAgrupados: any = {};
   loadingPermisos = false;
+  displayRolDialog = false;
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
     this.cargarRoles();
     this.cargarUsuarios();
+  }
+
+  openNewRolDialog() {
+    this.rol = { nombre: '' };
+    this.displayRolDialog = true;
   }
 
   setView(view: 'roles' | 'usuarios' | 'permisos') {
@@ -438,6 +474,7 @@ export class RolesComponent implements OnInit {
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Rol creado correctamente' });
         this.rol = { nombre: '' };
         this.saving = false;
+        this.displayRolDialog = false;
         this.cargarRoles();
       },
       error: (err) => {

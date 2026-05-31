@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -16,7 +16,6 @@ import { CategoriaService } from '../../infrastructure/services/categoria.servic
 interface Categoria {
   id?: number;
   nombre: string;
-  estado?: boolean;
 }
 
 @Component({
@@ -67,7 +66,6 @@ interface Categoria {
             <tr>
               <th style="width:120px">ID</th>
               <th>Nombre de la Categoría</th>
-              <th style="width:150px">Estado</th>
               <th style="width:150px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
@@ -75,13 +73,6 @@ interface Categoria {
             <tr>
               <td><span class="id-badge">#{{ cat.id }}</span></td>
               <td><span class="nombre-cell">{{ cat.nombre }}</span></td>
-              <td>
-                <p-tag
-                  [value]="cat.estado ? 'ACTIVA' : 'INACTIVA'"
-                  [severity]="cat.estado ? 'success' : 'danger'"
-                  styleClass="px-3 py-1 font-bold rounded-lg"
-                ></p-tag>
-              </td>
               <td>
                 <div class="action-buttons justify-center">
                   <button
@@ -104,7 +95,7 @@ interface Categoria {
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="4" class="empty-message">
+              <td colspan="3" class="empty-message">
                 <i class="pi pi-tag"></i>
                 <p>No se encontraron categorías registradas</p>
               </td>
@@ -122,6 +113,7 @@ interface Categoria {
       [draggable]="false"
       [resizable]="false"
       styleClass="form-dialog"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
       appendTo="body"
     >
       <div class="form-grid mt-2">
@@ -134,30 +126,21 @@ interface Categoria {
             placeholder="Ej: Insumos Médicos"
           />
         </div>
-        <div class="form-field">
-          <label>Estado de la Categoría</label>
-          <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <p-toggleSwitch [(ngModel)]="categoria.estado"></p-toggleSwitch>
-            <span class="font-bold text-sm" [class.text-green-600]="categoria.estado" [class.text-red-600]="!categoria.estado">
-               {{ categoria.estado ? 'CATEGORÍA ACTIVA' : 'CATEGORÍA INACTIVA' }}
-            </span>
-          </div>
-        </div>
       </div>
-      <ng-template pTemplate="footer">
+      <div class="dialog-footer">
         <button
           pButton
           label="Cancelar"
-          class="btn-secondary"
+          class="btn-cancelar"
           (click)="displayDialog = false"
         ></button>
         <button
           pButton
           label="Guardar Cambios"
-          class="btn-primary"
+          class="btn-guardar"
           (click)="guardar()"
         ></button>
-      </ng-template>
+      </div>
     </p-dialog>
   `
 })
@@ -165,6 +148,7 @@ export class CategoriaComponent implements OnInit {
   private categoriaService = inject(CategoriaService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
+  private cdr = inject(ChangeDetectorRef);
   categorias: Categoria[] = [];
   categoriasFiltradas: Categoria[] = [];
   filtro = '';
@@ -178,12 +162,22 @@ export class CategoriaComponent implements OnInit {
     this.categoriaService.getCategorias().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.categorias = d;
-        this.categoriasFiltradas = d;
+        setTimeout(() => {
+          this.categorias = d.map((c: any) => ({
+            ...c,
+            id: c.id_categoria ?? c.id,
+            nombre: c.nombre
+          }));
+          this.categoriasFiltradas = [...this.categorias];
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.categorias = [];
-        this.categoriasFiltradas = [];
+        setTimeout(() => {
+          this.categorias = [];
+          this.categoriasFiltradas = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }
@@ -194,7 +188,7 @@ export class CategoriaComponent implements OnInit {
     );
   }
   getNuevaCategoria(): Categoria {
-    return { nombre: '', estado: true };
+    return { nombre: '' };
   }
   openNew() {
     this.esNuevo = true;

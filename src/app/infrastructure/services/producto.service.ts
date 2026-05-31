@@ -33,4 +33,8 @@ export class ProductoService {
   getAllItems(): Observable<any> {
     return this.api.get<any>('/items');
   }
+
+  crearItem(data: any): Observable<any> {
+    return this.api.post<any>('/items', data);
+  }
 }

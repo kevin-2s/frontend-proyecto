@@ -167,17 +167,155 @@ $bg-soft:    #F8FAFC;
   }
 }
 
-/* Paginator */
+/* Paginator styling override */
 .p-paginator {
-  background: #fff !important;
-  padding: 0.75rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+  background: #ffffff !important;
   border-top: 1px solid $border !important;
+  padding: 0.85rem 1.5rem !important;
   border-radius: 0 0 14px 14px !important;
+  gap: 0.35rem !important;
 
+  .p-paginator-first,
+  .p-paginator-prev,
+  .p-paginator-next,
+  .p-paginator-last,
+  .p-paginator-page {
+    min-width: 2.25rem !important;
+    height: 2.25rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: #475569 !important; /* slate-600 */
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+    &:hover:not(.p-disabled):not(.p-highlight) {
+      background: #f1f5f9 !important; /* slate-100 */
+      color: #0f172a !important; /* slate-900 */
+      border-color: #e2e8f0 !important; /* slate-200 */
+      transform: translateY(-0.5px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $green !important;
+      outline-offset: 2px !important;
+    }
+
+    &.p-disabled {
+      opacity: 0.35 !important;
+      cursor: not-allowed !important;
+    }
+  }
+
+  /* Highlighted Page Button */
   .p-paginator-page.p-highlight {
     background: $navy !important;
-    color: #fff !important;
-    border-radius: 8px !important;
+    color: #ffffff !important;
+    border-color: $navy !important;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.15), 0 2px 4px -1px rgba(15, 23, 42, 0.1) !important;
+  }
+
+  /* Pages Wrapper */
+  .p-paginator-pages {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+  }
+
+  /* Navigation Buttons Icon Overrides (replacing raw characters) */
+  .p-paginator-first,
+  .p-paginator-prev,
+  .p-paginator-next,
+  .p-paginator-last {
+    position: relative !important;
+    font-size: 0 !important;
+    color: transparent !important;
+
+    &::before {
+      font-family: 'primeicons' !important;
+      font-size: 0.9rem !important;
+      color: #475569 !important;
+      display: inline-block !important;
+      font-style: normal !important;
+      font-weight: normal !important;
+      line-height: 1 !important;
+      -webkit-font-smoothing: antialiased !important;
+      transition: color 0.15s ease !important;
+    }
+
+    &:hover:not(.p-disabled)::before {
+      color: #0f172a !important;
+    }
+  }
+
+  .p-paginator-first::before {
+    content: "\e92d" !important; /* pi-angle-double-left */
+  }
+
+  .p-paginator-prev::before {
+    content: "\e931" !important; /* pi-angle-left */
+  }
+
+  .p-paginator-next::before {
+    content: "\e932" !important; /* pi-angle-right */
+  }
+
+  .p-paginator-last::before {
+    content: "\e92e" !important; /* pi-angle-double-right */
+  }
+
+  /* Selector de filas por página (Rows per page dropdown) */
+  .p-paginator-rpp-options,
+  .p-select,
+  .p-dropdown {
+    margin-left: auto !important; /* push it to the right */
+    border-radius: 10px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+    padding: 0 0.5rem !important;
+    height: 2.25rem !important;
+    width: auto !important;
+    min-width: 4rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      border-color: #cbd5e1 !important;
+      background: #ffffff !important;
+    }
+
+    .p-select-label,
+    .p-dropdown-label {
+      padding: 0 0.25rem !important;
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #334155 !important;
+    }
+
+    .p-select-trigger,
+    .p-dropdown-trigger {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 1.5rem !important;
+    }
   }
 }
 

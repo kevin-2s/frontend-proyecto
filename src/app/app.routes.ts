@@ -31,12 +31,21 @@ export const routes: Routes = [
         loadComponent: () => import('./presentation/roles/roles.component').then(m => m.RolesComponent)
       },
       {
-        path: 'productos',
-        loadComponent: () => import('./presentation/productos/productos.component').then(m => m.ProductosComponent)
-      },
-      {
-        path: 'categoria',
-        loadComponent: () => import('./presentation/categoria/categoria.component').then(m => m.CategoriaComponent)
+        path: 'inventario',
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./presentation/inventario/inventario.component').then(m => m.InventarioComponent)
+          },
+          {
+            path: 'productos',
+            loadComponent: () => import('./presentation/productos/productos.component').then(m => m.ProductosComponent)
+          },
+          {
+            path: 'categoria',
+            loadComponent: () => import('./presentation/categoria/categoria.component').then(m => m.CategoriaComponent)
+          }
+        ]
       },
       {
         path: 'fichas',
@@ -45,10 +54,6 @@ export const routes: Routes = [
       {
         path: 'sitios',
         loadComponent: () => import('./presentation/sitios/sitios.component').then(m => m.SitiosComponent)
-      },
-      {
-        path: 'inventario',
-        loadComponent: () => import('./presentation/inventario/inventario.component').then(m => m.InventarioComponent)
       },
       {
         path: 'solicitudes',

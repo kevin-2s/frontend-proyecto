@@ -759,7 +759,7 @@ export class ProductosComponent implements OnInit {
       productoData.cantidad = Number(formValue.cantidad);
     }
 
-    console.log('Datos enviados al backend:', JSON.stringify(productoData));
+    //console.log('Datos enviados al backend:', JSON.stringify(productoData));
 
     if (this.esNuevo) {
       this.productoService.crearProducto(productoData).subscribe({

@@ -150,14 +150,14 @@ interface Solicitud {
           </span>
         </div>
       </div>
-      <ng-template pTemplate="footer">
+      <div class="dialog-footer">
         <button
           pButton
           label="Entendido"
-          class="btn-primary"
+          class="btn-cancelar"
           (click)="displayDialog = false"
         ></button>
-      </ng-template>
+      </div>
     </p-dialog>
   `
 })

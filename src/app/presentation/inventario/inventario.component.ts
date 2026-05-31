@@ -13,7 +13,9 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InventarioService } from '../../infrastructure/services/inventario.service';
 import { ProductoService } from '../../infrastructure/services/producto.service';
+import { CategoriaService } from '../../infrastructure/services/categoria.service';
 import { SitioService } from '../../infrastructure/services/sitio.service';
+import { forkJoin } from 'rxjs';
 
 interface Inventario {
   id_inventario?: number;
@@ -79,12 +81,13 @@ interface Inventario {
             />
           </div>
           <button
-            pButton
-            label="Registrar Entrada"
-            icon="pi pi-plus"
+            type="button"
+            class="px-4 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none border-none h-[42px]"
             (click)="openNew()"
-            class="btn-add"
-          ></button>
+          >
+            <i class="pi pi-plus text-sm"></i>
+            Registrar Entrada
+          </button>
         </div>
       </div>
 
@@ -99,10 +102,11 @@ interface Inventario {
         >
           <ng-template pTemplate="header">
             <tr>
-              <th style="width:100px">ID</th>
-              <th>Código SKU (Item)</th>
+              <th style="width:100px">ID Prod</th>
+              <th>Código SKU</th>
               <th>Producto</th>
               <th>Ubicación / Sitio</th>
+              <th style="width:120px" class="text-center">Cantidad</th>
               <th style="width:160px">Estado</th>
               <th style="width:140px" class="text-center">Acciones</th>
             </tr>
@@ -110,15 +114,16 @@ interface Inventario {
 
           <ng-template pTemplate="body" let-inv>
             <tr>
-              <td><span class="text-slate-400 text-xs font-bold">#{{ inv.id_inventario }}</span></td>
-              <td><span class="font-semibold text-slate-800">{{ inv.item?.codigo_sku || 'Sin SKU' }}</span></td>
-              <td><span class="text-slate-600 font-medium">{{ inv.item?.producto?.nombre || 'Desconocido' }}</span></td>
+              <td><span class="text-slate-400 text-xs font-bold">#{{ inv.id_producto }}</span></td>
+              <td><span class="sku-cell">{{ inv.codigo_sku }}</span></td>
+              <td><span class="text-slate-600 font-medium">{{ inv.nombre_producto }}</span></td>
               <td>
                 <span class="flex items-center gap-1.5 text-slate-500">
                   <i class="pi pi-map-marker text-xs text-slate-400"></i>
-                  {{ inv.sitio?.nombre || 'Sin Ubicación' }}
+                  {{ inv.nombre_sitio }}
                 </span>
               </td>
+              <td class="text-center font-bold text-slate-800">{{ inv.cantidad }}</td>
               <td>
                 <span class="status-badge" [ngClass]="getStatusClass(inv.estado)">
                   {{ inv.estado }}
@@ -127,21 +132,23 @@ interface Inventario {
               <td>
                 <div class="action-buttons justify-center">
                   <button
-                    pButton
-                    icon="pi pi-pencil"
+                    type="button"
+                    (click)="editar(inv)"
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
                     pTooltip="Modificar Estado"
                     tooltipPosition="top"
-                    (click)="editar(inv)"
-                    class="btn-table-action btn-editor"
-                  ></button>
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
                   <button
-                    pButton
-                    icon="pi pi-trash"
-                    pTooltip="Dar de Baja / Retirar"
-                    tooltipPosition="top"
+                    type="button"
                     (click)="eliminar(inv)"
-                    class="btn-table-action btn-eliminar"
-                  ></button>
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
+                    pTooltip="Dar de Baja"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -149,9 +156,9 @@ interface Inventario {
 
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="6" class="empty-message">
-                <i class="pi pi-warehouse"></i>
-                <p>No se encontraron registros de inventario</p>
+              <td colspan="7" class="empty-message py-20 text-center">
+                <i class="pi pi-warehouse text-5xl text-slate-300 opacity-50 mb-3 block"></i>
+                <p class="text-slate-400 font-bold text-lg">No se encontraron registros de inventario</p>
               </td>
             </tr>
           </ng-template>
@@ -164,55 +171,158 @@ interface Inventario {
       [header]="esNuevo ? '✨ Registrar Entrada en Inventario' : '📝 Actualizar Estado de Inventario'"
       [(visible)]="displayDialog"
       [modal]="true"
-      [style]="{ width: '480px' }"
+      [style]="{ width: '600px', maxWidth: '90vw' }"
       [draggable]="false"
       [resizable]="false"
       styleClass="form-dialog"
       maskStyleClass="backdrop-blur-sm bg-black/40"
       appendTo="body"
     >
-      <div class="form-grid mt-4">
-        <!-- Selector de Item (Only on Create) -->
-        <div class="form-field" *ngIf="esNuevo">
-          <label class="text-sm font-bold text-gray-900">Seleccionar Item (SKU - Producto) *</label>
-          <p-select
-            [options]="itemsDisponibles"
-            [(ngModel)]="inventarioEdit.id_item"
-            optionLabel="displayLabel"
-            optionValue="id_item"
-            placeholder="Selecciona un item disponible"
-            [filter]="true"
-            filterBy="displayLabel"
-            styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all"
-            [style]="{'width':'100%'}"
-            appendTo="body"
-          ></p-select>
+      <div class="form-grid mt-2 max-h-[70vh] overflow-y-auto">
+        <!-- SECCIÓN: REGISTRO DE NUEVO PRODUCTO (Solo visible al crear) -->
+        <div class="flex flex-col gap-4" *ngIf="esNuevo">
+          <span class="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1">Detalles del Nuevo Producto</span>
+          
+          <div class="form-field">
+            <label>Nombre del Producto *</label>
+            <input pInputText [(ngModel)]="nuevoProducto.nombre" placeholder="Ej: Martillo" />
+          </div>
+
+          <div class="form-field">
+            <label>Descripción</label>
+            <input pInputText [(ngModel)]="nuevoProducto.descripcion" placeholder="Ej: Martillo de acero templado" />
+          </div>
+
+          <div class="product-form-row">
+            <div class="form-field">
+              <label>SKU (Código único) *</label>
+              <input pInputText [(ngModel)]="nuevoProducto.SKU" placeholder="Ej: MAR-001" />
+            </div>
+            <div class="form-field">
+              <label>Código UNSPSC</label>
+              <input pInputText [(ngModel)]="nuevoProducto.codigo_unspsc" placeholder="Ej: 27111600" />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>Categoría del Producto *</label>
+            <div class="input-with-button">
+              <p-select
+                [options]="categorias"
+                [(ngModel)]="nuevoProducto.id_categoria"
+                optionLabel="nombre"
+                optionValue="id_categoria"
+                placeholder="Seleccione categoría"
+                styleClass="w-full"
+                appendTo="body"
+              ></p-select>
+              <button
+                type="button"
+                class="btn-inline-add"
+                (click)="displayAddCategoria = true"
+                pTooltip="Agregar categoría"
+                tooltipPosition="top"
+              >
+                <i class="pi pi-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="product-form-row">
+            <div class="form-field">
+              <label>Tipo de Material *</label>
+              <div class="input-with-button">
+                <p-select
+                  [options]="tiposMaterial"
+                  [(ngModel)]="nuevoProducto.tipo_material"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccione tipo"
+                  styleClass="w-full"
+                  appendTo="body"
+                ></p-select>
+                <button
+                  type="button"
+                  class="btn-inline-add"
+                  (click)="displayAddTipoMaterial = true"
+                  pTooltip="Agregar tipo de material"
+                  tooltipPosition="top"
+                >
+                  <i class="pi pi-plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="form-field">
+              <label>Unidad de Medida *</label>
+              <div class="input-with-button">
+                <p-select
+                  [options]="unidadesMedida"
+                  [(ngModel)]="nuevoProducto.unidad_medida"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccione unidad"
+                  styleClass="w-full"
+                  appendTo="body"
+                ></p-select>
+                <button
+                  type="button"
+                  class="btn-inline-add"
+                  (click)="displayAddUnidadMedida = true"
+                  pTooltip="Agregar unidad de medida"
+                  tooltipPosition="top"
+                >
+                  <i class="pi pi-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-form-row">
+            <div class="form-field">
+              <label>Cantidad Inicial *</label>
+              <input type="number" pInputText [(ngModel)]="nuevoProducto.cantidad" min="1" />
+            </div>
+            <div class="form-field">
+              <label>Stock Mínimo Alertas *</label>
+              <input type="number" pInputText [(ngModel)]="nuevoProducto.stock_minimo" min="1" />
+            </div>
+          </div>
+
+          <div class="form-field flex flex-row items-center gap-2 py-1">
+            <input type="checkbox" [(ngModel)]="nuevoProducto.es_psd" id="es_psd" class="w-4 h-4 cursor-pointer" />
+            <label for="es_psd" class="text-xs font-bold text-slate-800 cursor-pointer select-none">¿Es un elemento de control de fecha (PSD)?</label>
+          </div>
+
+          <div class="form-field" *ngIf="nuevoProducto.es_psd">
+            <label>Fecha de Vencimiento *</label>
+            <input type="date" pInputText [(ngModel)]="nuevoProducto.fecha_vencimiento" />
+          </div>
         </div>
 
-        <!-- Static Item Info (Only on Edit) -->
-        <div class="form-field p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl" *ngIf="!esNuevo">
+        <!-- MODO EDICIÓN: INFORMACIÓN ESTÁTICA -->
+        <div class="form-field p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-1" *ngIf="!esNuevo">
           <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Item de Inventario</div>
           <div class="text-sm font-bold text-slate-900">{{ inventarioEdit.item?.codigo_sku }}</div>
           <div class="text-xs text-slate-500 mt-0.5">{{ inventarioEdit.item?.producto?.nombre }}</div>
         </div>
 
-        <!-- Selector de Sitio / Ubicación (Only on Create) -->
+        <!-- SECCIÓN: DATOS DE UBICACIÓN Y ESTADO -->
+        <span class="text-xs font-black text-slate-400 uppercase tracking-widest block mt-2 mb-1" *ngIf="esNuevo">Detalles del Inventario</span>
+
         <div class="form-field" *ngIf="esNuevo">
-          <label class="text-sm font-bold text-gray-900">Ubicación / Sitio de Almacenamiento *</label>
+          <label>Ubicación / Sitio de Almacenamiento *</label>
           <p-select
             [options]="sitios"
             [(ngModel)]="inventarioEdit.id_sitio"
             optionLabel="nombre"
             optionValue="id_sitio"
             placeholder="Selecciona un sitio"
-            styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all"
-            [style]="{'width':'100%'}"
+            styleClass="w-full"
             appendTo="body"
           ></p-select>
         </div>
 
-        <!-- Static Sitio Info (Only on Edit) -->
-        <div class="form-field p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl" *ngIf="!esNuevo">
+        <div class="form-field p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-1" *ngIf="!esNuevo">
           <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ubicación / Sitio</div>
           <div class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
             <i class="pi pi-map-marker text-slate-400"></i>
@@ -220,55 +330,206 @@ interface Inventario {
           </div>
         </div>
 
-        <!-- Selector de Estado -->
         <div class="form-field">
-          <label class="text-sm font-bold text-gray-900">Estado de Disponibilidad *</label>
+          <label>Estado de Disponibilidad *</label>
           <p-select
             [options]="estadosDisponibles"
             [(ngModel)]="inventarioEdit.estado"
             placeholder="Selecciona un estado"
-            styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all"
-            [style]="{'width':'100%'}"
+            styleClass="w-full"
             appendTo="body"
           ></p-select>
         </div>
       </div>
 
-      <ng-template pTemplate="footer">
+      <div class="dialog-footer">
         <button
           pButton
           label="Cancelar"
-          class="btn-secondary"
+          class="btn-cancelar"
           (click)="displayDialog = false"
         ></button>
         <button
           pButton
-          [label]="esNuevo ? 'Registrar' : 'Actualizar'"
-          class="btn-primary"
+          [label]="saving ? 'Guardando...' : (esNuevo ? 'Registrar' : 'Actualizar')"
+          class="btn-guardar"
           (click)="guardar()"
+          [disabled]="saving"
         ></button>
-      </ng-template>
+      </div>
+    </p-dialog>
+
+    <!-- Diálogo para agregar nueva Categoría -->
+    <p-dialog
+      header="✨ Registrar Nueva Categoría"
+      [(visible)]="displayAddCategoria"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '400px' }"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
+      appendTo="body"
+    >
+      <div class="flex flex-col gap-4 mt-2">
+        <div class="form-field flex flex-col gap-1.5">
+          <label class="text-sm font-bold text-gray-900">Nombre de la Categoría *</label>
+          <input
+            pInputText
+            [(ngModel)]="nuevoNombreCategoria"
+            placeholder="Ej: Herramientas"
+            class="w-full !bg-gray-100 !py-2.5 !rounded-md outline-none"
+          />
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button
+          class="px-5 py-2 text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors outline-none cursor-pointer border-none bg-transparent"
+          (click)="displayAddCategoria = false; nuevoNombreCategoria = ''"
+        >
+          Cancelar
+        </button>
+        <button
+          class="px-5 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-md transition-all outline-none disabled:opacity-50 cursor-pointer border-none"
+          [disabled]="!nuevoNombreCategoria.trim()"
+          (click)="guardarNuevaCategoria()"
+        >
+          Guardar
+        </button>
+      </div>
+    </p-dialog>
+
+    <!-- Diálogo para agregar nuevo Tipo de Material -->
+    <p-dialog
+      header="✨ Registrar Tipo de Material"
+      [(visible)]="displayAddTipoMaterial"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '400px' }"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
+      appendTo="body"
+    >
+      <div class="flex flex-col gap-4 mt-2">
+        <div class="form-field flex flex-col gap-1.5">
+          <label class="text-sm font-bold text-gray-900">Nombre del Tipo *</label>
+          <input
+            pInputText
+            [(ngModel)]="nuevoNombreTipoMaterial"
+            placeholder="Ej: CONSUMO, DEVOLUTIVO..."
+            class="w-full !bg-gray-100 !py-2.5 !rounded-md outline-none"
+          />
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button
+          class="px-5 py-2 text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors outline-none cursor-pointer border-none bg-transparent"
+          (click)="displayAddTipoMaterial = false; nuevoNombreTipoMaterial = ''"
+        >
+          Cancelar
+        </button>
+        <button
+          class="px-5 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-md transition-all outline-none disabled:opacity-50 cursor-pointer border-none"
+          [disabled]="!nuevoNombreTipoMaterial.trim()"
+          (click)="guardarNuevoTipoMaterial()"
+        >
+          Guardar
+        </button>
+      </div>
+    </p-dialog>
+
+    <!-- Diálogo para agregar nueva Unidad de Medida -->
+    <p-dialog
+      header="✨ Registrar Unidad de Medida"
+      [(visible)]="displayAddUnidadMedida"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '400px' }"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
+      appendTo="body"
+    >
+      <div class="flex flex-col gap-4 mt-2">
+        <div class="form-field flex flex-col gap-1.5">
+          <label class="text-sm font-bold text-gray-900">Nombre de la Unidad *</label>
+          <input
+            pInputText
+            [(ngModel)]="nuevoNombreUnidadMedida"
+            placeholder="Ej: UNIDAD, PAR, METRO..."
+            class="w-full !bg-gray-100 !py-2.5 !rounded-md outline-none"
+          />
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button
+          class="px-5 py-2 text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors outline-none cursor-pointer border-none bg-transparent"
+          (click)="displayAddUnidadMedida = false; nuevoNombreUnidadMedida = ''"
+        >
+          Cancelar
+        </button>
+        <button
+          class="px-5 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-md transition-all outline-none disabled:opacity-50 cursor-pointer border-none"
+          [disabled]="!nuevoNombreUnidadMedida.trim()"
+          (click)="guardarNuevaUnidadMedida()"
+        >
+          Guardar
+        </button>
+      </div>
     </p-dialog>
   `
 })
 export class InventarioComponent implements OnInit {
   private inventarioService = inject(InventarioService);
   private productoService = inject(ProductoService);
+  private categoriaService = inject(CategoriaService);
   private sitioService = inject(SitioService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
 
   inventario: Inventario[] = [];
-  inventarioFiltrado: Inventario[] = [];
+  inventarioRaw: Inventario[] = [];
+  inventarioAgrupado: any[] = [];
+  inventarioFiltrado: any[] = [];
+  grupoEditSelected: any = null;
   sitios: any[] = [];
+  categorias: any[] = [];
   itemsDisponibles: any[] = [];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
+  saving = false;
   inventarioEdit: Inventario = this.getNuevoInventario();
 
   estadosDisponibles = ['DISPONIBLE', 'BAJO STOCK', 'SIN STOCK', 'PRESTADO', 'MANTENIMIENTO', 'RESERVADO'];
+
+  displayAddCategoria = false;
+  displayAddTipoMaterial = false;
+  displayAddUnidadMedida = false;
+
+  nuevoNombreCategoria = '';
+  nuevoNombreTipoMaterial = '';
+  nuevoNombreUnidadMedida = '';
+
+  nuevoProducto = this.getLimpiarNuevoProducto();
+
+  tiposMaterial = [
+    { label: 'CONSUMO', value: 'CONSUMO' },
+    { label: 'DEVOLUTIVO', value: 'DEVOLUTIVO' },
+    { label: 'SOFTWARE', value: 'SOFTWARE' },
+    { label: 'EPP', value: 'EPP' }
+  ];
+
+  unidadesMedida = [
+    { label: 'UNIDAD', value: 'UNIDAD' },
+    { label: 'PAR', value: 'PAR' },
+    { label: 'KIT', value: 'KIT' },
+    { label: 'METRO', value: 'METRO' },
+    { label: 'LITRO', value: 'LITRO' },
+    { label: 'KILO', value: 'KILO' }
+  ];
 
   ngOnInit() {
     this.cargarDatos();
@@ -277,64 +538,97 @@ export class InventarioComponent implements OnInit {
   cargarDatos() {
     this.cargarInventario();
     this.cargarSitios();
+    this.cargarCategorias();
   }
 
   cargarInventario() {
     this.inventarioService.getInventarios().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.inventario = d;
-        this.inventarioFiltrado = d;
-        this.cargarItemsDisponibles();
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.inventarioRaw = d;
+          this.agruparInventario(d);
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.inventario = [];
-        this.inventarioFiltrado = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.inventarioRaw = [];
+          this.inventarioAgrupado = [];
+          this.inventarioFiltrado = [];
+          this.cdr.detectChanges();
+        });
       },
     });
+  }
+
+  agruparInventario(data: Inventario[]) {
+    const groups: { [key: string]: any } = {};
+
+    data.forEach((inv) => {
+      const prodId = inv.item?.producto?.id_producto || 0;
+      const sitioId = inv.sitio?.id_sitio || 0;
+      const key = `${prodId}_${sitioId}`;
+
+      if (!groups[key]) {
+        groups[key] = {
+          id_producto: prodId,
+          codigo_sku: inv.item?.codigo_sku || 'Sin SKU',
+          nombre_producto: inv.item?.producto?.nombre || 'Desconocido',
+          id_sitio: sitioId,
+          nombre_sitio: inv.sitio?.nombre || 'Sin Ubicación',
+          cantidad: 0,
+          estado: inv.estado,
+          items: []
+        };
+      }
+
+      groups[key].cantidad++;
+      groups[key].items.push(inv);
+      groups[key].estado = inv.estado;
+    });
+
+    this.inventarioAgrupado = Object.values(groups);
+    this.filtrar();
   }
 
   cargarSitios() {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.sitios = d.map((s: any) => ({
-          ...s,
-          id_sitio: s.id_sitio ?? s.id
-        }));
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.sitios = d.map((s: any) => ({
+            ...s,
+            id_sitio: s.id_sitio ?? s.id
+          }));
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  cargarCategorias() {
+    this.categoriaService.getCategorias().subscribe({
+      next: (res: any) => {
+        setTimeout(() => {
+          this.categorias = res?.data || res || [];
+          this.cdr.detectChanges();
+        });
       }
     });
   }
 
   cargarItemsDisponibles() {
-    this.productoService.getAllItems().subscribe({
-      next: (res: any) => {
-        const allItems = res?.data || res || [];
-        
-        // Filter out items that are already linked in the inventory
-        const existingItemIds = new Set(this.inventario.map(inv => inv.id_item));
-        
-        this.itemsDisponibles = allItems
-          .filter((item: any) => !existingItemIds.has(item.id_item))
-          .map((item: any) => ({
-            ...item,
-            displayLabel: `${item.codigo_sku} - ${item.producto?.nombre || 'Sin nombre'}`
-          }));
-        setTimeout(() => this.cdr.detectChanges());
-      }
-    });
+    // Stub: No longer used as selection is unified
   }
 
   filtrar() {
     const f = this.filtro.toLowerCase();
-    this.inventarioFiltrado = this.inventario.filter(
+    this.inventarioFiltrado = this.inventarioAgrupado.filter(
       (i) =>
-        i.item?.codigo_sku?.toLowerCase().includes(f) ||
-        i.item?.producto?.nombre?.toLowerCase().includes(f) ||
-        i.sitio?.nombre?.toLowerCase().includes(f) ||
+        i.codigo_sku?.toLowerCase().includes(f) ||
+        i.nombre_producto?.toLowerCase().includes(f) ||
+        i.nombre_sitio?.toLowerCase().includes(f) ||
         i.estado?.toLowerCase().includes(f)
     );
   }
@@ -355,91 +649,278 @@ export class InventarioComponent implements OnInit {
     };
   }
 
+  getLimpiarNuevoProducto() {
+    return {
+      nombre: '',
+      descripcion: '',
+      codigo_unspsc: '',
+      SKU: '',
+      tipo_material: 'CONSUMO',
+      unidad_medida: 'UNIDAD',
+      id_categoria: null as number | null,
+      cantidad: 1,
+      stock_minimo: 1,
+      es_psd: false,
+      fecha_vencimiento: ''
+    };
+  }
+
   openNew() {
     this.esNuevo = true;
     this.inventarioEdit = this.getNuevoInventario();
-    this.cargarItemsDisponibles();
+    this.nuevoProducto = this.getLimpiarNuevoProducto();
+    this.cargarCategorias();
     this.displayDialog = true;
   }
 
-  editar(inv: Inventario) {
+  editar(inv: any) {
     this.esNuevo = false;
-    this.inventarioEdit = { ...inv };
+    this.inventarioEdit = {
+      estado: inv.estado,
+      id_item: inv.items[0]?.id_item,
+      id_sitio: inv.id_sitio,
+      id_inventario: inv.items[0]?.id_inventario,
+      item: inv.items[0]?.item,
+      sitio: inv.items[0]?.sitio
+    };
+    this.grupoEditSelected = inv;
     this.displayDialog = true;
   }
 
   guardar() {
-    if (!this.inventarioEdit.id_item || !this.inventarioEdit.id_sitio || !this.inventarioEdit.estado) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'Por favor complete todos los campos requeridos',
-      });
-      return;
-    }
-
-    const payload = {
-      estado: this.inventarioEdit.estado,
-      id_item: Number(this.inventarioEdit.id_item),
-      id_sitio: Number(this.inventarioEdit.id_sitio)
-    };
-
     if (this.esNuevo) {
-      this.inventarioService.crearInventario(payload).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Entrada registrada en inventario correctamente',
+      // Registrar nuevo producto y sus items en inventario
+      if (!this.nuevoProducto.nombre || !this.nuevoProducto.SKU || !this.nuevoProducto.id_categoria) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Advertencia',
+          detail: 'Nombre, SKU y Categoría son requeridos para el producto',
+        });
+        return;
+      }
+      if (!this.inventarioEdit.id_sitio || !this.inventarioEdit.estado) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Advertencia',
+          detail: 'Ubicación y Estado son requeridos para registrar en inventario',
+        });
+        return;
+      }
+
+      this.saving = true;
+      const productPayload = {
+        nombre: this.nuevoProducto.nombre,
+        descripcion: this.nuevoProducto.descripcion || undefined,
+        codigo_unspsc: this.nuevoProducto.codigo_unspsc,
+        SKU: this.nuevoProducto.SKU,
+        tipo_material: this.nuevoProducto.tipo_material,
+        unidad_medida: this.nuevoProducto.unidad_medida,
+        id_categoria: Number(this.nuevoProducto.id_categoria),
+        cantidad: Number(this.nuevoProducto.cantidad),
+        stock_minimo: Number(this.nuevoProducto.stock_minimo),
+        es_psd: this.nuevoProducto.es_psd,
+        fecha_vencimiento: this.nuevoProducto.es_psd && this.nuevoProducto.fecha_vencimiento ? new Date(this.nuevoProducto.fecha_vencimiento) : undefined
+      };
+
+      this.productoService.crearProducto(productPayload).subscribe({
+        next: (res: any) => {
+          const itemsGenerados = res?.data?.items_generados || [];
+          if (itemsGenerados.length === 0) {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Producto registrado correctamente, pero no se generaron items en el servidor',
+            });
+            this.displayDialog = false;
+            this.cargarDatos();
+            this.saving = false;
+            return;
+          }
+
+          // Register all generated items in inventory
+          const creations = itemsGenerados.map((item: any) => {
+            return this.inventarioService.crearInventario({
+              estado: this.inventarioEdit.estado,
+              id_item: Number(item.id_item),
+              id_sitio: Number(this.inventarioEdit.id_sitio)
+            });
           });
-          this.displayDialog = false;
-          this.cargarInventario();
+
+          forkJoin(creations).subscribe({
+            next: () => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Éxito',
+                detail: `Producto y ${itemsGenerados.length} items registrados en inventario exitosamente`,
+              });
+              this.displayDialog = false;
+              this.cargarDatos();
+              this.saving = false;
+            },
+            error: () => {
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'Éxito parcial',
+                detail: 'Producto creado, pero falló el registro de items en inventario',
+              });
+              this.displayDialog = false;
+              this.cargarDatos();
+              this.saving = false;
+            }
+          });
         },
-        error: (err) => {
+        error: (err: any) => {
+          this.saving = false;
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo registrar la entrada en inventario: ' + (err.error?.message || 'Error del servidor'),
+            detail: 'No se pudo registrar el producto: ' + (err.error?.message || 'Error del servidor'),
           });
-        },
+        }
       });
+
     } else {
-      this.inventarioService.actualizarInventario(this.inventarioEdit.id_inventario!, payload).subscribe({
+      // Registrar item existente
+      if (!this.inventarioEdit.id_sitio || !this.inventarioEdit.estado) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Advertencia',
+          detail: 'Por favor complete todos los campos requeridos',
+        });
+        return;
+      }
+
+      this.saving = true;
+      const updates = this.grupoEditSelected.items.map((item: any) => {
+        return this.inventarioService.actualizarInventario(item.id_inventario, {
+          estado: this.inventarioEdit.estado,
+          id_item: Number(item.id_item),
+          id_sitio: Number(this.inventarioEdit.id_sitio)
+        });
+      });
+
+      forkJoin(updates).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
             summary: 'Éxito',
-            detail: 'Estado de inventario actualizado correctamente',
+            detail: 'Estado de inventario actualizado correctamente para el grupo',
           });
           this.displayDialog = false;
           this.cargarInventario();
+          this.saving = false;
         },
         error: () => {
+          this.saving = false;
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo actualizar el estado de inventario',
+            detail: 'No se pudo actualizar el estado de inventario del grupo',
           });
         },
       });
     }
   }
 
-  eliminar(inv: Inventario) {
+  guardarNuevaCategoria() {
+    const nombre = this.nuevoNombreCategoria.trim();
+    if (!nombre) return;
+
+    this.categoriaService.crearCategoria({ nombreCat: nombre }).subscribe({
+      next: (res: any) => {
+        const newCat = res?.data || res;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Categoría agregada correctamente',
+        });
+        
+        // Reload categories and select the new one
+        this.categoriaService.getCategorias().subscribe({
+          next: (catRes: any) => {
+            this.categorias = catRes?.data || catRes || [];
+            const found = this.categorias.find(
+              (c) => c.nombre.toLowerCase() === nombre.toLowerCase() || c.id_categoria === newCat?.id_categoria
+            );
+            if (found) {
+              this.nuevoProducto.id_categoria = found.id_categoria;
+            } else if (newCat?.id_categoria) {
+              this.nuevoProducto.id_categoria = newCat.id_categoria;
+            }
+            this.displayAddCategoria = false;
+            this.nuevoNombreCategoria = '';
+            setTimeout(() => this.cdr.detectChanges());
+          },
+          error: () => {
+            this.displayAddCategoria = false;
+            this.nuevoNombreCategoria = '';
+          }
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo crear la categoría',
+        });
+      }
+    });
+  }
+
+  guardarNuevoTipoMaterial() {
+    const val = this.nuevoNombreTipoMaterial.trim().toUpperCase();
+    if (!val) return;
+
+    const exists = this.tiposMaterial.some(t => t.value === val);
+    if (!exists) {
+      this.tiposMaterial = [...this.tiposMaterial, { label: val, value: val }];
+    }
+    
+    this.nuevoProducto.tipo_material = val;
+    this.displayAddTipoMaterial = false;
+    this.nuevoNombreTipoMaterial = '';
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Tipo de material agregado',
+    });
+  }
+
+  guardarNuevaUnidadMedida() {
+    const val = this.nuevoNombreUnidadMedida.trim().toUpperCase();
+    if (!val) return;
+
+    const exists = this.unidadesMedida.some(u => u.value === val);
+    if (!exists) {
+      this.unidadesMedida = [...this.unidadesMedida, { label: val, value: val }];
+    }
+
+    this.nuevoProducto.unidad_medida = val;
+    this.displayAddUnidadMedida = false;
+    this.nuevoNombreUnidadMedida = '';
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Unidad de medida agregada',
+    });
+  }
+
+  eliminar(inv: any) {
     this.confirmationService.confirm({
-      message: `¿Estás seguro de que deseas retirar del inventario el item ${inv.item?.codigo_sku}?`,
+      message: `¿Estás seguro de que deseas retirar del inventario todos los ${inv.cantidad} items de "${inv.nombre_producto}" en ${inv.nombre_sitio}?`,
       header: 'Confirmar Retiro de Inventario',
       icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sí, retirar',
+      acceptLabel: 'Sí, retirar todos',
       rejectLabel: 'Cancelar',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.inventarioService.eliminarInventario(inv.id_inventario!).subscribe({
+        const deletions = inv.items.map((item: any) => this.inventarioService.eliminarInventario(item.id_inventario));
+        forkJoin(deletions).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
               summary: 'Éxito',
-              detail: 'Item retirado del inventario',
+              detail: 'Items retirados del inventario correctamente',
             });
             this.cargarInventario();
           },
@@ -447,7 +928,7 @@ export class InventarioComponent implements OnInit {
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
-              detail: 'No se pudo retirar el item del inventario',
+              detail: 'No se pudieron retirar algunos items del inventario',
             });
           }
         });

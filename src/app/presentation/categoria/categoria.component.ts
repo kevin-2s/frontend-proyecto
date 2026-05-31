@@ -113,6 +113,7 @@ interface Categoria {
       [draggable]="false"
       [resizable]="false"
       styleClass="form-dialog"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
       appendTo="body"
     >
       <div class="form-grid mt-2">
@@ -126,20 +127,20 @@ interface Categoria {
           />
         </div>
       </div>
-      <ng-template pTemplate="footer">
+      <div class="dialog-footer">
         <button
           pButton
           label="Cancelar"
-          class="btn-secondary"
+          class="btn-cancelar"
           (click)="displayDialog = false"
         ></button>
         <button
           pButton
           label="Guardar Cambios"
-          class="btn-primary"
+          class="btn-guardar"
           (click)="guardar()"
         ></button>
-      </ng-template>
+      </div>
     </p-dialog>
   `
 })
@@ -161,18 +162,22 @@ export class CategoriaComponent implements OnInit {
     this.categoriaService.getCategorias().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.categorias = d.map((c: any) => ({
-          ...c,
-          id: c.id_categoria ?? c.id,
-          nombre: c.nombre
-        }));
-        this.categoriasFiltradas = [...this.categorias];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.categorias = d.map((c: any) => ({
+            ...c,
+            id: c.id_categoria ?? c.id,
+            nombre: c.nombre
+          }));
+          this.categoriasFiltradas = [...this.categorias];
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.categorias = [];
-        this.categoriasFiltradas = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.categorias = [];
+          this.categoriasFiltradas = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }

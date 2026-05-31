@@ -9,15 +9,6 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
 import { ChartModule } from 'primeng/chart';
 
-// Angular Material
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-
-// Taiga UI
-import { TuiButton, TuiIcon } from '@taiga-ui/core';
-import { TuiBadge } from '@taiga-ui/kit';
-
 import { ApiService } from '../../core/services/api.service';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -31,36 +22,24 @@ import { map, catchError } from 'rxjs/operators';
     TableModule, 
     SkeletonModule, 
     TagModule, 
-    ChartModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressBarModule,
-    TuiButton,
-    TuiBadge,
-    TuiIcon
+    ChartModule
   ],
   template: `
     <div class="animate-fade-in px-2">
       
       <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-3">
-          <!-- Angular Material Icon -->
-          <mat-icon class="text-[#39A900] scale-150 mr-2">dashboard</mat-icon>
+          <i class="pi pi-th-large text-[#39A900] text-3xl mr-2"></i>
           <h2 class="text-[28px] font-black text-gray-900 tracking-tight m-0">Dashboard Resumen</h2>
-          <!-- Taiga UI Badge -->
-          <span tuiBadge size="m" appearance="info" class="ml-2">Live v2.0</span>
+          <p-tag severity="info" value="Live v2.0" class="ml-2" />
         </div>
         
-        <!-- Taiga UI Button -->
         <button
-          tuiButton
           type="button"
-          appearance="secondary"
-          size="m"
-          class="rounded-xl"
+          class="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer outline-none"
           (click)="cargarDatos()"
         >
-          <tui-icon icon="@tui.refresh-cw" class="mr-2"></tui-icon>
+          <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
           Actualizar Datos
         </button>
       </div>
@@ -76,11 +55,12 @@ import { map, catchError } from 'rxjs/operators';
               <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
               <h3 class="text-[40px] font-black text-slate-900 leading-none">{{ totalUsuarios() }}</h3>
-              <mat-icon class="text-blue-500 opacity-20 scale-[2.5]">groups</mat-icon>
+              <i class="pi pi-users text-blue-500 text-4xl opacity-20"></i>
             }
           </div>
-          <!-- Angular Material Progress Bar -->
-          <mat-progress-bar mode="determinate" value="70" color="primary" class="rounded-full"></mat-progress-bar>
+          <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+            <div class="bg-blue-500 h-1.5 rounded-full" style="width: 70%"></div>
+          </div>
         </div>
 
         <!-- Total Productos -->
@@ -91,10 +71,12 @@ import { map, catchError } from 'rxjs/operators';
               <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
               <h3 class="text-[40px] font-black text-slate-900 leading-none">{{ totalProductos() }}</h3>
-              <mat-icon class="text-[#39A900] opacity-20 scale-[2.5]">inventory_2</mat-icon>
+              <i class="pi pi-box text-[#39A900] text-4xl opacity-20"></i>
             }
           </div>
-          <mat-progress-bar mode="determinate" value="85" class="rounded-full"></mat-progress-bar>
+          <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+            <div class="bg-[#39A900] h-1.5 rounded-full" style="width: 85%"></div>
+          </div>
         </div>
 
         <!-- Solicitudes Pendientes -->
@@ -105,10 +87,12 @@ import { map, catchError } from 'rxjs/operators';
               <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
               <h3 class="text-[40px] font-black text-orange-500 leading-none">{{ solicitudesPendientes() }}</h3>
-              <mat-icon class="text-orange-500 opacity-20 scale-[2.5]">pending_actions</mat-icon>
+              <i class="pi pi-clock text-orange-500 text-4xl opacity-20"></i>
             }
           </div>
-          <mat-progress-bar mode="determinate" value="40" color="warn" class="rounded-full"></mat-progress-bar>
+          <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+            <div class="bg-orange-500 h-1.5 rounded-full" style="width: 40%"></div>
+          </div>
         </div>
 
         <!-- Total Inventario -->
@@ -119,10 +103,12 @@ import { map, catchError } from 'rxjs/operators';
               <p-skeleton width="4rem" height="3rem"></p-skeleton>
             } @else {
               <h3 class="text-[40px] font-black text-emerald-600 leading-none">{{ totalInventario() }}</h3>
-              <mat-icon class="text-emerald-500 opacity-20 scale-[2.5]">layers</mat-icon>
+              <i class="pi pi-database text-emerald-500 text-4xl opacity-20"></i>
             }
           </div>
-          <mat-progress-bar mode="determinate" value="65" color="accent" class="rounded-full"></mat-progress-bar>
+          <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 65%"></div>
+          </div>
         </div>
 
       </div>

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { CommonModule } from '@angular/common';
@@ -36,26 +36,74 @@ import { FormsModule } from '@angular/forms';
         <nav class="flex-1 overflow-y-auto py-3 px-4">
           <ul class="space-y-1">
             <li *ngFor="let item of menuItems">
-              <a [routerLink]="item.path" 
-                 routerLinkActive="active"
-                 #rla="routerLinkActive"
-                 [class.bg-[#111827]]="rla.isActive"
-                 [class.text-white]="rla.isActive"
-                 [class.text-slate-500]="!rla.isActive"
-                 class="flex items-center px-4 py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold hover:bg-slate-50">
-               <i [class]="'pi ' + item.icon + ' mr-3 text-base'"
-                  [class.text-white]="rla.isActive"
-                  [class.text-slate-400]="!rla.isActive"></i>
-               {{ item.title }}
-               <span *ngIf="item.title === 'Solicitudes'" 
-                     class="ml-auto flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
-                     [class.bg-[#3b82f6]]="!rla.isActive"
-                     [class.bg-white]="rla.isActive"
-                     [class.text-white]="!rla.isActive"
-                     [class.text-[#111827]]="rla.isActive">
-                 3
-               </span>
-              </a>
+              <!-- Item con Submódulos -->
+              <div *ngIf="item.children; else simpleLink">
+                <a 
+                  [routerLink]="item.path"
+                  routerLinkActive="active"
+                  #rlaParent="routerLinkActive"
+                  (click)="toggleMenuItem(item)"
+                  [class.bg-[#111827]]="rlaParent.isActive"
+                  [class.text-white]="rlaParent.isActive"
+                  [class.text-slate-500]="!rlaParent.isActive && !item.expanded"
+                  [class.text-slate-800]="!rlaParent.isActive && item.expanded"
+                  [class.bg-slate-50]="!rlaParent.isActive && item.expanded"
+                  class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold hover:bg-slate-50">
+                  <div class="flex items-center">
+                    <i [class]="'pi ' + item.icon + ' mr-3 text-base'"
+                       [class.text-white]="rlaParent.isActive"
+                       [class.text-[#39A900]]="!rlaParent.isActive && item.expanded"
+                       [class.text-slate-400]="!rlaParent.isActive && !item.expanded"></i>
+                    {{ item.title }}
+                  </div>
+                  <i class="pi pi-chevron-down text-[10px] transition-transform duration-200" 
+                     [class.rotate-180]="item.expanded"
+                     [class.text-white]="rlaParent.isActive"
+                     [class.text-slate-400]="!rlaParent.isActive"></i>
+                </a>
+                
+                <!-- Submenú -->
+                <ul *ngIf="item.expanded" class="pl-6 mt-1 space-y-1">
+                  <li *ngFor="let child of item.children">
+                    <a [routerLink]="child.path"
+                       routerLinkActive="active-sub"
+                       #rlaSub="routerLinkActive"
+                       [class.bg-[#39A900]/10]="rlaSub.isActive"
+                       [class.text-[#39A900]]="rlaSub.isActive"
+                       [class.text-slate-500]="!rlaSub.isActive"
+                       class="flex items-center px-4 py-2.5 rounded-xl text-[12.5px] transition-all cursor-pointer font-medium hover:bg-slate-50">
+                      <i [class]="'pi ' + child.icon + ' mr-3 text-sm'"
+                         [class.text-[#39A900]]="rlaSub.isActive"
+                         [class.text-slate-400]="!rlaSub.isActive"></i>
+                      {{ child.title }}
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Item simple sin hijos -->
+              <ng-template #simpleLink>
+                <a [routerLink]="item.path" 
+                   routerLinkActive="active"
+                   #rla="routerLinkActive"
+                   [class.bg-[#111827]]="rla.isActive"
+                   [class.text-white]="rla.isActive"
+                   [class.text-slate-500]="!rla.isActive"
+                   class="flex items-center px-4 py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold hover:bg-slate-50">
+                 <i [class]="'pi ' + item.icon + ' mr-3 text-base'"
+                    [class.text-white]="rla.isActive"
+                    [class.text-slate-400]="!rla.isActive"></i>
+                 {{ item.title }}
+                 <span *ngIf="item.title === 'Solicitudes'" 
+                       class="ml-auto flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
+                       [class.bg-[#3b82f6]]="!rla.isActive"
+                       [class.bg-white]="rla.isActive"
+                       [class.text-white]="!rla.isActive"
+                       [class.text-[#111827]]="rla.isActive">
+                   3
+                 </span>
+                </a>
+              </ng-template>
             </li>
           </ul>
         </nav>
@@ -160,7 +208,7 @@ import { FormsModule } from '@angular/forms';
     </div>
   `
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
 
@@ -187,6 +235,18 @@ export class LayoutComponent {
     { title: 'Solicitudes', path: '/solicitudes', icon: 'pi-inbox' },
     { title: 'Movimientos', path: '/movimientos', icon: 'pi-arrows-h' }
   ];
+
+  ngOnInit() {
+    const currentUrl = this.router.url;
+    this.menuItems.forEach(item => {
+      if (item.children) {
+        const hasActiveChild = item.children.some((child: any) => currentUrl.includes(child.path));
+        if (hasActiveChild) {
+          item.expanded = true;
+        }
+      }
+    });
+  }
 
   toggleMenuItem(item: any): void {
     item.expanded = !item.expanded;

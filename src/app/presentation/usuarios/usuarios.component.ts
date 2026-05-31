@@ -11,11 +11,14 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TagModule } from 'primeng/tag';
 import { PasswordModule } from 'primeng/password';
+import { TooltipModule } from 'primeng/tooltip';
+import { SelectModule } from 'primeng/select';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
-import { RolService, Rol } from '../../infrastructure/services/rol.service';
+import { RolService } from '../../infrastructure/services/rol.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { Rol } from '../../domain/models/rol.model';
 
 interface Usuario {
   id_usuario?: number;
@@ -45,14 +48,7 @@ interface Usuario {
     TagModule,
     PasswordModule,
     TooltipModule,
-    MatIconModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatSlideToggleModule,
-    TuiButton,
-    TuiBadge
+    SelectModule
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
@@ -76,8 +72,7 @@ interface Usuario {
       <!-- [StylesGlobales] .module-header: Encabezado estandarizado -->
       <div class="module-header">
         <div class="flex items-center gap-3">
-          <!-- [Material] mat-icon: Iconografía premium -->
-          
+          <i class="pi pi-users text-[#39A900] text-3xl"></i>
           <h3 class="page-title m-0">Usuarios</h3>
         </div>
 
@@ -89,10 +84,12 @@ interface Usuario {
               placeholder="Nombre" class="search-input" />
           </div>
           
-          <!-- [Taiga UI] tuiButton: El botón más moderno del ecosistema -->
-          <button tuiButton type="button" size="m" appearance="primary"
-            class="rounded-xl font-bold flex items-center gap-1" (click)="openNew()">
-            <mat-icon class="scale-90">person_add</mat-icon>
+          <button
+            type="button"
+            class="px-4 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+            (click)="openNew()"
+          >
+            <i class="pi pi-user-plus text-sm"></i>
             Crear Usuario
           </button>
         </div>
@@ -120,7 +117,7 @@ interface Usuario {
               <td>
                 <div class="flex items-center gap-3">
                   <div class="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
-                    <mat-icon class="text-slate-300 scale-75">person</mat-icon>
+                    <i class="pi pi-user text-slate-400 text-sm"></i>
                   </div>
                   <div class="flex flex-col">
                     <span class="font-bold text-slate-800 leading-tight">{{ u.nombre }} {{ u.apellidos }}</span>
@@ -146,12 +143,23 @@ interface Usuario {
               </td>
               <td>
                 <div class="flex items-center justify-center gap-1">
-                  <!-- [Material] mat-icon-button: Acciones circulares limpias -->
-                  <button mat-icon-button (click)="editar(u)" class="text-blue-500 hover:bg-blue-50">
-                    <mat-icon>edit_note</mat-icon>
+                  <button
+                    type="button"
+                    (click)="editar(u)"
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
+                    pTooltip="Editar"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-pencil"></i>
                   </button>
-                  <button mat-icon-button (click)="eliminar(u)" class="text-red-400 hover:bg-red-50">
-                    <mat-icon>delete_outline</mat-icon>
+                  <button
+                    type="button"
+                    (click)="eliminar(u)"
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
+                    pTooltip="Eliminar"
+                    tooltipPosition="top"
+                  >
+                    <i class="pi pi-trash"></i>
                   </button>
                 </div>
               </td>
@@ -159,8 +167,8 @@ interface Usuario {
           </ng-template>
 
           <ng-template pTemplate="emptymessage">
-            <tr><td colspan="6" class="empty-message py-20">
-              <mat-icon class="scale-[4] opacity-5 mb-10">person_off</mat-icon>
+            <tr><td colspan="6" class="empty-message py-20 text-center">
+              <i class="pi pi-user-minus text-5xl text-slate-300 opacity-50 mb-3 block"></i>
               <p class="text-slate-400 font-bold text-lg">No hay usuarios registrados</p>
             </td></tr>
           </ng-template>
@@ -206,7 +214,7 @@ interface Usuario {
             </div>
             <div class="flex flex-col gap-1.5 flex-1">
               <label class="text-sm font-bold text-gray-900">Rol</label>
-              <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id" placeholder="Selecciona un rol" styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all" [style]="{'width':'100%'}" appendTo="body"></p-select>
+              <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Selecciona un rol" styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all" [style]="{'width':'100%'}" appendTo="body"></p-select>
             </div>
           </div>
 
@@ -230,16 +238,22 @@ interface Usuario {
             </div>
           </div>
         </div>
-      </div>
 
         <!-- Botones (Footer) -->
-        <div class="flex justify-end gap-3 mt-8">
-          <button class="px-5 py-2 text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors outline-none cursor-pointer" (click)="displayDialog = false">
-            Cancelar
-          </button>
-          <button class="px-5 py-2 text-sm font-bold text-white bg-gray-900 hover:bg-black rounded-md transition-all outline-none disabled:opacity-50 cursor-pointer" (click)="guardar()" [disabled]="saving">
-            {{ saving ? 'Guardando...' : 'Guardar' }}
-          </button>
+        <div class="dialog-footer">
+          <button
+            pButton
+            label="Cancelar"
+            class="btn-cancelar"
+            (click)="displayDialog = false"
+          ></button>
+          <button
+            pButton
+            [label]="saving ? 'Guardando...' : 'Guardar'"
+            class="btn-guardar"
+            (click)="guardar()"
+            [disabled]="saving"
+          ></button>
         </div>
 
       </div>
@@ -385,14 +399,19 @@ export class UsuariosComponent implements OnInit {
 
     this.saving = true;
 
-    // Clonamos para no modificar el objeto de la vista y limpiamos campos
-    const datosEnvio = { ...this.usuario };
-    if (!this.esNuevo && !datosEnvio.password) {
-      delete datosEnvio.password; // No enviar password si está vacío en edición
+    // Preparamos los datos SOLO con los campos que el backend espera
+    const datosEnvio: { nombre: string; correo: string; password?: string; id_rol: number; estado?: boolean } = {
+      nombre: this.usuario.nombre,
+      correo: this.usuario.correo,
+      id_rol: this.usuario.id_rol,
+    };
+
+    if (this.usuario.password) {
+      datosEnvio.password = this.usuario.password;
     }
 
     if (this.esNuevo) {
-      this.usuarioService.create(datosEnvio).subscribe({
+      this.usuarioService.create(datosEnvio as any).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado correctamente' });
           this.displayDialog = false;
@@ -405,9 +424,12 @@ export class UsuariosComponent implements OnInit {
         },
       });
     } else {
-      const { id_usuario, ...updateData } = datosEnvio as any;
+      const updateData: any = {};
+      if (this.usuario.nombre !== undefined) updateData.nombre = this.usuario.nombre;
+      if (this.usuario.correo !== undefined) updateData.correo = this.usuario.correo;
+      if (this.usuario.id_rol !== undefined) updateData.id_rol = this.usuario.id_rol;
       
-      this.usuarioService.update(id_usuario!, updateData).subscribe({
+      this.usuarioService.update(this.usuario.id_usuario!, updateData).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente' });
           this.displayDialog = false;

@@ -12,24 +12,13 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { SitioService } from '../../infrastructure/services/sitio.service';
-import { UsuarioService } from '../../infrastructure/services/usuario.service';
-
-interface Sitio {
-  id_sitio?: number;
-  nombre: string;
-  tipo: string;
-  id_responsable?: number;
-  responsable?: {
-    id_usuario: number;
-    nombre: string;
-    correo: string;
-  };
-  estado?: boolean;
-}
+import { ProgramaService } from '../../infrastructure/services/programa.service';
+import { AreaService } from '../../infrastructure/services/area.service';
+import { Programa } from '../../domain/models/programa.model';
+import { Area } from '../../domain/models/area.model';
 
 @Component({
-  selector: 'app-sitios',
+  selector: 'app-programas',
   standalone: true,
   imports: [
     CommonModule,
@@ -50,16 +39,23 @@ interface Sitio {
   template: `
     <p-toast position="bottom-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
+
     <div class="module-container">
       <div class="module-header">
         <h3 class="page-title">
-          <i class="pi pi-map-marker"></i> Sitios y Bodegas
+          <i class="pi pi-bookmark"></i> Programas de Formación
         </h3>
         <div class="header-actions">
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
-            <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
-              placeholder="Buscar sitio..." class="search-input" />
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="filtro"
+              (input)="filtrar()"
+              placeholder="Buscar programa..."
+              class="search-input"
+            />
           </div>
           <button
             *ngIf="!displayDialog"
@@ -68,7 +64,7 @@ interface Sitio {
             (click)="openNew()"
           >
             <i class="pi pi-plus"></i>
-            Nuevo Sitio
+            Nuevo Programa
           </button>
           <button
             *ngIf="displayDialog"
@@ -86,68 +82,66 @@ interface Sitio {
       <div *ngIf="displayDialog" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
         <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
           <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
-            <i class="pi pi-map-marker text-[#39A900] text-xl"></i>
+            <i class="pi pi-bookmark text-[#39A900] text-xl"></i>
           </div>
           <div>
-            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Registrar Nuevo Sitio' : 'Editar Ubicación' }}</h4>
-            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para el sitio en el sistema</p>
+            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Registrar Nuevo Programa' : 'Editar Programa' }}</h4>
+            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para el programa de formación</p>
           </div>
         </div>
         
         <div class="p-6 flex flex-col gap-5">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-            <!-- Nombre de la Ubicación -->
+            <!-- Código del Programa -->
             <div class="form-field">
               <input
                 pInputText
-                id="nombre"
-                [(ngModel)]="sitio.nombre"
-                placeholder="Ej: Bodega de Electrónica"
+                id="p-codigo"
+                [(ngModel)]="programa.codigo"
+                placeholder="Ej: 228118"
               />
-              <label for="nombre">Nombre de la Ubicación *</label>
+              <label for="p-codigo">Código del Programa *</label>
             </div>
 
-            <!-- Tipo de Ambiente -->
+            <!-- Nombre del Programa -->
             <div class="form-field">
-              <p-select
-                id="tipo"
-                [(ngModel)]="sitio.tipo"
-                [options]="tipos"
-                optionLabel="label"
-                optionValue="value"
-                placeholder=" "
-                styleClass="w-full"
-                appendTo="body"
-              ></p-select>
-              <label for="tipo">Tipo de Ambiente *</label>
+              <input
+                pInputText
+                id="p-nombre"
+                [(ngModel)]="programa.nombre"
+                placeholder="Ej: Análisis y Desarrollo de Software"
+              />
+              <label for="p-nombre">Nombre del Programa *</label>
             </div>
 
-            <!-- Responsable -->
+            <!-- Área de Formación -->
             <div class="form-field">
               <p-select
-                id="id_responsable"
-                [(ngModel)]="sitio.id_responsable"
-                [options]="usuarios"
+                id="p-area"
+                [(ngModel)]="programa.id_area"
+                [options]="areas"
                 optionLabel="nombre"
-                optionValue="id_usuario"
+                optionValue="id_area"
                 placeholder=" "
                 [filter]="true"
-                filterBy="nombre,correo"
+                filterBy="nombre"
                 styleClass="w-full"
                 appendTo="body"
               ></p-select>
-              <label for="id_responsable">Responsable</label>
+              <label for="p-area">Área de Formación *</label>
             </div>
 
             <!-- Estado Switch -->
             <div class="form-field">
               <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200/80 h-[46px]">
-                <p-toggleSwitch [(ngModel)]="sitio.estado"></p-toggleSwitch>
-                <span class="font-bold text-sm" [class.text-green-600]="sitio.estado !== false" [class.text-red-600]="sitio.estado === false">
-                   {{ sitio.estado !== false ? 'SITIO ACTIVO' : 'SITIO INACTIVO' }}
+                <p-toggleSwitch [(ngModel)]="programa.estado"></p-toggleSwitch>
+                <span class="font-bold text-sm"
+                  [class.text-green-600]="programa.estado !== false"
+                  [class.text-red-600]="programa.estado === false">
+                  {{ programa.estado !== false ? 'ACTIVO' : 'INACTIVO' }}
                 </span>
               </div>
-              <label>Estado Operativo</label>
+              <label>Estado</label>
             </div>
           </div>
 
@@ -158,14 +152,14 @@ interface Sitio {
               class="btn-guardar"
               (click)="guardar()"
               [disabled]="saving"
-            >{{ saving ? 'Guardando...' : 'Guardar Ubicación' }}</button>
+            >{{ saving ? 'Guardando...' : 'Guardar Programa' }}</button>
           </div>
         </div>
       </div>
 
       <div class="data-table-wrapper">
         <p-table
-          [value]="sitiosFiltrados"
+          [value]="programasFiltrados"
           [paginator]="true"
           [rows]="10"
           styleClass="modern-table"
@@ -174,29 +168,27 @@ interface Sitio {
           <ng-template pTemplate="header">
             <tr>
               <th style="width:80px">ID</th>
-              <th>Nombre del Sitio</th>
-              <th>Responsable</th>
-              <th>Tipo</th>
+              <th style="width:120px">Código</th>
+              <th>Nombre del Programa</th>
+              <th>Área de Formación</th>
               <th style="width:120px">Estado</th>
               <th style="width:150px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-sitio>
+          <ng-template pTemplate="body" let-programa>
             <tr>
-              <td><span class="id-badge">#{{ sitio.id_sitio }}</span></td>
-              <td><span class="nombre-cell">{{ sitio.nombre }}</span></td>
-              <td><span class="text-slate-600 text-sm">{{ sitio.responsable?.nombre || 'Sin responsable' }}</span></td>
+              <td><span class="id-badge">#{{ programa.id_programa }}</span></td>
+              <td><span class="font-bold text-slate-800">{{ programa.codigo }}</span></td>
+              <td><span class="nombre-cell">{{ programa.nombre }}</span></td>
               <td>
-                <p-tag 
-                  [value]="sitio.tipo.toUpperCase()" 
-                  [severity]="getTipoSeverity(sitio.tipo)"
-                  styleClass="px-3 py-1 font-bold rounded-lg"
-                ></p-tag>
+                <span class="text-slate-800 text-sm font-semibold">
+                  {{ programa.area?.nombre || 'Sin área asociada' }}
+                </span>
               </td>
               <td>
                 <p-tag
-                  [value]="sitio.estado !== false ? 'DISPONIBLE' : 'INACTIVO'"
-                  [severity]="sitio.estado !== false ? 'success' : 'danger'"
+                  [value]="programa.estado !== false ? 'ACTIVO' : 'INACTIVO'"
+                  [severity]="programa.estado !== false ? 'success' : 'danger'"
                   styleClass="px-3 py-1 font-bold rounded-lg"
                 ></p-tag>
               </td>
@@ -206,15 +198,15 @@ interface Sitio {
                     pButton
                     icon="pi pi-pencil"
                     class="btn-table-action btn-editor"
-                    (click)="editar(sitio)"
-                    pTooltip="Editar sitio"
+                    (click)="editar(programa)"
+                    pTooltip="Editar programa"
                   ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
-                    (click)="eliminar(sitio)"
-                    pTooltip="Eliminar sitio"
+                    (click)="eliminar(programa)"
+                    pTooltip="Eliminar programa"
                   ></button>
                 </div>
               </td>
@@ -223,201 +215,164 @@ interface Sitio {
           <ng-template pTemplate="emptymessage">
             <tr>
               <td colspan="6" class="empty-message">
-                <i class="pi pi-map-marker"></i>
-                <p>No se encontraron sitios registrados</p>
+                <i class="pi pi-bookmark"></i>
+                <p>No se encontraron programas registrados</p>
               </td>
             </tr>
           </ng-template>
         </p-table>
       </div>
     </div>
-
   `
 })
-export class SitiosComponent implements OnInit {
-  private sitioService = inject(SitioService);
-  private usuarioService = inject(UsuarioService);
+export class ProgramasComponent implements OnInit {
+  private programaService = inject(ProgramaService);
+  private areaService = inject(AreaService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
 
-  sitios: Sitio[] = [];
-  sitiosFiltrados: Sitio[] = [];
-  usuarios: any[] = [];
+  programas: Programa[] = [];
+  programasFiltrados: Programa[] = [];
+  areas: Area[] = [];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
   saving = false;
-  sitio: Sitio = this.getNuevoSitio();
-  tipos = [
-    { label: 'Bodega', value: 'Bodega' },
-    { label: 'Laboratorio', value: 'Laboratorio' },
-    { label: 'Aula', value: 'Aula' },
-    { label: 'Oficina', value: 'Oficina' },
-    { label: 'Almacén', value: 'Almacén' },
-  ];
+  programa: Programa = this.getNuevo();
 
   ngOnInit() {
-    this.cargarSitios();
-    this.cargarUsuarios();
+    this.cargar();
+    this.cargarAreas();
   }
 
-  cargarSitios() {
-    this.sitioService.getSitios().subscribe({
+  cargar() {
+    this.programaService.getProgramas().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.sitios = d;
-        this.sitiosFiltrados = d;
+        this.programas = d;
+        this.programasFiltrados = d;
         setTimeout(() => this.cdr.detectChanges());
       },
       error: () => {
-        this.sitios = [];
-        this.sitiosFiltrados = [];
+        this.programas = [];
+        this.programasFiltrados = [];
         setTimeout(() => this.cdr.detectChanges());
-      },
+      }
     });
   }
 
-  cargarUsuarios() {
-    this.usuarioService.getAll().subscribe({
+  cargarAreas() {
+    this.areaService.getAreas().subscribe({
       next: (res: any) => {
-        const d = res?.data || res || [];
-        this.usuarios = d;
+        this.areas = res?.data || res || [];
         setTimeout(() => this.cdr.detectChanges());
       },
       error: () => {
-        this.usuarios = [];
+        this.areas = [];
         setTimeout(() => this.cdr.detectChanges());
-      },
+      }
     });
   }
 
   filtrar() {
-    const f = this.filtro.toLowerCase();
-    this.sitiosFiltrados = this.sitios.filter(
-      (s) =>
-        s.nombre?.toLowerCase().includes(f) ||
-        s.tipo?.toLowerCase().includes(f) ||
-        s.responsable?.nombre?.toLowerCase().includes(f),
+    const f = this.filtro.toLowerCase().trim();
+    this.programasFiltrados = this.programas.filter(p =>
+      p.nombre?.toLowerCase().includes(f) ||
+      p.codigo?.toLowerCase().includes(f) ||
+      p.area?.nombre?.toLowerCase().includes(f)
     );
   }
 
-  getNuevoSitio(): Sitio {
-    return { nombre: '', tipo: '', estado: true };
+  getNuevo(): Programa {
+    return { nombre: '', codigo: '', id_area: null as any, estado: true };
   }
 
   openNew() {
     this.esNuevo = true;
-    this.sitio = this.getNuevoSitio();
+    this.programa = this.getNuevo();
     this.displayDialog = true;
   }
 
-  editar(s: Sitio) {
+  editar(p: Programa) {
     this.esNuevo = false;
-    this.sitio = { ...s };
+    this.programa = { ...p };
     this.displayDialog = true;
   }
 
   guardar() {
-    if (!this.sitio.nombre || !this.sitio.tipo) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'Todos los campos son requeridos',
-      });
+    if (!this.programa.nombre.trim() || !this.programa.codigo.trim() || !this.programa.id_area) {
+      this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'Todos los campos (*) son requeridos' });
       return;
     }
 
-    const payload: any = {
-      nombre: this.sitio.nombre,
-      tipo: this.sitio.tipo,
-      estado: this.sitio.estado !== false,
+    const payload = {
+      nombre: this.programa.nombre.trim(),
+      codigo: this.programa.codigo.trim(),
+      id_area: Number(this.programa.id_area),
+      estado: this.programa.estado !== false
     };
-    if (this.sitio.id_responsable) payload.id_responsable = this.sitio.id_responsable;
 
     this.saving = true;
 
     if (this.esNuevo) {
-      this.sitioService.crearSitio(payload).subscribe({
+      this.programaService.crearPrograma(payload).subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Sitio creado correctamente',
-          });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Programa creado correctamente' });
           this.displayDialog = false;
           this.saving = false;
-          this.cargarSitios();
+          this.cargar();
         },
-        error: () => {
+        error: (err: any) => {
           this.saving = false;
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo crear el sitio',
+            detail: err.error?.message || 'No se pudo crear el programa. Verifique que el código no exista.'
           });
-        },
+        }
       });
     } else {
-      this.sitioService.actualizarSitio(this.sitio.id_sitio!, payload).subscribe({
+      this.programaService.actualizarPrograma(this.programa.id_programa!, payload).subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Sitio actualizado correctamente',
-          });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Programa actualizado correctamente' });
           this.displayDialog = false;
           this.saving = false;
-          this.cargarSitios();
+          this.cargar();
         },
-        error: () => {
+        error: (err: any) => {
           this.saving = false;
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo actualizar el sitio',
+            detail: err.error?.message || 'No se pudo actualizar el programa'
           });
-        },
+        }
       });
     }
   }
 
-  eliminar(s: Sitio) {
+  eliminar(p: Programa) {
     this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar el sitio ' + s.nombre + '?',
+      message: `¿Está seguro de eliminar el programa "${p.nombre}"?`,
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.sitioService.eliminarSitio(s.id_sitio!).subscribe({
+        this.programaService.eliminarPrograma(p.id_programa!).subscribe({
           next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Sitio eliminado correctamente',
-            });
-            this.cargarSitios();
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Programa eliminado correctamente' });
+            this.cargar();
           },
-          error: () => {
+          error: (err: any) => {
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
-              detail: 'No se pudo eliminar el sitio',
+              detail: err.error?.message || 'No se pudo eliminar el programa'
             });
-          },
+          }
         });
-      },
+      }
     });
-  }
-
-  getTipoSeverity(tipo: string): 'warn' | 'info' | 'success' | 'secondary' {
-    const map: any = {
-      Bodega: 'warn',
-      Laboratorio: 'info',
-      Aula: 'success',
-      Oficina: 'secondary',
-      Almacén: 'warn',
-    };
-    return map[tipo] || 'secondary';
   }
 }

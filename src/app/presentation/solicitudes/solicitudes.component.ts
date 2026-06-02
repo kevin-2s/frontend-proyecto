@@ -37,7 +37,7 @@ interface Solicitud {
   encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
   template: `
-    <p-toast position="top-right"></p-toast>
+    <p-toast position="bottom-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <div class="module-container">
       <div class="module-header">

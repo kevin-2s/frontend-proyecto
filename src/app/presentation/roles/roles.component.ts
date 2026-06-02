@@ -5,9 +5,12 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
+import { ViewEncapsulation } from '@angular/core';
 import { ToastModule } from 'primeng/toast';
 import { TagModule } from 'primeng/tag';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { SelectModule } from 'primeng/select';
+import { PasswordModule } from 'primeng/password';
 import { MessageService } from 'primeng/api';
 import { RolService } from '../../infrastructure/services/rol.service';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
@@ -26,137 +29,294 @@ import { Rol } from '../../domain/models/rol.model';
     DialogModule,
     ToastModule,
     TagModule,
-    ToggleSwitchModule
+    ToggleSwitchModule,
+    SelectModule,
+    PasswordModule
   ],
   providers: [MessageService],
+  styles: [`
+    /* ── Modern Premium Toggle ── */
+    .perm-toggle-track {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      width: 52px;
+      height: 28px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
+      flex-shrink: 0;
+      outline: none;
+      border: none;
+      padding: 0;
+    }
+    .perm-toggle-track.off {
+      background: #1e293b;
+      box-shadow: 0 0 0 0px #39A90000, inset 0 2px 6px rgba(0,0,0,.4);
+    }
+    .perm-toggle-track.on {
+      background: linear-gradient(135deg, #39A900 0%, #5cde00 100%);
+      box-shadow: 0 0 14px 2px rgba(57,169,0,.35), inset 0 1px 3px rgba(255,255,255,.15);
+    }
+    .perm-toggle-thumb {
+      position: absolute;
+      top: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      transition: left 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+    .perm-toggle-track.off .perm-toggle-thumb {
+      left: 4px;
+      background: #64748b;
+    }
+    .perm-toggle-track.on .perm-toggle-thumb {
+      left: 28px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(57,169,0,.35);
+    }
+    /* glow pulse when turning on */
+    .perm-toggle-track.on {
+      animation: toggleGlow 0.4s ease;
+    }
+    @keyframes toggleGlow {
+      0%   { box-shadow: 0 0 0px 0px rgba(57,169,0,0); }
+      50%  { box-shadow: 0 0 18px 6px rgba(57,169,0,.45); }
+      100% { box-shadow: 0 0 14px 2px rgba(57,169,0,.35); }
+    }
+
+    /* ── Permiso card ── */
+    .perm-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1.5px solid #f1f5f9;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      gap: 12px;
+    }
+    .perm-card.active {
+      border-color: rgba(57,169,0,.25);
+      background: linear-gradient(135deg, rgba(57,169,0,.03) 0%, #fff 100%);
+      box-shadow: 0 2px 12px rgba(57,169,0,.08);
+    }
+    .perm-card:hover {
+      border-color: rgba(57,169,0,.3);
+      box-shadow: 0 4px 16px rgba(57,169,0,.1);
+    }
+    .perm-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+    .perm-icon.active { background: rgba(57,169,0,.12); color: #39A900; }
+    .perm-icon.inactive { background: #f1f5f9; color: #94a3b8; }
+
+    /* ── Group header ── */
+    .perm-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(57,169,0,.12);
+    }
+    .perm-group-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #39A900, #5cde00);
+      flex-shrink: 0;
+    }
+
+    /* scrollbar */
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+  `],
   template: `
     <p-toast></p-toast>
 
     <div class="module-container">
 
       <!-- Header -->
-      <div class="module-header">
-        <h3 class="page-title">
-          <i class="pi pi-shield"></i> Roles y Usuarios
-        </h3>
-        <div class="header-actions">
-          <div class="search-wrapper">
-            <i class="pi pi-search"></i>
-            <input
-              pInputText
-              type="text"
-              [(ngModel)]="filtro"
-              (input)="filtrar()"
-              placeholder="Buscar..."
-              class="search-input"
-            />
+      <div class="module-header" style="align-items: flex-start; flex-direction: column;">
+        <div class="w-full flex justify-between items-center mb-4">
+          <h3 class="page-title mb-0">
+            <i class="pi pi-shield"></i> Roles y Usuarios
+          </h3>
+          <div class="header-actions">
+            <div class="search-wrapper">
+              <i class="pi pi-search"></i>
+              <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrarGlobal()" placeholder="Buscar..." class="search-input" />
+            </div>
+            <!-- Botón Crear Rol (pequeño, secundario) -->
+            <button
+              *ngIf="currentView === 'usuarios' && !showRolForm"
+              type="button"
+              class="px-4 py-2.5 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+              (click)="openNewRolDialog()"
+            >
+              <i class="pi pi-shield"></i>
+              Nuevo Rol
+            </button>
+            <button
+              *ngIf="currentView === 'usuarios' && showRolForm"
+              type="button"
+              class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+              (click)="showRolForm = false"
+            >
+              <i class="pi pi-times"></i>
+              Cerrar
+            </button>
+            <!-- Botón Crear Usuario -->
+            <button
+              *ngIf="currentView === 'usuarios' && !showUserForm"
+              type="button"
+              class="btn-add"
+              (click)="toggleUserForm()"
+            >
+              <i class="pi pi-user-plus"></i>
+              Crear Usuario
+            </button>
+            <button
+              *ngIf="currentView === 'usuarios' && showUserForm"
+              type="button"
+              class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+              (click)="toggleUserForm()"
+            >
+              <i class="pi pi-times"></i>
+              Cerrar Formulario
+            </button>
           </div>
-          <!-- Nav buttons -->
-          <button pButton label="Roles" icon="pi pi-shield"
-            [class.btn-add]="currentView === 'roles'"
-            class="p-button-outlined p-button-sm rounded-xl"
-            (click)="setView('roles')"></button>
-          <button pButton label="Usuarios" icon="pi pi-users"
-            [class.btn-add]="currentView === 'usuarios'"
-            class="p-button-outlined p-button-sm rounded-xl"
-            (click)="setView('usuarios')"></button>
-          <button pButton label="Permisos" icon="pi pi-lock"
-            [class.btn-add]="currentView === 'permisos'"
-            class="p-button-outlined p-button-sm rounded-xl"
-            (click)="setView('permisos')"></button>
-          <button 
-            *ngIf="currentView === 'roles'"
-            pButton 
-            label="Crear Rol" 
-            icon="pi pi-plus"
-            class="rounded-xl font-bold bg-[#39A900] text-white hover:bg-green-700 outline-none cursor-pointer border-none h-[42px] ml-2"
-            (click)="openNewRolDialog()"></button>
         </div>
-      </div>
 
-      <!-- ROLES VIEW -->
-      <div *ngIf="currentView === 'roles'" class="view-content">
-        <!-- Integrated Form for Creating Role -->
-        <div class="integrated-form-card mb-8 p-6 bg-white border border-slate-100 rounded-2xl shadow-sm" *ngIf="isAdmin">
-          <div class="w-full text-center py-4 mb-4">
-            <h3 class="text-xl font-extrabold text-slate-800 uppercase tracking-tight">Crear Nuevo Rol</h3>
-            <p class="text-slate-400 text-xs mt-1">Define un nuevo rol con sus respectivos accesos del sistema</p>
+        <!-- INLINE FORM FOR ROL -->
+        <div *ngIf="showRolForm" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
+          <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
+              <i class="pi pi-shield text-[#39A900] text-xl"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">Registrar Nuevo Rol</h4>
+              <p class="text-xs text-slate-500 m-0 mt-0.5">Crea un nuevo rol de acceso para asignar a los usuarios del sistema</p>
+            </div>
           </div>
           
-          <div class="flex flex-col sm:flex-row gap-4 items-end max-w-xl mx-auto">
-            <div class="flex-1 flex flex-col gap-1.5">
-              <label class="text-xs font-bold text-gray-900 uppercase tracking-wider">Nombre del Rol *</label>
-              <input 
-                pInputText 
-                [(ngModel)]="rol.nombre" 
-                placeholder="Ej. INSTRUCTOR, GESTOR..." 
-                class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-4 !rounded-xl transition-all outline-none" 
-              />
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+              <!-- Nombre del Rol -->
+              <div class="form-field">
+                <input
+                  pInputText
+                  id="rol-nombre"
+                  [(ngModel)]="rol.nombre"
+                  placeholder="Ej: INSTRUCTOR, GESTOR"
+                />
+                <label for="rol-nombre">Nombre del Rol *</label>
+              </div>
             </div>
-            
-            <button
-              pButton
-              label="Guardar Rol"
-              icon="pi pi-check"
-              class="px-5 py-2.5 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl transition-all outline-none border-none cursor-pointer flex items-center gap-2 h-[42px]"
-              (click)="guardar()"
-              [disabled]="saving"
-            ></button>
+
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                class="btn-cancelar"
+                (click)="showRolForm = false; rol = { nombre: '' }"
+              >Cancelar</button>
+              <button
+                type="button"
+                class="btn-guardar"
+                (click)="guardar()"
+                [disabled]="saving || !rol.nombre?.trim()"
+              >{{ saving ? 'Guardando...' : 'Guardar Rol' }}</button>
+            </div>
           </div>
         </div>
 
-        <!-- Roles Table -->
-        <div class="data-table-wrapper">
-          <p-table
-            [value]="rolesFiltrados"
-            [paginator]="true"
-            [rows]="10"
-            styleClass="modern-table"
-            [loading]="loading"
+        <!-- INLINE FORM FOR USER -->
+        <div *ngIf="showUserForm" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
+          <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
+              <i class="pi pi-user-edit text-[#39A900] text-xl"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevoUsuario ? 'Añadir Nuevo Usuario' : 'Editar Usuario' }}</h4>
+              <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para el usuario en el sistema</p>
+            </div>
+          </div>
+          
+          <div class="p-6 flex flex-col gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+              <!-- Nombre Completo -->
+              <div class="floating-label-group" [class.floating]="usuarioForm.nombre && usuarioForm.nombre.trim() !== ''">
+                <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                <label for="nombre">Nombre Completo <span class="text-red-500">*</span></label>
+              </div>
+
+              <!-- Correo Electrónico -->
+              <div class="floating-label-group" [class.floating]="usuarioForm.correo && usuarioForm.correo.trim() !== ''">
+                <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                <label for="correo">Correo Electrónico <span class="text-red-500">*</span></label>
+              </div>
+
+              <!-- Rol Asignado -->
+              <div class="flex gap-2 items-center w-full">
+                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.id_rol !== undefined && usuarioForm.id_rol !== null">
+                  <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                  <label>Rol Asignado <span class="text-red-500">*</span></label>
+                </div>
+                <button type="button" pTooltip="Crear nuevo rol" tooltipPosition="top" class="w-[46px] h-[46px] flex-shrink-0 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-xl cursor-pointer transition-colors outline-none" (click)="openNewRolDialog()">
+                  <i class="pi pi-plus"></i>
+                </button>
+              </div>
+
+              <!-- Contraseña de Acceso -->
+              <div class="floating-label-group" [class.floating]="usuarioForm.password && usuarioForm.password.trim() !== ''" *ngIf="esNuevoUsuario">
+                <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
+                <label>Contraseña de Acceso <span class="text-red-500">*</span></label>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+              <button type="button" class="px-6 py-2.5 text-sm font-bold text-red-600 bg-white hover:bg-red-50/50 border border-red-200 hover:border-red-600 rounded-xl cursor-pointer transition-all outline-none" (click)="toggleUserForm()">Cancelar</button>
+              <button type="button" class="px-6 py-2.5 text-sm font-bold text-[#39A900] bg-white hover:bg-green-50/30 border border-[#39A900]/30 hover:border-[#39A900] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl cursor-pointer transition-all outline-none" (click)="guardarUsuario()" [disabled]="savingUser">{{ savingUser ? 'Guardando...' : 'Guardar Usuario' }}</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button 
+            type="button"
+            [class]="currentView === 'usuarios' ? 'px-4 py-2 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl flex items-center gap-2 cursor-pointer outline-none border-none h-[40px] transition-colors' : 'px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer outline-none h-[40px] transition-colors'"
+            (click)="setView('usuarios')"
           >
-            <ng-template pTemplate="header">
-              <tr>
-                <th style="width:56px">#</th>
-                <th>Nombre del Rol</th>
-                <th>Descripción</th>
-                <th style="text-align:center">Acciones</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-r let-i="rowIndex">
-              <tr>
-                <td><span class="text-slate-400 text-xs font-bold">{{ i + 1 }}</span></td>
-                <td><span class="font-semibold text-slate-800">{{ r.nombre }}</span></td>
-                <td><span class="text-slate-400 text-sm italic">Sin descripción</span></td>
-                <td>
-                  <div class="action-buttons justify-center">
-                    <button pButton icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top"
-                      class="btn-table-action btn-editor"></button>
-                    <button pButton icon="pi pi-trash" pTooltip="Eliminar" tooltipPosition="top"
-                      class="btn-table-action btn-eliminar"></button>
-                  </div>
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
+            <i class="pi pi-users"></i>
+            Usuarios
+          </button>
+          <button 
+            type="button"
+            [class]="currentView === 'permisos' ? 'px-4 py-2 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl flex items-center gap-2 cursor-pointer outline-none border-none h-[40px] transition-colors' : 'px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer outline-none h-[40px] transition-colors'"
+            (click)="setView('permisos')"
+          >
+            <i class="pi pi-lock"></i>
+            Permisos
+          </button>
         </div>
       </div>
 
       <!-- USUARIOS VIEW (Synced with Roles) -->
       <div *ngIf="currentView === 'usuarios'" class="view-content">
         <div class="table-card">
-          <div class="table-header">
-            <div class="search-container">
-              <i class="pi pi-search search-icon"></i>
-              <input
-                pInputText
-                type="text"
-                [(ngModel)]="filtroUser"
-                (input)="filtrarUsuarios()"
-                placeholder="Buscar usuarios vinculados..."
-                class="search-input"
-              />
-            </div>
-          </div>
           
           <p-table
             [value]="usuariosFiltrados"
@@ -170,20 +330,20 @@ import { Rol } from '../../domain/models/rol.model';
                 <th style="width: 100px">ID</th>
                 <th>Nombre Completo</th>
                 <th>Correo Electrónico</th>
+                <th>Rol</th>
                 <th>Estado</th>
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-u>
               <tr>
-                <td><span class="id-badge">#{{ u.id }}</span></td>
+                <td><span class="id-badge">#{{ u.id || u.id_usuario }}</span></td>
                 <td class="font-bold">{{ u.nombre || u.nombreCompleto }}</td>
                 <td class="text-slate-500">{{ u.correo }}</td>
                 <td>
-                   <p-tag 
-                    [value]="u.estado ? 'ACTIVO' : 'INACTIVO'" 
-                    [severity]="u.estado ? 'success' : 'danger'"
-                    styleClass="px-3 py-1 rounded-lg"
-                  ></p-tag>
+                  <p-tag [value]="getRolNombre(u.id_rol)" [severity]="getRolSeverity(u.id_rol)" styleClass="text-[10px] px-2 py-0.5 rounded-md"></p-tag>
+                </td>
+                <td>
+                   <p-tag [value]="u.estado ? 'ACTIVO' : 'INACTIVO'" [severity]="u.estado ? 'success' : 'danger'" styleClass="px-3 py-1 rounded-lg text-[10px]"></p-tag>
                 </td>
               </tr>
             </ng-template>
@@ -199,169 +359,151 @@ import { Rol } from '../../domain/models/rol.model';
         </div>
       </div>
 
-      <!-- PERMISOS VIEW (Real-time granular management) -->
-      <div *ngIf="currentView === 'permisos'" class="view-content">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          <!-- Columna izquierda: Lista de Usuarios -->
-          <div class="lg:col-span-1 bg-white border border-slate-100 rounded-2xl shadow-sm p-4 flex flex-col h-[650px]">
-            <div class="mb-4">
-              <span class="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">Directorio de Usuarios</span>
-              <div class="relative w-full">
-                <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                <input pInputText type="text" [(ngModel)]="filtroUser" (input)="filtrarUsuarios()"
-                  placeholder="Buscar usuario por nombre..." class="w-full pl-9 py-2 border-slate-200 rounded-xl text-sm" />
+      <!-- PERMISOS VIEW -->
+      <div *ngIf="currentView === 'permisos'" class="view-content flex flex-col gap-6">
+
+        <!-- Tabla de Usuarios -->
+        <div class="data-table-wrapper">
+          <p-table
+            [value]="usuariosFiltrados"
+            [paginator]="true"
+            [rows]="10"
+            styleClass="modern-table"
+            [rowHover]="true"
+            [loading]="loading"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width: 80px">ID</th>
+                <th>Nombre Completo</th>
+                <th>Correo Electrónico</th>
+                <th>Rol</th>
+                <th style="width: 110px">Estado</th>
+                <th style="width: 100px" class="text-center">Acciones</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-u>
+              <tr [class.bg-[#39A900]/5]="usuarioSeleccionado?.id_usuario === u.id_usuario || usuarioSeleccionado?.id === u.id">
+                <td><span class="id-badge">#{{ u.id || u.id_usuario }}</span></td>
+                <td><span class="font-bold text-slate-800">{{ u.nombre || u.nombreCompleto }}</span></td>
+                <td><span class="text-slate-500 text-sm">{{ u.correo }}</span></td>
+                <td>
+                  <p-tag [value]="getRolNombre(u.id_rol)" [severity]="getRolSeverity(u.id_rol)" styleClass="text-[10px] px-2 py-0.5 rounded-md"></p-tag>
+                </td>
+                <td>
+                  <p-tag [value]="u.estado ? 'ACTIVO' : 'INACTIVO'" [severity]="u.estado ? 'success' : 'danger'" styleClass="px-3 py-1 rounded-lg text-[10px]"></p-tag>
+                </td>
+                <td>
+                  <div class="action-buttons justify-center">
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      class="btn-table-action btn-editor"
+                      (click)="seleccionarUsuario(u)"
+                      pTooltip="Gestionar permisos"
+                    ></button>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="empty-message">
+                  <i class="pi pi-users"></i>
+                  <p>No hay usuarios registrados para mostrar</p>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- Inline Card: Permisos del usuario seleccionado (below table) -->
+        <div *ngIf="usuarioSeleccionado" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
+          <!-- Card Header -->
+          <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
+                <i class="pi pi-key text-[#39A900] text-xl"></i>
+              </div>
+              <div>
+                <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">
+                  Permisos de {{ usuarioSeleccionado.nombre || usuarioSeleccionado.nombreCompleto }}
+                </h4>
+                <p class="text-xs text-slate-500 m-0 mt-0.5">
+                  Rol: <span class="font-bold text-slate-700">{{ getRolNombre(usuarioSeleccionado.id_rol) }}</span>
+                  — Activa o desactiva los permisos de acceso de este usuario
+                </p>
               </div>
             </div>
-            
-            <div class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-              <div *ngFor="let u of usuariosFiltrados" 
-                   (click)="seleccionarUsuario(u)"
-                   [class.bg-[#39A900]/10]="usuarioSeleccionado?.id === u.id"
-                   [class.border-[#39A900]/30]="usuarioSeleccionado?.id === u.id"
-                   [class.border-slate-100]="usuarioSeleccionado?.id !== u.id"
-                   class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
-                
-                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 border border-slate-200">
-                  <i class="pi pi-user text-slate-400 text-lg"></i>
-                </div>
-                <div class="flex flex-col min-w-0 flex-1">
-                  <span class="font-bold text-slate-800 text-sm truncate leading-tight">{{ u.nombre || u.nombreCompleto }}</span>
-                  <span class="text-slate-400 text-[10.5px] truncate">{{ u.correo }}</span>
-                </div>
-                <!-- Tag de Rol -->
-                <p-tag [value]="getRolNombre(u.id_rol)" [severity]="getRolSeverity(u.id_rol)" styleClass="text-[9px] px-2 py-0.5 rounded-md"></p-tag>
-              </div>
-              
-              <div *ngIf="usuariosFiltrados.length === 0" class="text-center py-12 text-slate-400">
-                <i class="pi pi-users text-4xl opacity-20 block mb-2"></i>
-                <p class="text-xs">No hay usuarios vinculados</p>
-              </div>
-            </div>
+            <button
+              type="button"
+              class="px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer transition-all outline-none flex items-center gap-2"
+              (click)="usuarioSeleccionado = null; permisosAgrupados = {}"
+            >
+              <i class="pi pi-times"></i>
+              Cerrar
+            </button>
           </div>
 
-          <!-- Columna derecha: Gestión de Permisos del Usuario Seleccionado -->
-          <div class="lg:col-span-2 bg-white border border-slate-100 rounded-2xl shadow-sm p-5 flex flex-col h-[650px] overflow-hidden">
-            
-            <div *ngIf="!usuarioSeleccionado" class="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div class="w-16 h-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center mb-4">
-                <i class="pi pi-key text-slate-300 text-2xl"></i>
-              </div>
-              <h4 class="text-slate-800 font-extrabold text-lg uppercase tracking-tight">Gestión de Accesos Granulares</h4>
-              <p class="text-slate-400 max-w-sm text-sm mt-1">
-                Seleccione un usuario de la lista de la izquierda para ver, activar o desactivar sus permisos de acceso en tiempo real.
-              </p>
+          <!-- Card Body: Permisos agrupados -->
+          <div class="p-6">
+            <div *ngIf="loadingPermisos" class="flex flex-col items-center justify-center py-16">
+              <i class="pi pi-spin pi-spinner text-3xl text-[#39A900]"></i>
+              <span class="text-xs text-slate-400 mt-2 font-semibold">Cargando mapa de accesos...</span>
             </div>
 
-            <div *ngIf="usuarioSeleccionado" class="flex flex-col h-full overflow-hidden">
-              <!-- Datos del Usuario Seleccionado -->
-              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4 flex-shrink-0">
-                <div class="flex items-center gap-3">
-                  <div class="w-12 h-12 rounded-full bg-[#39A900]/10 flex items-center justify-center border border-[#39A900]/20">
-                    <i class="pi pi-verified text-[#39A900] text-xl"></i>
-                  </div>
-                  <div class="flex flex-col">
-                    <div class="flex items-center gap-2">
-                      <span class="font-black text-slate-800 text-base leading-tight">{{ usuarioSeleccionado.nombre || usuarioSeleccionado.nombreCompleto }}</span>
-                      <p-tag [value]="getRolNombre(usuarioSeleccionado.id_rol)" [severity]="getRolSeverity(usuarioSeleccionado.id_rol)"></p-tag>
-                    </div>
-                    <span class="text-slate-400 text-xs mt-0.5">{{ usuarioSeleccionado.correo }}</span>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 uppercase tracking-wider">
-                    CC: {{ usuarioSeleccionado.documento || 'No Registrado' }}
+            <div *ngIf="!loadingPermisos" class="max-h-[500px] overflow-y-auto pr-1 space-y-5 custom-scrollbar">
+              <div *ngFor="let key of getKeys(permisosAgrupados)" class="bg-slate-50/60 border border-slate-100 rounded-2xl p-4">
+                <div class="perm-group-header">
+                  <span class="perm-group-dot"></span>
+                  <span class="text-xs font-black text-slate-700 uppercase tracking-widest">{{ key }}</span>
+                  <span class="ml-auto text-[10px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+                    {{ permisosAgrupados[key].length }} permisos
                   </span>
                 </div>
-              </div>
 
-              <!-- Lista de Permisos Agrupados -->
-              <div class="flex-1 overflow-y-auto pr-1 space-y-5 custom-scrollbar">
-                
-                <div *ngIf="loadingPermisos" class="flex flex-col items-center justify-center py-24">
-                  <i class="pi pi-spin pi-spinner text-3xl text-[#39A900]"></i>
-                  <span class="text-xs text-slate-400 mt-2 font-semibold">Cargando mapa de accesos...</span>
-                </div>
-
-                <div *ngIf="!loadingPermisos">
-                  <!-- Iteramos por cada módulo / categoría de permisos -->
-                  <div *ngFor="let key of getKeys(permisosAgrupados)" class="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-4">
-                    <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200/50">
-                      <i class="pi pi-folder-open text-slate-400 text-sm"></i>
-                      <span class="text-xs font-black text-slate-700 uppercase tracking-widest">{{ key }}</span>
+                <div class="space-y-2">
+                  <div *ngFor="let p of permisosAgrupados[key]"
+                       class="perm-card"
+                       [class.active]="p.tiene_permiso">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                      <div class="perm-icon" [class.active]="p.tiene_permiso" [class.inactive]="!p.tiene_permiso">
+                        <i [class]="p.tiene_permiso ? 'pi pi-check-circle' : 'pi pi-lock'"></i>
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="font-bold text-slate-800 text-sm leading-tight truncate">{{ p.descripcion || formatPermisoName(p.nombre) }}</span>
+                        <span class="text-[10.5px] text-slate-400 truncate font-mono">{{ p.nombre }}</span>
+                      </div>
                     </div>
 
-                    <!-- Lista de permisos en este módulo -->
-                    <div class="space-y-3">
-                      <div *ngFor="let p of permisosAgrupados[key]" class="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl shadow-2xs hover:border-[#39A900]/20 transition-all">
-                        <div class="flex flex-col min-w-0 pr-4">
-                          <span class="font-bold text-slate-800 text-sm leading-tight">{{ p.descripcion || formatPermisoName(p.nombre) }}</span>
-                          <span class="text-[11px] text-slate-400 mt-0.5">{{ p.nombre }}</span>
-                        </div>
-                        
-                        <div class="flex items-center gap-3">
-                          <span *ngIf="p.heredado_de_rol" class="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase">
-                            Heredado
-                          </span>
-                          <!-- PrimeNG toggleSwitch para activación en tiempo real -->
-                          <p-toggleSwitch [ngModel]="p.tiene_permiso" 
-                                          (onChange)="togglePermiso(p, $event.checked)">
-                          </p-toggleSwitch>
-                        </div>
-                      </div>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                      <span *ngIf="p.heredado_de_rol"
+                        class="text-[9px] font-bold text-indigo-500 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        Heredado
+                      </span>
+                      <button
+                        type="button"
+                        class="perm-toggle-track"
+                        [class.on]="p.tiene_permiso"
+                        [class.off]="!p.tiene_permiso"
+                        (click)="togglePermiso(p, !p.tiene_permiso)"
+                        [attr.aria-label]="p.tiene_permiso ? 'Desactivar permiso' : 'Activar permiso'"
+                      >
+                        <span class="perm-toggle-thumb"></span>
+                      </button>
                     </div>
                   </div>
                 </div>
-
               </div>
-
             </div>
-
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- Dialog para Crear/Editar Rol -->
-    <p-dialog
-      header="Crear Nuevo Rol"
-      [(visible)]="displayRolDialog"
-      [modal]="true"
-      [style]="{ width: '400px' }"
-      [draggable]="false"
-      styleClass="custom-dialog-usuario-clean"
-      maskStyleClass="backdrop-blur-sm bg-black/40"
-      [showHeader]="true"
-    >
-      <div class="flex flex-col gap-4 mt-2">
-        <div class="flex flex-col gap-1.5">
-          <label class="text-sm font-bold text-gray-900">Nombre del Rol *</label>
-          <input 
-            pInputText 
-            [(ngModel)]="rol.nombre" 
-            placeholder="Ej. INSTRUCTOR, GESTOR" 
-            class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" 
-          />
-        </div>
-        
-        <div class="dialog-footer">
-          <button
-            pButton
-            label="Cancelar"
-            class="btn-cancelar"
-            (click)="displayRolDialog = false"
-          ></button>
-          <button
-            pButton
-            [label]="saving ? 'Guardando...' : 'Guardar'"
-            class="btn-guardar"
-            (click)="guardar()"
-            [disabled]="saving"
-          ></button>
-        </div>
-      </div>
-    </p-dialog>
+
+
+
   `
 })
 export class RolesComponent implements OnInit {
@@ -371,15 +513,19 @@ export class RolesComponent implements OnInit {
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
-  currentView: 'roles' | 'usuarios' | 'permisos' = 'roles';
+  currentView: 'usuarios' | 'permisos' = 'usuarios';
   
   roles: Rol[] = [];
-  rolesFiltrados: Rol[] = [];
   filtro = '';
 
   usuarios: any[] = [];
   usuariosFiltrados: any[] = [];
   filtroUser = '';
+  
+  showUserForm = false;
+  esNuevoUsuario = true;
+  savingUser = false;
+  usuarioForm: any = {};
   
   loading = false;
   saving = false;
@@ -392,6 +538,7 @@ export class RolesComponent implements OnInit {
   permisosAgrupados: any = {};
   loadingPermisos = false;
   displayRolDialog = false;
+  showRolForm = false;
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
@@ -401,31 +548,26 @@ export class RolesComponent implements OnInit {
 
   openNewRolDialog() {
     this.rol = { nombre: '' };
-    this.displayRolDialog = true;
+    this.showRolForm = true;
+    this.showUserForm = false;
   }
 
-  setView(view: 'roles' | 'usuarios' | 'permisos') {
+  setView(view: 'usuarios' | 'permisos') {
     this.currentView = view;
-    if ((view === 'usuarios' || view === 'permisos') && this.usuarios.length === 0) {
+    if (this.usuarios.length === 0) {
       this.cargarUsuarios();
     }
   }
 
   cargarRoles() {
-    this.loading = true;
     this.rolService.getAll().subscribe({
       next: (res: any) => {
         const data = Array.isArray(res) ? res : (res.data || []);
         this.roles = data;
-        this.rolesFiltrados = data;
-        this.loading = false;
         this.cdr.detectChanges();
       },
       error: () => {
         this.roles = [];
-        this.rolesFiltrados = [];
-        this.loading = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los roles' });
       },
     });
   }
@@ -447,18 +589,11 @@ export class RolesComponent implements OnInit {
     });
   }
 
-  filtrar() {
-    const filtroLower = this.filtro.toLowerCase();
-    this.rolesFiltrados = this.roles.filter((r) =>
-      r.nombre?.toLowerCase().includes(filtroLower),
-    );
-  }
-
-  filtrarUsuarios() {
-    const filtroLower = this.filtroUser.toLowerCase();
+  filtrarGlobal() {
+    const f = this.filtro.toLowerCase();
     this.usuariosFiltrados = this.usuarios.filter((u) =>
-      (u.nombre || u.nombreCompleto || '').toLowerCase().includes(filtroLower) ||
-      (u.correo || '').toLowerCase().includes(filtroLower)
+      (u.nombre || u.nombreCompleto || '').toLowerCase().includes(f) ||
+      (u.correo || '').toLowerCase().includes(f)
     );
   }
 
@@ -470,18 +605,84 @@ export class RolesComponent implements OnInit {
 
     this.saving = true;
     this.rolService.create({ nombre: this.rol.nombre }).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Rol creado correctamente' });
         this.rol = { nombre: '' };
         this.saving = false;
-        this.displayRolDialog = false;
+        this.showRolForm = false;
         this.cargarRoles();
+        if (res && res.data && res.data.id_rol) {
+          this.usuarioForm.id_rol = res.data.id_rol;
+        }
       },
       error: (err) => {
         this.saving = false;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear el rol' });
       },
     });
+  }
+
+  toggleUserForm() {
+    if (this.showUserForm) {
+      this.showUserForm = false;
+    } else {
+      this.openNewUsuario();
+    }
+  }
+
+  openNewUsuario() {
+    this.esNuevoUsuario = true;
+    this.usuarioForm = { nombre: '', correo: '', id_rol: null, password: '' };
+    this.showUserForm = true;
+  }
+
+  editarUsuario(u: any) {
+    this.esNuevoUsuario = false;
+    this.usuarioForm = { ...u, password: '' };
+    this.showUserForm = true;
+  }
+
+  guardarUsuario() {
+    if (!this.usuarioForm.nombre || !this.usuarioForm.correo || !this.usuarioForm.id_rol) {
+      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Faltan campos requeridos' });
+      return;
+    }
+    this.savingUser = true;
+
+    const reqData = {
+      nombre: this.usuarioForm.nombre,
+      correo: this.usuarioForm.correo,
+      id_rol: this.usuarioForm.id_rol,
+      ...(this.usuarioForm.password ? { password: this.usuarioForm.password } : {})
+    };
+
+    if (this.esNuevoUsuario) {
+      this.usuarioService.create(reqData as any).subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado' });
+          this.showUserForm = false;
+          this.savingUser = false;
+          this.cargarUsuarios();
+        },
+        error: (err) => {
+          this.savingUser = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al crear' });
+        }
+      });
+    } else {
+      this.usuarioService.update(this.usuarioForm.id_usuario || this.usuarioForm.id, reqData).subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado' });
+          this.showUserForm = false;
+          this.savingUser = false;
+          this.cargarUsuarios();
+        },
+        error: (err) => {
+          this.savingUser = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al actualizar' });
+        }
+      });
+    }
   }
 
   seleccionarUsuario(u: any) {

@@ -232,6 +232,10 @@ export class LayoutComponent implements OnInit {
     },
     { title: 'Fichas',      path: '/fichas',      icon: 'pi-id-card' },
     { title: 'Sitios',      path: '/sitios',      icon: 'pi-map-marker' },
+    { title: 'Centros',     path: '/centros',     icon: 'pi-briefcase' },
+    { title: 'Sedes',       path: '/sedes',       icon: 'pi-building' },
+    { title: 'Áreas',       path: '/areas',       icon: 'pi-clone' },
+    { title: 'Programas',   path: '/programas',   icon: 'pi-bookmark' },
     { title: 'Solicitudes', path: '/solicitudes', icon: 'pi-inbox' },
     { title: 'Movimientos', path: '/movimientos', icon: 'pi-arrows-h' }
   ];

@@ -59,7 +59,7 @@ interface Inventario {
   encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
   template: `
-    <p-toast position="top-right"></p-toast>
+    <p-toast position="bottom-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
 
     <div class="module-container">
@@ -81,12 +81,22 @@ interface Inventario {
             />
           </div>
           <button
+            *ngIf="!displayDialog"
             type="button"
-            class="px-4 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none border-none h-[42px]"
+            class="btn-add"
             (click)="openNew()"
           >
-            <i class="pi pi-plus text-sm"></i>
+            <i class="pi pi-plus"></i>
             Registrar Entrada
+          </button>
+          <button
+            *ngIf="displayDialog"
+            type="button"
+            class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+            (click)="displayDialog = false"
+          >
+            <i class="pi pi-times"></i>
+            Cerrar Formulario
           </button>
         </div>
       </div>
@@ -166,198 +176,7 @@ interface Inventario {
       </div>
     </div>
 
-    <!-- Create/Edit Form Dialog -->
-    <p-dialog
-      [header]="esNuevo ? '✨ Registrar Entrada en Inventario' : '📝 Actualizar Estado de Inventario'"
-      [(visible)]="displayDialog"
-      [modal]="true"
-      [style]="{ width: '600px', maxWidth: '90vw' }"
-      [draggable]="false"
-      [resizable]="false"
-      styleClass="form-dialog"
-      maskStyleClass="backdrop-blur-sm bg-black/40"
-      appendTo="body"
-    >
-      <div class="form-grid mt-2 max-h-[70vh] overflow-y-auto">
-        <!-- SECCIÓN: REGISTRO DE NUEVO PRODUCTO (Solo visible al crear) -->
-        <div class="flex flex-col gap-4" *ngIf="esNuevo">
-          <span class="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1">Detalles del Nuevo Producto</span>
-          
-          <div class="form-field">
-            <label>Nombre del Producto *</label>
-            <input pInputText [(ngModel)]="nuevoProducto.nombre" placeholder="Ej: Martillo" />
-          </div>
 
-          <div class="form-field">
-            <label>Descripción</label>
-            <input pInputText [(ngModel)]="nuevoProducto.descripcion" placeholder="Ej: Martillo de acero templado" />
-          </div>
-
-          <div class="product-form-row">
-            <div class="form-field">
-              <label>SKU (Código único) *</label>
-              <input pInputText [(ngModel)]="nuevoProducto.SKU" placeholder="Ej: MAR-001" />
-            </div>
-            <div class="form-field">
-              <label>Código UNSPSC</label>
-              <input pInputText [(ngModel)]="nuevoProducto.codigo_unspsc" placeholder="Ej: 27111600" />
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label>Categoría del Producto *</label>
-            <div class="input-with-button">
-              <p-select
-                [options]="categorias"
-                [(ngModel)]="nuevoProducto.id_categoria"
-                optionLabel="nombre"
-                optionValue="id_categoria"
-                placeholder="Seleccione categoría"
-                styleClass="w-full"
-                appendTo="body"
-              ></p-select>
-              <button
-                type="button"
-                class="btn-inline-add"
-                (click)="displayAddCategoria = true"
-                pTooltip="Agregar categoría"
-                tooltipPosition="top"
-              >
-                <i class="pi pi-plus"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="product-form-row">
-            <div class="form-field">
-              <label>Tipo de Material *</label>
-              <div class="input-with-button">
-                <p-select
-                  [options]="tiposMaterial"
-                  [(ngModel)]="nuevoProducto.tipo_material"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="Seleccione tipo"
-                  styleClass="w-full"
-                  appendTo="body"
-                ></p-select>
-                <button
-                  type="button"
-                  class="btn-inline-add"
-                  (click)="displayAddTipoMaterial = true"
-                  pTooltip="Agregar tipo de material"
-                  tooltipPosition="top"
-                >
-                  <i class="pi pi-plus"></i>
-                </button>
-              </div>
-            </div>
-            <div class="form-field">
-              <label>Unidad de Medida *</label>
-              <div class="input-with-button">
-                <p-select
-                  [options]="unidadesMedida"
-                  [(ngModel)]="nuevoProducto.unidad_medida"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="Seleccione unidad"
-                  styleClass="w-full"
-                  appendTo="body"
-                ></p-select>
-                <button
-                  type="button"
-                  class="btn-inline-add"
-                  (click)="displayAddUnidadMedida = true"
-                  pTooltip="Agregar unidad de medida"
-                  tooltipPosition="top"
-                >
-                  <i class="pi pi-plus"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="product-form-row">
-            <div class="form-field">
-              <label>Cantidad Inicial *</label>
-              <input type="number" pInputText [(ngModel)]="nuevoProducto.cantidad" min="1" />
-            </div>
-            <div class="form-field">
-              <label>Stock Mínimo Alertas *</label>
-              <input type="number" pInputText [(ngModel)]="nuevoProducto.stock_minimo" min="1" />
-            </div>
-          </div>
-
-          <div class="form-field flex flex-row items-center gap-2 py-1">
-            <input type="checkbox" [(ngModel)]="nuevoProducto.es_psd" id="es_psd" class="w-4 h-4 cursor-pointer" />
-            <label for="es_psd" class="text-xs font-bold text-slate-800 cursor-pointer select-none">¿Es un elemento de control de fecha (PSD)?</label>
-          </div>
-
-          <div class="form-field" *ngIf="nuevoProducto.es_psd">
-            <label>Fecha de Vencimiento *</label>
-            <input type="date" pInputText [(ngModel)]="nuevoProducto.fecha_vencimiento" />
-          </div>
-        </div>
-
-        <!-- MODO EDICIÓN: INFORMACIÓN ESTÁTICA -->
-        <div class="form-field p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-1" *ngIf="!esNuevo">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Item de Inventario</div>
-          <div class="text-sm font-bold text-slate-900">{{ inventarioEdit.item?.codigo_sku }}</div>
-          <div class="text-xs text-slate-500 mt-0.5">{{ inventarioEdit.item?.producto?.nombre }}</div>
-        </div>
-
-        <!-- SECCIÓN: DATOS DE UBICACIÓN Y ESTADO -->
-        <span class="text-xs font-black text-slate-400 uppercase tracking-widest block mt-2 mb-1" *ngIf="esNuevo">Detalles del Inventario</span>
-
-        <div class="form-field" *ngIf="esNuevo">
-          <label>Ubicación / Sitio de Almacenamiento *</label>
-          <p-select
-            [options]="sitios"
-            [(ngModel)]="inventarioEdit.id_sitio"
-            optionLabel="nombre"
-            optionValue="id_sitio"
-            placeholder="Selecciona un sitio"
-            styleClass="w-full"
-            appendTo="body"
-          ></p-select>
-        </div>
-
-        <div class="form-field p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-1" *ngIf="!esNuevo">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ubicación / Sitio</div>
-          <div class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-            <i class="pi pi-map-marker text-slate-400"></i>
-            {{ inventarioEdit.sitio?.nombre }}
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label>Estado de Disponibilidad *</label>
-          <p-select
-            [options]="estadosDisponibles"
-            [(ngModel)]="inventarioEdit.estado"
-            placeholder="Selecciona un estado"
-            styleClass="w-full"
-            appendTo="body"
-          ></p-select>
-        </div>
-      </div>
-
-      <div class="dialog-footer">
-        <button
-          pButton
-          label="Cancelar"
-          class="btn-cancelar"
-          (click)="displayDialog = false"
-        ></button>
-        <button
-          pButton
-          [label]="saving ? 'Guardando...' : (esNuevo ? 'Registrar' : 'Actualizar')"
-          class="btn-guardar"
-          (click)="guardar()"
-          [disabled]="saving"
-        ></button>
-      </div>
-    </p-dialog>
 
     <!-- Diálogo para agregar nueva Categoría -->
     <p-dialog

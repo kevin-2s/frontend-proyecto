@@ -41,7 +41,7 @@ interface Ficha {
   encapsulation: ViewEncapsulation.None,
   providers: [MessageService],
   template: `
-    <p-toast position="top-right"></p-toast>
+    <p-toast position="bottom-right"></p-toast>
     
     <div class="module-container">
       <div class="module-header">
@@ -55,14 +55,90 @@ interface Ficha {
             <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
               placeholder="Buscar ficha..." class="search-input" />
           </div>
-          <button 
+          <button
+            *ngIf="!displayDialog"
             type="button"
-            class="px-4 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none border-none h-[42px]"
+            class="btn-add"
             (click)="openNew()"
           >
-            <i class="pi pi-plus text-sm"></i>
+            <i class="pi pi-plus"></i>
             Nueva Ficha
           </button>
+          <button
+            *ngIf="displayDialog"
+            type="button"
+            class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+            (click)="displayDialog = false"
+          >
+            <i class="pi pi-times"></i>
+            Cerrar Formulario
+          </button>
+        </div>
+      </div>
+
+      <!-- Inline Form Card -->
+      <div *ngIf="displayDialog" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
+        <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
+            <i class="pi pi-id-card text-[#39A900] text-xl"></i>
+          </div>
+          <div>
+            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">Registrar Nueva Ficha de Formación</h4>
+            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para la ficha de formación en el sistema</p>
+          </div>
+        </div>
+        
+        <div class="p-6 flex flex-col gap-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+            <!-- Número de Ficha / Código -->
+            <div class="form-field">
+              <input
+                pInputText
+                id="f-numero"
+                [(ngModel)]="ficha.numero_ficha"
+                placeholder="Ej: 2711854"
+              />
+              <label for="f-numero">Número de Ficha / Código *</label>
+            </div>
+
+            <!-- Programa de Formación -->
+            <div class="form-field">
+              <input
+                pInputText
+                id="f-programa"
+                [(ngModel)]="ficha.programa"
+                placeholder="Ej: ADSO"
+              />
+              <label for="f-programa">Programa de Formación *</label>
+            </div>
+
+            <!-- Instructor Responsable -->
+            <div class="form-field">
+              <p-select
+                id="f-responsable"
+                [options]="instructores"
+                [(ngModel)]="ficha.id_responsable"
+                optionLabel="nombre"
+                optionValue="id_usuario"
+                placeholder=" "
+                [filter]="true"
+                filterBy="nombre"
+                styleClass="w-full"
+                appendTo="body"
+              ></p-select>
+              <label for="f-responsable">Instructor Responsable</label>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+            <button type="button" class="btn-cancelar" (click)="displayDialog = false">Cancelar</button>
+            <button
+              type="button"
+              class="btn-guardar"
+              (click)="guardar()"
+              [disabled]="saving"
+            >{{ saving ? 'Guardando...' : 'Registrar Ficha' }}</button>
+          </div>
         </div>
       </div>
 
@@ -108,71 +184,6 @@ interface Ficha {
       </div>
     </div>
 
-    <!-- Dialog para crear nueva ficha -->
-    <p-dialog
-      header="✨ Registrar Nueva Ficha de Formación"
-      [(visible)]="displayDialog"
-      [modal]="true"
-      [style]="{ width: '480px' }"
-      [draggable]="false"
-      [resizable]="false"
-      styleClass="custom-dialog-usuario-clean"
-      maskStyleClass="backdrop-blur-sm bg-black/40"
-      appendTo="body"
-    >
-      <div class="flex flex-col gap-5 mt-4">
-        <div class="flex flex-col gap-1.5">
-          <label class="text-sm font-bold text-gray-900">Número de Ficha / Código *</label>
-          <input
-            pInputText
-            [(ngModel)]="ficha.numero_ficha"
-            placeholder="Ej: 2711854"
-            class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none"
-          />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <label class="text-sm font-bold text-gray-900">Programa de Formación *</label>
-          <input
-            pInputText
-            [(ngModel)]="ficha.programa"
-            placeholder="Ej: ADSO"
-            class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none"
-          />
-        </div>
-        
-        <div class="flex flex-col gap-1.5">
-          <label class="text-sm font-bold text-gray-900">Instructor Responsable</label>
-          <p-select
-            [options]="instructores"
-            [(ngModel)]="ficha.id_responsable"
-            optionLabel="nombre"
-            optionValue="id_usuario"
-            placeholder="Selecciona un responsable"
-            [filter]="true"
-            filterBy="nombre"
-            styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all"
-            [style]="{'width':'100%'}"
-            appendTo="body"
-          ></p-select>
-        </div>
-      </div>
-
-      <div class="dialog-footer">
-        <button
-          pButton
-          label="Cancelar"
-          class="btn-cancelar"
-          (click)="displayDialog = false"
-        ></button>
-        <button
-          pButton
-          [label]="saving ? 'Guardando...' : 'Registrar Ficha'"
-          class="btn-guardar"
-          (click)="guardar()"
-          [disabled]="saving"
-        ></button>
-      </div>
-    </p-dialog>
   `
 })
 export class FichasComponent implements OnInit {

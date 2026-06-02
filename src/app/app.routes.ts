@@ -58,6 +58,22 @@ export const routes: Routes = [
       {
         path: 'solicitudes',
         loadComponent: () => import('./presentation/solicitudes/solicitudes.component').then(m => m.SolicitudesComponent)
+      },
+      {
+        path: 'centros',
+        loadComponent: () => import('./presentation/centros/centros.component').then(m => m.CentrosComponent)
+      },
+      {
+        path: 'sedes',
+        loadComponent: () => import('./presentation/sedes/sedes.component').then(m => m.SedesComponent)
+      },
+      {
+        path: 'areas',
+        loadComponent: () => import('./presentation/areas/areas.component').then(m => m.AreasComponent)
+      },
+      {
+        path: 'programas',
+        loadComponent: () => import('./presentation/programas/programas.component').then(m => m.ProgramasComponent)
       }
     ]
   },

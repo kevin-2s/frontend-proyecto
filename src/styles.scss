@@ -11,6 +11,7 @@
 @use './stylesglobales/fichas.scss';
 @use './stylesglobales/inventario.scss';
 @use './stylesglobales/modern-table.scss';
+@use './stylesglobales/toast.scss';
 
 /* CSS Imports must go after @use */
 @import "primeicons/primeicons.css";
@@ -58,9 +59,329 @@
 }
 
 /* Estilo para las opciones dentro del selector */
-.p-select-item {
-  background: white !important;
-  &:hover {
-    background: #f1f5f9 !important;
-  }
+.p-select-option {
+  padding: 0.6rem 1rem !important;
+  color: #374151 !important;
+  border-radius: 8px !important;
+  margin: 2px 4px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
 }
+
+.p-select-option:hover {
+  background: #f0fdf4 !important; /* light green background */
+  color: #39A900 !important; /* brand green text */
+}
+
+.p-select-option.p-highlight {
+  background: #39A900 !important; /* brand green background */
+  color: white !important;
+}
+
+.p-select-option-text {
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+}
+
+/* Outlined Floating Labels System */
+.floating-label-group {
+  position: relative;
+  width: 100%;
+}
+
+.floating-label-group label {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: white;
+  padding: 0 0.5rem;
+  color: #94a3b8; /* slate-400 */
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+/* Floating state when focused or having a value */
+.floating-label-group:focus-within label,
+.floating-label-group.floating label {
+  top: 0;
+  transform: translateY(-50%) scale(0.85);
+  color: #39A900; /* brand green */
+  font-weight: 700;
+}
+
+/* Keep label grey when not focused but has value */
+.floating-label-group.floating:not(:focus-within) label {
+  color: #64748b; /* slate-500 */
+  font-weight: 600;
+}
+
+/* Standardize input styling inside floating group to match the reference design */
+.floating-label-group input {
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.floating-label-group input:focus {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+  outline: none !important;
+}
+
+/* Align PrimeNG select with the floating label group design */
+.floating-label-group .p-select {
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.floating-label-group .p-select.p-focus,
+.floating-label-group .p-select:focus-within {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+}
+
+.floating-label-group .p-select-label {
+  padding-left: 1rem !important;
+  font-size: 0.875rem !important;
+  color: #1e293b !important;
+}
+
+/* Ensure password wrapper fits the floating system and positions its eye icon on the right */
+.floating-label-group .p-password {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+.floating-label-group .p-password svg,
+.floating-label-group .p-password-toggle-icon,
+.floating-label-group .p-password-icon,
+.floating-label-group .p-password-toggle-icon-show,
+.floating-label-group .p-password-toggle-icon-hide {
+  position: absolute !important;
+  top: 50% !important;
+  right: 1rem !important;
+  transform: translateY(-50%) !important;
+  color: #64748b !important; /* slate-500 */
+  cursor: pointer !important;
+  z-index: 20 !important;
+  margin: 0 !important;
+  font-size: 1rem !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* ==========================================
+   GLOBAL FORM FIELDS OUTLINED FLOATING LABELS
+   ========================================== */
+
+/* Only apply absolute positioning to label if the form-field has a text/number input, select, or password */
+.form-field:has(input:not([type="checkbox"]):not([type="radio"]):not([type="submit"])),
+.form-field:has(.p-select),
+.form-field:has(.p-password) {
+  position: relative !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.form-field:has(input:not([type="checkbox"]):not([type="radio"]):not([type="submit"])) label,
+.form-field:has(.p-select) label,
+.form-field:has(.p-password) label {
+  position: absolute !important;
+  left: 1rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background-color: white !important;
+  padding: 0 0.5rem !important;
+  color: #94a3b8 !important; /* slate-400 */
+  font-size: 0.875rem !important; /* text-sm */
+  font-weight: 500 !important;
+  pointer-events: none !important;
+  transition: all 0.2s ease !important;
+  z-index: 10 !important;
+}
+
+/* Floating states */
+.form-field:has(input:focus) label,
+.form-field:has(input.p-filled) label,
+.form-field:has(input:not(:placeholder-shown)) label,
+.form-field:has(.p-select.p-focus) label,
+.form-field:has(.p-select:focus-within) label,
+.form-field:has(.p-select.p-inputwrapper-filled) label,
+.form-field:has(.p-password.p-inputwrapper-filled) label,
+.form-field:has(.p-password.p-focus) label,
+.form-field:has(.p-password:focus-within) label {
+  top: 0 !important;
+  transform: translateY(-50%) scale(0.85) !important;
+  color: #39A900 !important; /* brand green */
+  font-weight: 700 !important;
+}
+
+/* Keep label gray when blurred but filled */
+.form-field:has(input.p-filled):not(:focus-within) label,
+.form-field:has(input:not(:placeholder-shown)):not(:focus-within) label,
+.form-field:has(.p-select.p-inputwrapper-filled):not(:focus-within) label,
+.form-field:has(.p-password.p-inputwrapper-filled):not(:focus-within) label {
+  color: #64748b !important; /* slate-500 */
+  font-weight: 600 !important;
+}
+
+/* Hide input placeholders when they are not focused to avoid overlapping */
+.form-field input:not(:focus)::placeholder {
+  color: transparent !important;
+}
+
+/* Base styles for standard inputs inside .form-field (overrides previous raw borders) */
+.form-field input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]) {
+  width: 100% !important;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+  padding-left: 1.1rem !important;
+  padding-right: 1.1rem !important;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  font-size: 0.875rem !important;
+  color: #0f172a !important; /* navy */
+  transition: all 0.2s ease !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.form-field input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):focus {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+  background-color: white !important;
+}
+
+/* Base styles for PrimeNG select inside .form-field */
+.form-field .p-select {
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  height: 46px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.form-field .p-select.p-focus,
+.form-field .p-select:focus-within {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+  background-color: white !important;
+}
+
+.form-field .p-select-label {
+  padding-left: 1.1rem !important;
+  font-size: 0.875rem !important;
+  color: #1e293b !important;
+}
+
+/* Ensure password wrapper inside .form-field fits the floating system and positions its eye icon on the right */
+.form-field .p-password {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+.form-field .p-password input {
+  padding-right: 2.5rem !important; /* Space for the eye icon */
+}
+
+.form-field .p-password svg,
+.form-field .p-password-toggle-icon,
+.form-field .p-password-icon,
+.form-field .p-password-toggle-icon-show,
+.form-field .p-password-toggle-icon-hide {
+  position: absolute !important;
+  top: 50% !important;
+  right: 1rem !important;
+  transform: translateY(-50%) !important;
+  color: #64748b !important; /* slate-500 */
+  cursor: pointer !important;
+  z-index: 20 !important;
+  margin: 0 !important;
+  font-size: 1rem !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Global Outlined Red/Green Buttons for Dialog Footers */
+.dialog-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  padding: 1.25rem 2.5rem 2.5rem !important;
+}
+
+.btn-cancelar, 
+button.btn-cancelar, 
+.p-button.btn-cancelar {
+  background: white !important;
+  color: #ef4444 !important; /* red-500 */
+  border: 1px solid #fca5a5 !important; /* red-300 */
+  padding: 0.65rem 1.5rem !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+  font-size: 0.875rem !important;
+  height: 44px !important;
+}
+
+.btn-cancelar:hover, 
+button.btn-cancelar:hover, 
+.p-button.btn-cancelar:hover {
+  background: #fef2f2 !important; /* light red */
+  border-color: #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+.btn-guardar, 
+button.btn-guardar, 
+.p-button.btn-guardar {
+  background: white !important;
+  color: #39A900 !important; /* brand green */
+  border: 1px solid rgba(57, 169, 0, 0.3) !important;
+  padding: 0.65rem 1.8rem !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+  font-size: 0.875rem !important;
+  height: 44px !important;
+}
+
+.btn-guardar:hover:not(:disabled), 
+button.btn-guardar:hover:not(:disabled), 
+.p-button.btn-guardar:hover:not(:disabled) {
+  background: #f0fdf4 !important; /* light green */
+  border-color: #39A900 !important;
+  color: #2d8600 !important;
+}
+
+.btn-guardar:disabled, 
+button.btn-guardar:disabled, 
+.p-button.btn-guardar:disabled {
+  opacity: 0.5 !important;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+}
+
+
+
+

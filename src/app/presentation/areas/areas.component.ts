@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef} from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -11,15 +11,11 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { CategoriaService } from '../../infrastructure/services/categoria.service';
-
-interface Categoria {
-  id?: number;
-  nombre: string;
-}
+import { AreaService } from '../../infrastructure/services/area.service';
+import { Area } from '../../domain/models/area.model';
 
 @Component({
-  selector: 'app-categoria',
+  selector: 'app-areas',
   standalone: true,
   imports: [
     CommonModule,
@@ -39,16 +35,23 @@ interface Categoria {
   template: `
     <p-toast position="bottom-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
+
     <div class="module-container">
       <div class="module-header">
         <h3 class="page-title">
-          <i class="pi pi-tag"></i> Categorías
+          <i class="pi pi-clone"></i> Áreas de Formación
         </h3>
         <div class="header-actions">
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
-            <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
-              placeholder="Buscar categoría..." class="search-input" />
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="filtro"
+              (input)="filtrar()"
+              placeholder="Buscar área..."
+              class="search-input"
+            />
           </div>
           <button
             *ngIf="!displayDialog"
@@ -57,7 +60,7 @@ interface Categoria {
             (click)="openNew()"
           >
             <i class="pi pi-plus"></i>
-            Nueva Categoría
+            Nueva Área
           </button>
           <button
             *ngIf="displayDialog"
@@ -75,25 +78,38 @@ interface Categoria {
       <div *ngIf="displayDialog" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
         <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
           <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
-            <i class="pi pi-tag text-[#39A900] text-xl"></i>
+            <i class="pi pi-clone text-[#39A900] text-xl"></i>
           </div>
           <div>
-            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Registrar Nueva Categoría' : 'Editar Categoría' }}</h4>
-            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para la categoría en el sistema</p>
+            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Registrar Nueva Área' : 'Editar Área' }}</h4>
+            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para el área de formación</p>
           </div>
         </div>
         
         <div class="p-6 flex flex-col gap-5">
-          <div class="grid grid-cols-1 gap-5 pt-2">
-            <!-- Nombre de la Categoría -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+            <!-- Nombre del Área -->
             <div class="form-field">
               <input
                 pInputText
-                id="nombre"
-                [(ngModel)]="categoria.nombre"
-                placeholder="Ej: Insumos Médicos"
+                id="a-nombre"
+                [(ngModel)]="area.nombre"
+                placeholder="Ej: Teleinformática y Tecnología"
               />
-              <label for="nombre">Nombre de la Categoría *</label>
+              <label for="a-nombre">Nombre del Área *</label>
+            </div>
+
+            <!-- Estado Switch -->
+            <div class="form-field">
+              <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200/80 h-[46px]">
+                <p-toggleSwitch [(ngModel)]="area.estado"></p-toggleSwitch>
+                <span class="font-bold text-sm"
+                  [class.text-green-600]="area.estado !== false"
+                  [class.text-red-600]="area.estado === false">
+                  {{ area.estado !== false ? 'ACTIVA' : 'INACTIVA' }}
+                </span>
+              </div>
+              <label>Estado</label>
             </div>
           </div>
 
@@ -103,14 +119,15 @@ interface Categoria {
               type="button"
               class="btn-guardar"
               (click)="guardar()"
-            >Guardar Categoría</button>
+              [disabled]="saving"
+            >{{ saving ? 'Guardando...' : 'Guardar Área' }}</button>
           </div>
         </div>
       </div>
 
       <div class="data-table-wrapper">
         <p-table
-          [value]="categoriasFiltradas"
+          [value]="areasFiltradas"
           [paginator]="true"
           [rows]="10"
           styleClass="modern-table"
@@ -118,30 +135,38 @@ interface Categoria {
         >
           <ng-template pTemplate="header">
             <tr>
-              <th style="width:120px">ID</th>
-              <th>Nombre de la Categoría</th>
+              <th style="width:80px">ID</th>
+              <th>Nombre del Área</th>
+              <th style="width:120px">Estado</th>
               <th style="width:150px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-cat>
+          <ng-template pTemplate="body" let-area>
             <tr>
-              <td><span class="id-badge">#{{ cat.id }}</span></td>
-              <td><span class="nombre-cell">{{ cat.nombre }}</span></td>
+              <td><span class="id-badge">#{{ area.id_area }}</span></td>
+              <td><span class="nombre-cell">{{ area.nombre }}</span></td>
+              <td>
+                <p-tag
+                  [value]="area.estado !== false ? 'ACTIVO' : 'INACTIVO'"
+                  [severity]="area.estado !== false ? 'success' : 'danger'"
+                  styleClass="px-3 py-1 font-bold rounded-lg"
+                ></p-tag>
+              </td>
               <td>
                 <div class="action-buttons justify-center">
                   <button
                     pButton
                     icon="pi pi-pencil"
                     class="btn-table-action btn-editor"
-                    (click)="editar(cat)"
-                    pTooltip="Editar categoría"
+                    (click)="editar(area)"
+                    pTooltip="Editar área"
                   ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
-                    (click)="eliminar(cat)"
-                    pTooltip="Eliminar categoría"
+                    (click)="eliminar(area)"
+                    pTooltip="Eliminar área"
                   ></button>
                 </div>
               </td>
@@ -149,148 +174,145 @@ interface Categoria {
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="3" class="empty-message">
-                <i class="pi pi-tag"></i>
-                <p>No se encontraron categorías registradas</p>
+              <td colspan="4" class="empty-message">
+                <i class="pi pi-clone"></i>
+                <p>No se encontraron áreas registradas</p>
               </td>
             </tr>
           </ng-template>
         </p-table>
       </div>
     </div>
-
   `
 })
-export class CategoriaComponent implements OnInit {
-  private categoriaService = inject(CategoriaService);
+export class AreasComponent implements OnInit {
+  private areaService = inject(AreaService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
-  categorias: Categoria[] = [];
-  categoriasFiltradas: Categoria[] = [];
+
+  areas: Area[] = [];
+  areasFiltradas: Area[] = [];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
-  categoria: Categoria = this.getNuevaCategoria();
+  saving = false;
+  area: Area = this.getNuevo();
+
   ngOnInit() {
-    this.cargarCategorias();
+    this.cargar();
   }
-  cargarCategorias() {
-    this.categoriaService.getCategorias().subscribe({
+
+  cargar() {
+    this.areaService.getAreas().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        setTimeout(() => {
-          this.categorias = d.map((c: any) => ({
-            ...c,
-            id: c.id_categoria ?? c.id,
-            nombre: c.nombre
-          }));
-          this.categoriasFiltradas = [...this.categorias];
-          this.cdr.detectChanges();
-        });
+        this.areas = d;
+        this.areasFiltradas = d;
+        setTimeout(() => this.cdr.detectChanges());
       },
       error: () => {
-        setTimeout(() => {
-          this.categorias = [];
-          this.categoriasFiltradas = [];
-          this.cdr.detectChanges();
-        });
-      },
+        this.areas = [];
+        this.areasFiltradas = [];
+        setTimeout(() => this.cdr.detectChanges());
+      }
     });
   }
+
   filtrar() {
-    const f = this.filtro.toLowerCase();
-    this.categoriasFiltradas = this.categorias.filter((c) =>
-      c.nombre?.toLowerCase().includes(f),
+    const f = this.filtro.toLowerCase().trim();
+    this.areasFiltradas = this.areas.filter(a =>
+      a.nombre?.toLowerCase().includes(f)
     );
   }
-  getNuevaCategoria(): Categoria {
-    return { nombre: '' };
+
+  getNuevo(): Area {
+    return { nombre: '', estado: true };
   }
+
   openNew() {
     this.esNuevo = true;
-    this.categoria = this.getNuevaCategoria();
+    this.area = this.getNuevo();
     this.displayDialog = true;
   }
-  editar(cat: Categoria) {
+
+  editar(a: Area) {
     this.esNuevo = false;
-    this.categoria = { ...cat };
+    this.area = { ...a };
     this.displayDialog = true;
   }
+
   guardar() {
-    if (!this.categoria.nombre) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'El nombre de la categoría es requerido',
-      });
+    if (!this.area.nombre.trim()) {
+      this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'El nombre del área es requerido' });
       return;
     }
+
+    const payload = {
+      nombre: this.area.nombre.trim(),
+      estado: this.area.estado !== false
+    };
+
+    this.saving = true;
+
     if (this.esNuevo) {
-      this.categoriaService.crearCategoria({ nombreCat: this.categoria.nombre }).subscribe({
+      this.areaService.crearArea(payload).subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Categoría creada correctamente',
-          });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Área creada correctamente' });
           this.displayDialog = false;
-          this.cargarCategorias();
+          this.saving = false;
+          this.cargar();
         },
-        error: () => {
+        error: (err: any) => {
+          this.saving = false;
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo crear la categoría',
+            detail: err.error?.message || 'No se pudo crear el área. Verifique que no exista.'
           });
-        },
+        }
       });
     } else {
-      this.categoriaService.actualizarCategoria(this.categoria.id!, this.categoria).subscribe({
+      this.areaService.actualizarArea(this.area.id_area!, payload).subscribe({
         next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Categoría actualizada correctamente',
-          });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Área actualizada correctamente' });
           this.displayDialog = false;
-          this.cargarCategorias();
+          this.saving = false;
+          this.cargar();
         },
-        error: () => {
+        error: (err: any) => {
+          this.saving = false;
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo actualizar la categoría',
+            detail: err.error?.message || 'No se pudo actualizar el área'
           });
-        },
+        }
       });
     }
   }
-  eliminar(cat: Categoria) {
+
+  eliminar(a: Area) {
     this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar la categoría ' + cat.nombre + '?',
+      message: `¿Está seguro de eliminar el área "${a.nombre}"? Esto podría eliminar los programas asociados.`,
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.categoriaService.eliminarCategoria(cat.id!).subscribe({
+        this.areaService.eliminarArea(a.id_area!).subscribe({
           next: () => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Categoría eliminada correctamente',
-            });
-            this.cargarCategorias();
+            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Área eliminada correctamente' });
+            this.cargar();
           },
-          error: () => {
+          error: (err: any) => {
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
-              detail: 'No se pudo eliminar la categoría',
+              detail: err.error?.message || 'No se pudo eliminar el área'
             });
-          },
+          }
         });
-      },
+      }
     });
   }
 }

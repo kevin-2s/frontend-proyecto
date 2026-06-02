@@ -61,10 +61,62 @@ interface Usuario {
     :host ::ng-deep .custom-dialog-usuario-clean .p-dialog-content {
       background-color: #ffffff !important;
     }
+    /* Quick-create rol dialog */
+    :host ::ng-deep .quick-rol-dialog .p-dialog {
+      border-radius: 16px !important;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.18) !important;
+      border: none !important;
+    }
+    :host ::ng-deep .quick-rol-dialog .p-dialog-header {
+      background: #fff !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+      border-radius: 16px 16px 0 0 !important;
+      padding: 1.25rem 1.5rem !important;
+    }
+    :host ::ng-deep .quick-rol-dialog .p-dialog-content {
+      background: #fff !important;
+      border-radius: 0 0 16px 16px !important;
+      padding: 1.5rem !important;
+    }
   `],
   template: `
-    <p-toast position="top-right"></p-toast>
+    <p-toast position="bottom-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
+
+    <!-- Mini-diálogo: Crear Rol rápido -->
+    <p-dialog
+      [(visible)]="showRolDialog"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="quick-rol-dialog"
+      [style]="{width: '380px'}"
+      appendTo="body"
+    >
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-[#39A900]/10 flex items-center justify-center">
+            <i class="pi pi-shield text-[#39A900] text-base"></i>
+          </div>
+          <div>
+            <p class="font-bold text-slate-800 text-base m-0 leading-tight">Nuevo Rol</p>
+            <p class="text-xs text-slate-400 m-0">Crear un rol rápidamente</p>
+          </div>
+        </div>
+      </ng-template>
+      <div class="flex flex-col gap-4">
+        <div class="form-field">
+          <input pInputText id="nuevo-rol-nombre" [(ngModel)]="nuevoRolNombre" placeholder="Nombre del rol" class="w-full" />
+          <label for="nuevo-rol-nombre">Nombre del rol</label>
+        </div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+          <button type="button" class="btn-cancelar" (click)="showRolDialog = false">Cancelar</button>
+          <button type="button" class="btn-guardar" (click)="crearRolRapido()" [disabled]="savingRol || !nuevoRolNombre.trim()">
+            {{ savingRol ? 'Creando...' : 'Crear Rol' }}
+          </button>
+        </div>
+      </div>
+    </p-dialog>
 
     <!-- [StylesGlobales] .module-container: El contenedor principal blanco -->
     <div class="module-container">
@@ -85,13 +137,115 @@ interface Usuario {
           </div>
           
           <button
+            *ngIf="!displayDialog"
             type="button"
-            class="px-4 py-2 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+            class="btn-add"
             (click)="openNew()"
           >
-            <i class="pi pi-user-plus text-sm"></i>
+            <i class="pi pi-user-plus"></i>
             Crear Usuario
           </button>
+          <button
+            *ngIf="displayDialog"
+            type="button"
+            class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+            (click)="displayDialog = false"
+          >
+            <i class="pi pi-times"></i>
+            Cerrar Formulario
+          </button>
+        </div>
+      </div>
+
+      <!-- Inline Form Card -->
+      <div *ngIf="displayDialog" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
+        <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
+            <i class="pi pi-user-edit text-[#39A900] text-xl"></i>
+          </div>
+          <div>
+            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Añadir Nuevo Usuario' : 'Editar Usuario' }}</h4>
+            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para el usuario en el sistema</p>
+          </div>
+        </div>
+        
+        <div class="p-6 flex flex-col gap-5">
+          <div class="flex flex-col gap-5 pt-2">
+            <!-- Primera Fila: Nombres y Apellidos -->
+            <div class="flex flex-col sm:flex-row gap-5">
+              <div class="form-field flex-1">
+                <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" placeholder="Nombres" />
+                <label for="u-nombre">Nombres</label>
+              </div>
+              <div class="form-field flex-1">
+                <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" placeholder="Apellidos" />
+                <label for="u-apellidos">Apellidos</label>
+              </div>
+            </div>
+
+            <!-- Segunda Fila: Correo y Rol -->
+            <div class="flex flex-col sm:flex-row gap-5">
+              <div class="form-field flex-1">
+                <input pInputText id="u-correo" [(ngModel)]="usuario.correo" type="email" placeholder="correo@ejemplo.com" />
+                <label for="u-correo">Correo Electrónico</label>
+              </div>
+              <div class="form-field flex-1">
+                <div class="flex gap-2 items-end">
+                  <div class="flex-1 relative">
+                    <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                    <label style="position:absolute;top:-10px;left:12px;font-size:0.72rem;color:#39A900;background:#fff;padding:0 4px;font-weight:600;">Rol</label>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="openRolDialog()"
+                    title="Crear nuevo rol"
+                    class="h-[46px] w-[46px] min-w-[46px] rounded-xl border-2 border-dashed border-[#39A900]/40 bg-[#39A900]/5 hover:bg-[#39A900]/15 hover:border-[#39A900] text-[#39A900] flex items-center justify-center transition-all duration-200 cursor-pointer outline-none"
+                  >
+                    <i class="pi pi-plus text-base font-bold"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tercera Fila: Teléfono y Documento -->
+            <div class="flex flex-col sm:flex-row gap-5">
+              <div class="form-field flex-1">
+                <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" placeholder="Número de teléfono" />
+                <label for="u-telefono">Teléfono</label>
+              </div>
+              <div class="form-field flex-1">
+                <input pInputText id="u-documento" [(ngModel)]="usuario.documento" placeholder="Número de documento" />
+                <label for="u-documento">Documento</label>
+              </div>
+            </div>
+
+            <!-- Cuarta Fila: Contraseña + Estado -->
+            <div class="flex flex-col sm:flex-row gap-5">
+              <div class="form-field flex-1" *ngIf="esNuevo">
+                <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" placeholder="Contraseña segura" [toggleMask]="true" appendTo="body"></p-password>
+                <label>Contraseña</label>
+              </div>
+              <!-- Estado del usuario -->
+              <div class="form-field flex-1">
+                <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                <label>Estado</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              class="btn-cancelar"
+              (click)="displayDialog = false"
+            >Cancelar</button>
+            <button
+              type="button"
+              class="btn-guardar"
+              (click)="guardar()"
+              [disabled]="saving"
+            >{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+          </div>
         </div>
       </div>
 
@@ -176,88 +330,6 @@ interface Usuario {
       </div>
     </div>
 
-    <!-- Form Dialog -->
-    <p-dialog
-      [header]="esNuevo ? 'Añadir Usuario' : 'Editar Usuario'"
-      [(visible)]="displayDialog"
-      [modal]="true"
-      [style]="{ width: '700px' }"
-      [draggable]="false"
-      styleClass="custom-dialog-usuario-clean"
-      maskStyleClass="backdrop-blur-sm bg-black/40"
-      [showHeader]="false"
-    >
-      <div class="flex flex-col bg-white rounded-xl p-8 pt-6">
-        
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">
-          {{ esNuevo ? 'Registro de Usuario' : 'Editar Usuario' }}
-        </h2>
-
-        <div class="flex flex-col gap-5">
-          <!-- Primera Fila: Nombres y Apellidos -->
-          <div class="flex flex-col sm:flex-row gap-5">
-            <div class="flex flex-col gap-1.5 flex-1">
-              <label class="text-sm font-bold text-gray-900">Nombres</label>
-              <input pInputText [(ngModel)]="usuario.nombre" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Nombres" />
-            </div>
-            <div class="flex flex-col gap-1.5 flex-1">
-              <label class="text-sm font-bold text-gray-900">Apellidos</label>
-              <input pInputText [(ngModel)]="usuario.apellidos" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Apellidos" />
-            </div>
-          </div>
-
-          <!-- Segunda Fila: Correo y Rol -->
-          <div class="flex flex-col sm:flex-row gap-5">
-            <div class="flex flex-col gap-1.5 flex-1">
-              <label class="text-sm font-bold text-gray-900">Correo Electrónico</label>
-              <input pInputText [(ngModel)]="usuario.correo" type="email" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="correo@ejemplo.com" />
-            </div>
-            <div class="flex flex-col gap-1.5 flex-1">
-              <label class="text-sm font-bold text-gray-900">Rol</label>
-              <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Selecciona un rol" styleClass="w-full !bg-gray-100 !border-transparent hover:!border-gray-300 focus:!border-gray-300 !text-gray-900 !rounded-md transition-all" [style]="{'width':'100%'}" appendTo="body"></p-select>
-            </div>
-          </div>
-
-          <!-- Tercera Fila: Teléfono y Documento -->
-          <div class="flex flex-col sm:flex-row gap-5">
-            <div class="flex flex-col gap-1.5 flex-1">
-              <label class="text-sm font-bold text-gray-900">Teléfono</label>
-              <input pInputText [(ngModel)]="usuario.telefono" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Número de teléfono" />
-            </div>
-            <div class="flex flex-col gap-1.5 flex-1">
-              <label class="text-sm font-bold text-gray-900">Documento</label>
-              <input pInputText [(ngModel)]="usuario.documento" class="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Número de documento" />
-            </div>
-          </div>
-
-          <!-- Cuarta Fila: Contraseña -->
-          <div class="flex flex-col sm:flex-row gap-5">
-            <div class="flex flex-col gap-1.5 flex-1" *ngIf="esNuevo">
-              <label class="text-sm font-bold text-gray-900">Contraseña</label>
-              <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full !bg-gray-100 !border-transparent focus:!border-gray-300 focus:!bg-white !text-gray-900 !py-2.5 !px-3 !rounded-md transition-all outline-none" placeholder="Contraseña segura" [toggleMask]="true" appendTo="body"></p-password>
-            </div>
-          </div>
-        </div>
-
-        <!-- Botones (Footer) -->
-        <div class="dialog-footer">
-          <button
-            pButton
-            label="Cancelar"
-            class="btn-cancelar"
-            (click)="displayDialog = false"
-          ></button>
-          <button
-            pButton
-            [label]="saving ? 'Guardando...' : 'Guardar'"
-            class="btn-guardar"
-            (click)="guardar()"
-            [disabled]="saving"
-          ></button>
-        </div>
-
-      </div>
-    </p-dialog>
   `
 })
 export class UsuariosComponent implements OnInit {
@@ -271,6 +343,10 @@ export class UsuariosComponent implements OnInit {
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
   roles: Rol[] = [];
+  estadoOpciones = [
+    { label: 'Activo', value: true },
+    { label: 'Inactivo', value: false }
+  ];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
@@ -279,12 +355,43 @@ export class UsuariosComponent implements OnInit {
   isAdmin = false;
   stats = { total: 0, activos: 0, inactivos: 0, admins: 0 };
   hidePassword = true;
+  showRolDialog = false;
+  nuevoRolNombre = '';
+  savingRol = false;
 
   usuario: Usuario = this.getNuevoUsuario();
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
     this.cargarDatos();
+  }
+
+  openRolDialog() {
+    this.nuevoRolNombre = '';
+    this.showRolDialog = true;
+  }
+
+  crearRolRapido() {
+    const nombre = this.nuevoRolNombre.trim();
+    if (!nombre) return;
+    this.savingRol = true;
+    this.rolService.create({ nombre }).subscribe({
+      next: (nuevoRol: any) => {
+        const rolCreado = {
+          id_rol: nuevoRol.id_rol || nuevoRol.id || nuevoRol.idRol,
+          nombre: nuevoRol.nombre || nuevoRol.nombreRol || nombre
+        } as Rol;
+        this.roles = [...this.roles, rolCreado];
+        this.usuario.id_rol = rolCreado.id_rol;
+        this.showRolDialog = false;
+        this.savingRol = false;
+        this.messageService.add({ severity: 'success', summary: 'Rol creado', detail: `"${rolCreado.nombre}" fue creado y seleccionado` });
+      },
+      error: () => {
+        this.savingRol = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el rol' });
+      }
+    });
   }
 
   cargarDatos() {

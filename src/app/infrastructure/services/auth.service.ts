@@ -84,7 +84,10 @@ export class AuthService {
     try {
       const payload = token.split('.')[1];
       const decoded = JSON.parse(atob(payload));
-      return decoded.rol || decoded.role || null; // Asume que 'rol' o 'role' está en la carga útil (payload)
+      if (decoded.roles && Array.isArray(decoded.roles) && decoded.roles.length > 0) {
+        return decoded.roles[0];
+      }
+      return decoded.rol || decoded.role || null;
     } catch (e) {
       return null;
     }

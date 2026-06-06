@@ -39,11 +39,6 @@ import { CheckboxModule } from 'primeng/checkbox';
           </div>
           
           <!-- Top: Logo -->
-          <div class="relative z-20 flex items-center gap-3">
-            <img src="LogoLogitmat_sin_fondo.png" alt="Logitma" class="w-14 h-14 object-contain drop-shadow-lg">
-            <span class="text-white font-bold text-3xl tracking-wide drop-shadow-md">logitma</span>
-          </div>
-
           <!-- Bottom: Frase de software -->
           <div class="relative z-20 mt-auto pb-4">
             <!-- Indicadores de carrusel -->
@@ -66,19 +61,8 @@ import { CheckboxModule } from 'primeng/checkbox';
         <!-- Lado Derecho: Formulario de Login (Blanco) -->
         <div class="w-full md:w-1/2 p-10 md:p-16 flex flex-col justify-center bg-white">
           
-          <!-- Toggle Button (Log In / Sign Up) -->
-          <div class="flex justify-center mb-10">
-            <div class="bg-gray-100 p-1.5 rounded-full flex shadow-inner border border-gray-200">
-              <button class="px-8 py-2.5 rounded-full text-gray-500 text-sm font-semibold transition-colors hover:text-gray-700">
-                Crear Cuenta
-              </button>
-              <button class="px-8 py-2.5 rounded-full bg-[#39A900] text-white text-sm font-bold shadow-md shadow-[#39A900]/20 transition-all">
-                Iniciar Sesión
-              </button>
-            </div>
-          </div>
-
           <div class="text-center mb-10">
+            <img src="LogoLogitmat_sin_fondo.png" alt="Logitma" class="mx-auto mb-6 w-40 h-auto" />
             <h1 class="text-4xl font-bold text-gray-800 tracking-tight">Acceder a tu Cuenta</h1>
           </div>
 
@@ -205,7 +189,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.authService.login(correo, contrasena).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/home']);
       },
       error: (err) => {
         this.isLoading.set(false);

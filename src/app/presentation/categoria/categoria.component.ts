@@ -10,8 +10,10 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmationService } from 'primeng/api';
 import { CategoriaService } from '../../infrastructure/services/categoria.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
 
 interface Categoria {
   id?: number;
@@ -35,7 +37,7 @@ interface Categoria {
     TooltipModule,
   ],
   encapsulation: ViewEncapsulation.None,
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   template: `
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
@@ -50,7 +52,7 @@ interface Categoria {
             <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
               placeholder="Buscar categoría..." class="search-input" />
           </div>
-          <button pButton label="Nueva" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
+          <button *ngIf="esAdmin()" pButton label="Nueva" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
 
@@ -76,6 +78,7 @@ interface Categoria {
               <td>
                 <div class="action-buttons justify-center">
                   <button
+                    *ngIf="esAdmin()"
                     pButton
                     icon="pi pi-pencil"
                     class="btn-table-action btn-editor"
@@ -83,6 +86,7 @@ interface Categoria {
                     pTooltip="Editar categoría"
                   ></button>
                   <button
+                    *ngIf="esAdmin()"
                     pButton
                     icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
@@ -146,9 +150,14 @@ interface Categoria {
 })
 export class CategoriaComponent implements OnInit {
   private categoriaService = inject(CategoriaService);
-  private messageService = inject(MessageService);
+  private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
+
+  esAdmin(): boolean {
+    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+  }
   categorias: Categoria[] = [];
   categoriasFiltradas: Categoria[] = [];
   filtro = '';
@@ -202,7 +211,8 @@ export class CategoriaComponent implements OnInit {
   }
   guardar() {
     if (!this.categoria.nombre) {
-      this.messageService.add({
+      this.notification.add({
+        module: 'Categoría',
         severity: 'warn',
         summary: 'Advertencia',
         detail: 'El nombre de la categoría es requerido',
@@ -212,7 +222,7 @@ export class CategoriaComponent implements OnInit {
     if (this.esNuevo) {
       this.categoriaService.crearCategoria({ nombreCat: this.categoria.nombre }).subscribe({
         next: () => {
-          this.messageService.add({
+          this.notification.add({ module: 'Categoría',
             severity: 'success',
             summary: 'Éxito',
             detail: 'Categoría creada correctamente',
@@ -221,7 +231,8 @@ export class CategoriaComponent implements OnInit {
           this.cargarCategorias();
         },
         error: () => {
-          this.messageService.add({
+          this.notification.add({
+            module: 'Categoría',
             severity: 'error',
             summary: 'Error',
             detail: 'No se pudo crear la categoría',
@@ -231,7 +242,8 @@ export class CategoriaComponent implements OnInit {
     } else {
       this.categoriaService.actualizarCategoria(this.categoria.id!, this.categoria).subscribe({
         next: () => {
-          this.messageService.add({
+          this.notification.add({
+            module: 'Categoría',
             severity: 'success',
             summary: 'Éxito',
             detail: 'Categoría actualizada correctamente',
@@ -240,7 +252,8 @@ export class CategoriaComponent implements OnInit {
           this.cargarCategorias();
         },
         error: () => {
-          this.messageService.add({
+          this.notification.add({
+            module: 'Categoría',
             severity: 'error',
             summary: 'Error',
             detail: 'No se pudo actualizar la categoría',
@@ -258,7 +271,8 @@ export class CategoriaComponent implements OnInit {
       accept: () => {
         this.categoriaService.eliminarCategoria(cat.id!).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({
+              module: 'Categoría',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Categoría eliminada correctamente',
@@ -266,7 +280,8 @@ export class CategoriaComponent implements OnInit {
             this.cargarCategorias();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({
+              module: 'Categoría',
               severity: 'error',
               summary: 'Error',
               detail: 'No se pudo eliminar la categoría',

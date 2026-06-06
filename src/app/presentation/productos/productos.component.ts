@@ -11,10 +11,12 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SelectModule } from 'primeng/select';
 import { FileUploadModule } from 'primeng/fileupload';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { ProductoService } from '../../infrastructure/services/producto.service';
 import { CategoriaService } from '../../infrastructure/services/categoria.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
 
 interface Producto {
   id_producto: number;
@@ -60,7 +62,7 @@ interface Categoria {
     TooltipModule
   ],
   encapsulation: ViewEncapsulation.None,
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   template: `
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
@@ -76,7 +78,7 @@ interface Categoria {
             <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
               placeholder="Buscar producto, SKU..." class="search-input" />
           </div>
-          <button pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
+          <button *ngIf="esAdmin()" pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
 
@@ -152,6 +154,7 @@ interface Categoria {
                     pTooltip="Ver items"
                   ></button>
                   <button
+                    *ngIf="esAdmin()"
                     pButton
                     icon="pi pi-pencil"
                     class="btn-table-action btn-editor"
@@ -159,6 +162,7 @@ interface Categoria {
                     pTooltip="Editar producto"
                   ></button>
                   <button
+                    *ngIf="esAdmin()"
                     pButton
                     icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
@@ -554,9 +558,14 @@ export class ProductosComponent implements OnInit {
   private fb = inject(FormBuilder);
   private productoService = inject(ProductoService);
   private categoriaService = inject(CategoriaService);
-  private messageService = inject(MessageService);
+  private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
+
+  esAdmin(): boolean {
+    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+  }
 
   productos: Producto[] = [];
   productosFiltrados: Producto[] = [];
@@ -734,7 +743,7 @@ export class ProductosComponent implements OnInit {
 
   guardar() {
     if (this.productoForm.invalid) {
-      this.messageService.add({
+      this.notification.add({ module: 'Productos',
         severity: 'warn',
         summary: 'Advertencia',
         detail: 'Por favor complete los campos requeridos',
@@ -764,7 +773,7 @@ export class ProductosComponent implements OnInit {
     if (this.esNuevo) {
       this.productoService.crearProducto(productoData).subscribe({
         next: () => {
-          this.messageService.add({
+          this.notification.add({ module: 'Productos',
             severity: 'success',
             summary: 'Éxito',
             detail: 'Producto creado correctamente',
@@ -773,7 +782,7 @@ export class ProductosComponent implements OnInit {
           this.cargarDatos();
         },
         error: (err) => {
-          this.messageService.add({
+          this.notification.add({ module: 'Productos',
             severity: 'error',
             summary: 'Error',
             detail: 'No se pudo crear el producto: ' + (err?.message || 'Error desconocido'),
@@ -783,7 +792,7 @@ export class ProductosComponent implements OnInit {
     } else {
       this.productoService.actualizarProducto(formValue.id_producto, productoData).subscribe({
         next: () => {
-          this.messageService.add({
+          this.notification.add({ module: 'Productos',
             severity: 'success',
             summary: 'Éxito',
             detail: 'Producto actualizado correctamente',
@@ -792,7 +801,7 @@ export class ProductosComponent implements OnInit {
           this.cargarDatos();
         },
         error: (err) => {
-          this.messageService.add({
+          this.notification.add({ module: 'Productos',
             severity: 'error',
             summary: 'Error',
             detail: 'No se pudo actualizar el producto',
@@ -809,7 +818,7 @@ export class ProductosComponent implements OnInit {
     this.categoriaService.crearCategoria({ nombreCat: nombre }).subscribe({
       next: (res: any) => {
         const newCat = res?.data || res;
-        this.messageService.add({
+        this.notification.add({ module: 'Productos',
           severity: 'success',
           summary: 'Éxito',
           detail: 'Categoría agregada correctamente',
@@ -838,7 +847,7 @@ export class ProductosComponent implements OnInit {
         });
       },
       error: (err) => {
-        this.messageService.add({
+        this.notification.add({ module: 'Productos',
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudo crear la categoría',
@@ -859,7 +868,7 @@ export class ProductosComponent implements OnInit {
     this.productoForm.patchValue({ tipo_material: val });
     this.displayAddTipoMaterial = false;
     this.nuevoNombreTipoMaterial = '';
-    this.messageService.add({
+    this.notification.add({ module: 'Productos',
       severity: 'success',
       summary: 'Éxito',
       detail: 'Tipo de material agregado',
@@ -878,7 +887,7 @@ export class ProductosComponent implements OnInit {
     this.productoForm.patchValue({ unidad_medida: val });
     this.displayAddUnidadMedida = false;
     this.nuevoNombreUnidadMedida = '';
-    this.messageService.add({
+    this.notification.add({ module: 'Productos',
       severity: 'success',
       summary: 'Éxito',
       detail: 'Unidad de medida agregada',
@@ -894,7 +903,7 @@ export class ProductosComponent implements OnInit {
       accept: () => {
         this.productoService.eliminarProducto(producto.id_producto).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Productos',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Producto eliminado correctamente',
@@ -902,7 +911,7 @@ export class ProductosComponent implements OnInit {
             this.cargarDatos();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Productos',
               severity: 'error',
               summary: 'Error',
               detail: 'No se pudo eliminar el producto',
@@ -926,7 +935,7 @@ export class ProductosComponent implements OnInit {
         setTimeout(() => this.cdr.detectChanges());
       },
       error: (err) => {
-        this.messageService.add({
+        this.notification.add({ module: 'Productos',
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudieron cargar los items del producto',
@@ -965,7 +974,7 @@ export class ProductosComponent implements OnInit {
         const ids = this.selectedProducts.map((p) => p.id_producto);
         this.productoService.eliminarMultiples(ids).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Productos',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Productos eliminados correctamente',
@@ -974,7 +983,7 @@ export class ProductosComponent implements OnInit {
             this.cargarDatos();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Productos',
               severity: 'error',
               summary: 'Error',
               detail: 'No se pudieron eliminar los productos',

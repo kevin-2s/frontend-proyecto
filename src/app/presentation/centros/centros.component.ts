@@ -5,28 +5,20 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { SelectModule } from 'primeng/select';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmationService } from 'primeng/api';
-import { SitioService } from '../../infrastructure/services/sitio.service';
 import { CentroService } from '../../infrastructure/services/centro.service';
 
-interface Sitio {
-  id_sitio?: number;
-  nombre: string;
+interface Centro {
   id_centro?: number;
-  centro?: {
-    id_centro: number;
-    nombre: string;
-  };
+  nombre: string;
 }
 
 @Component({
-  selector: 'app-sitios',
+  selector: 'app-centros',
   standalone: true,
   imports: [
     CommonModule,
@@ -35,11 +27,9 @@ interface Sitio {
     ButtonModule,
     InputTextModule,
     DialogModule,
-    TagModule,
     ToastModule,
     ConfirmDialogModule,
     TooltipModule,
-    SelectModule,
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [ConfirmationService],
@@ -48,14 +38,15 @@ interface Sitio {
     <p-confirmDialog></p-confirmDialog>
     <div class="module-container">
       <div class="module-header">
-        <h3 class="page-title">
-          <i class="pi pi-map-marker"></i> Sedes
+        <h3 class="page-title flex items-center gap-2">
+          <i class="pi pi-map text-2xl text-[#39A900] inline-block flex-shrink-0"></i>
+          Centros
         </h3>
         <div class="header-actions">
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
             <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
-              placeholder="Buscar sede..." class="search-input" />
+              placeholder="Buscar centro..." class="search-input" />
           </div>
           <button pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
@@ -63,7 +54,7 @@ interface Sitio {
 
       <div class="data-table-wrapper">
         <p-table
-          [value]="sitiosFiltrados"
+          [value]="centrosFiltrados"
           [paginator]="true"
           [rows]="10"
           styleClass="modern-table"
@@ -72,19 +63,17 @@ interface Sitio {
           <ng-template pTemplate="header">
             <tr>
               <th style="width:80px">ID</th>
-              <th>Nombre de la Sede</th>
-              <th>Centro</th>
+              <th>Nombre del Centro</th>
               <th style="width:150px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
-          <ng-template pTemplate="body" let-sitio>
+          <ng-template pTemplate="body" let-centro>
             <tr>
-              <td><span class="id-badge">#{{ sitio.id_sitio }}</span></td>
-              <td><span class="nombre-cell">{{ sitio.nombre }}</span></td>
+              <td><span class="id-badge">#{{ centro.id_centro }}</span></td>
               <td>
                 <div class="flex items-center gap-2">
                   <i class="pi pi-map text-slate-500 text-base"></i>
-                  <span class="text-slate-600 text-sm font-semibold">{{ sitio.centro?.nombre || 'Sin centro' }}</span>
+                  <span class="nombre-cell font-semibold">{{ centro.nombre }}</span>
                 </div>
               </td>
               <td>
@@ -93,8 +82,8 @@ interface Sitio {
                     pButton
                     icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
-                    (click)="eliminar(sitio)"
-                    pTooltip="Eliminar sede"
+                    (click)="eliminar(centro)"
+                    pTooltip="Eliminar centro"
                   ></button>
                 </div>
               </td>
@@ -102,9 +91,9 @@ interface Sitio {
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="4" class="empty-message">
-                <i class="pi pi-map-marker"></i>
-                <p>No se encontraron sedes registradas</p>
+              <td colspan="3" class="empty-message">
+                <i class="pi pi-home"></i>
+                <p>No se encontraron centros registrados</p>
               </td>
             </tr>
           </ng-template>
@@ -113,7 +102,7 @@ interface Sitio {
     </div>
 
     <p-dialog
-      header="✨ Registrar Nueva Sede"
+      header="✨ Registrar Nuevo Centro"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"
@@ -125,42 +114,14 @@ interface Sitio {
     >
       <div class="form-grid mt-2">
         <div class="form-field">
-          <label for="nombre">Nombre de la Sede *</label>
+          <label for="nombre">Nombre del Centro *</label>
           <input
             pInputText
             id="nombre"
-            [(ngModel)]="sitio.nombre"
-            placeholder="Ej: Comercios y Servicios / Yamboro"
+            [(ngModel)]="centro.nombre"
+            placeholder="Ej: Centro De Gestion Y Desarrollo Sostenible Sur Colombiano"
+            class="w-full"
           />
-        </div>
-
-        <div class="form-field">
-          <label for="id_centro">Centro *</label>
-          <p-select
-            id="id_centro"
-            [(ngModel)]="sitio.id_centro"
-            [options]="centros"
-            optionLabel="nombre"
-            optionValue="id_centro"
-            placeholder="Seleccione centro"
-            [filter]="true"
-            filterBy="nombre"
-            styleClass="w-full"
-            appendTo="body"
-          >
-            <ng-template let-dep pTemplate="selectedItem">
-              <div class="flex items-center gap-2">
-                <i class="pi pi-map text-slate-600 text-base"></i>
-                <span class="font-semibold text-sm">{{ dep.nombre }}</span>
-              </div>
-            </ng-template>
-            <ng-template let-dep pTemplate="item">
-              <div class="flex items-center gap-2">
-                <i class="pi pi-map text-slate-500 text-base"></i>
-                <span class="text-sm">{{ dep.nombre }}</span>
-              </div>
-            </ng-template>
-          </p-select>
         </div>
       </div>
 
@@ -173,7 +134,7 @@ interface Sitio {
         ></button>
         <button
           pButton
-          [label]="saving ? 'Guardando...' : 'Guardar Sede'"
+          [label]="saving ? 'Guardando...' : 'Guardar Centro'"
           class="btn-guardar"
           (click)="guardar()"
           [disabled]="saving"
@@ -182,40 +143,22 @@ interface Sitio {
     </p-dialog>
   `
 })
-export class SitiosComponent implements OnInit {
-  private sitioService = inject(SitioService);
+export class CentrosComponent implements OnInit {
   private centroService = inject(CentroService);
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
 
-  sitios: Sitio[] = [];
-  sitiosFiltrados: Sitio[] = [];
-  centros: any[] = [];
+  centros: Centro[] = [];
+  centrosFiltrados: Centro[] = [];
   filtro = '';
   displayDialog = false;
   saving = false;
-  sitio: Sitio = this.getNuevoSitio();
+  centro: Centro = this.getNuevoCentro();
+
 
   ngOnInit() {
-    this.cargarSitios();
     this.cargarCentros();
-  }
-
-  cargarSitios() {
-    this.sitioService.getSitios().subscribe({
-      next: (res: any) => {
-        const d = res?.data || res || [];
-        this.sitios = d;
-        this.sitiosFiltrados = d;
-        setTimeout(() => this.cdr.detectChanges());
-      },
-      error: () => {
-        this.sitios = [];
-        this.sitiosFiltrados = [];
-        setTimeout(() => this.cdr.detectChanges());
-      },
-    });
   }
 
   cargarCentros() {
@@ -223,10 +166,12 @@ export class SitiosComponent implements OnInit {
       next: (res: any) => {
         const d = res?.data || res || [];
         this.centros = d;
+        this.centrosFiltrados = d;
         setTimeout(() => this.cdr.detectChanges());
       },
       error: () => {
         this.centros = [];
+        this.centrosFiltrados = [];
         setTimeout(() => this.cdr.detectChanges());
       },
     });
@@ -234,85 +179,85 @@ export class SitiosComponent implements OnInit {
 
   filtrar() {
     const f = this.filtro.toLowerCase();
-    this.sitiosFiltrados = this.sitios.filter(
-      (s) =>
-        s.nombre?.toLowerCase().includes(f) ||
-        s.centro?.nombre?.toLowerCase().includes(f)
+    this.centrosFiltrados = this.centros.filter(
+      (c) => c.nombre?.toLowerCase().includes(f)
     );
   }
 
-  getNuevoSitio(): Sitio {
+  getNuevoCentro(): Centro {
     return { nombre: '' };
   }
 
   openNew() {
-    this.sitio = this.getNuevoSitio();
+    this.centro = this.getNuevoCentro();
     this.displayDialog = true;
   }
 
   guardar() {
-    if (!this.sitio.nombre || !this.sitio.id_centro) {
-      this.notification.add({ module: 'Sedes',
+    if (!this.centro.nombre) {
+      this.notification.add({
+        module: 'Centros',
         severity: 'warn',
         summary: 'Advertencia',
-        detail: 'Nombre y Centro son requeridos',
+        detail: 'El nombre del centro es requerido',
       });
       return;
     }
 
-    const payload: any = {
-      nombre: this.sitio.nombre,
-      tipo: 'Sede',
-      id_centro: this.sitio.id_centro,
+    const payload = {
+      nombre: this.centro.nombre,
       estado: true,
-      id_responsable: null
     };
 
     this.saving = true;
 
-    this.sitioService.crearSitio(payload).subscribe({
+    this.centroService.crearCentro(payload).subscribe({
       next: () => {
-        this.notification.add({ module: 'Sedes',
+        this.notification.add({
+          module: 'Centros',
           severity: 'success',
           summary: 'Éxito',
-          detail: 'Sede creada correctamente',
+          detail: 'Centro registrado correctamente',
         });
         this.displayDialog = false;
         this.saving = false;
-        this.cargarSitios();
+        this.cargarCentros();
       },
       error: () => {
         this.saving = false;
-        this.notification.add({ module: 'Sedes',
+        this.notification.add({
+          module: 'Centros',
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo crear la sede',
+          detail: 'No se pudo registrar el centro',
         });
       },
     });
   }
 
-  eliminar(s: Sitio) {
+  eliminar(c: Centro) {
     this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar la sede ' + s.nombre + '?',
+      message: '¿Está seguro de eliminar el centro ' + c.nombre + '?',
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.sitioService.eliminarSitio(s.id_sitio!).subscribe({
+        this.centroService.eliminarCentro(c.id_centro!).subscribe({
           next: () => {
-            this.notification.add({ module: 'Sedes',
+            this.notification.add({
+              module: 'Centros',
               severity: 'success',
               summary: 'Éxito',
-              detail: 'Sede de formación eliminada correctamente',
+              detail: 'Centro eliminado correctamente',
             });
-            this.cargarSitios();
+            this.cargarCentros();
           },
           error: () => {
-            this.notification.add({ module: 'Sedes',
+            this.notification.add({
+              module: 'Centros',
               severity: 'error',
               summary: 'Error',
-              detail: 'No se pudo eliminar la sede (puede tener dependencias)',
+              detail: 'No se pudo eliminar el centro (puede tener dependencias)',
             });
           },
         });

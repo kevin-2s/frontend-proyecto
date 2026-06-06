@@ -1,0 +1,165 @@
+/* ═══════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS — Diseño Flat (Basado en la imagen)
+   Sistema de Gestión de Materiales de Formación
+═══════════════════════════════════════════════════════════════ */
+
+/* Contenedor general del toast */
+.p-toast {
+  opacity: 1 !important;
+  z-index: 99999 !important;
+
+  /* Asegura que los toasts no se corten en el borde */
+  &.p-toast-bottom-right {
+    bottom: 1.5rem !important;
+    right: 1.5rem !important;
+  }
+}
+
+/* Cada mensaje individual */
+.p-toast-message {
+  border-radius: 6px !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  box-shadow: none !important;
+  margin-bottom: 1rem !important;
+  min-width: 350px !important;
+  max-width: 450px !important;
+  animation: toastFadeIn 0.3s ease-out forwards !important;
+}
+
+/* ── Animación de entrada ──────────────────────────────────────── */
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Contenido interno ────────────────────────────────────────── */
+.p-toast-message-content {
+  display: flex !important;
+  align-items: center !important;
+  padding: 1rem 1.2rem !important;
+  background: transparent !important;
+}
+
+/* ── Ícono ────────────────────────────────────────────────────── */
+.p-toast-message-icon {
+  font-size: 1.2rem !important;
+  margin-right: 0.4rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── Texto ────────────────────────────────────────────────────── */
+.p-toast-message-text {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: row !important; /* Para que summary y detail estén en la misma línea */
+  align-items: center !important;
+  gap: 0.3rem !important;
+  flex-wrap: wrap !important;
+}
+
+.p-toast-summary {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+}
+
+.p-toast-detail {
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+/* ── Botón cerrar ─────────────────────────────────────────────── */
+.p-toast-icon-close {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0.4 !important;
+  transition: opacity 0.2s !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  background: transparent !important;
+  border: none !important;
+  margin-left: 1rem !important;
+
+  &:hover {
+    opacity: 0.8 !important;
+  }
+
+  .p-icon {
+    font-size: 1rem !important;
+    width: 1rem !important;
+    height: 1rem !important;
+    color: #999 !important;
+    /* Hacer el icono de cerrar más grueso simulando la imagen */
+    stroke-width: 2px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TIPO: ÉXITO (success)  — Verde Pastel
+══════════════════════════════════════════════════════════════ */
+.p-toast-message-success {
+  background-color: #e5f3e0 !important;
+  border-color: #d1e8c7 !important;
+  color: #387c3e !important;
+
+  .p-toast-message-icon { color: #387c3e !important; }
+  .p-toast-summary { color: #387c3e !important; }
+  .p-toast-detail  { color: #387c3e !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TIPO: ERROR (error)  — Rojo Pastel
+══════════════════════════════════════════════════════════════ */
+.p-toast-message-error {
+  background-color: #f7dede !important;
+  border-color: #ebcccc !important;
+  color: #a94442 !important;
+
+  .p-toast-message-icon { color: #a94442 !important; }
+  .p-toast-summary { color: #a94442 !important; }
+  .p-toast-detail  { color: #a94442 !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TIPO: ADVERTENCIA (warn)  — Amarillo/Beige Pastel
+══════════════════════════════════════════════════════════════ */
+.p-toast-message-warn {
+  background-color: #fdf6e3 !important;
+  border-color: #f6e6b4 !important;
+  color: #8a6d3b !important;
+
+  .p-toast-message-icon { color: #8a6d3b !important; }
+  .p-toast-summary { color: #8a6d3b !important; }
+  .p-toast-detail  { color: #8a6d3b !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TIPO: INFORMACIÓN (info)  — Azul Pastel
+══════════════════════════════════════════════════════════════ */
+.p-toast-message-info {
+  background-color: #def0f8 !important;
+  border-color: #c4e3f3 !important;
+  color: #31708f !important;
+
+  .p-toast-message-icon { color: #31708f !important; }
+  .p-toast-summary { color: #31708f !important; }
+  .p-toast-detail  { color: #31708f !important; }
+}
+
+/* Ocultar spinner */
+.p-progress-spinner {
+  display: none;
+}

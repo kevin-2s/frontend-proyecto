@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { noAuthGuard } from './core/guards/no-auth.guard';
+import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'dashboard',
+    redirectTo: 'home',
     pathMatch: 'full'
   },
   {
@@ -19,16 +20,18 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
-        path: 'dashboard',
+        path: 'home',
         loadComponent: () => import('./presentation/dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
       {
         path: 'usuarios',
-        loadComponent: () => import('./presentation/usuarios/usuarios.component').then(m => m.UsuariosComponent)
+        loadComponent: () => import('./presentation/usuarios/usuarios.component').then(m => m.UsuariosComponent),
+        canActivate: [roleGuard(['Administrador'])]
       },
       {
         path: 'roles',
-        loadComponent: () => import('./presentation/roles/roles.component').then(m => m.RolesComponent)
+        loadComponent: () => import('./presentation/roles/roles.component').then(m => m.RolesComponent),
+        canActivate: [roleGuard(['Administrador'])]
       },
       {
         path: 'inventario',
@@ -48,12 +51,29 @@ export const routes: Routes = [
         ]
       },
       {
+        path: 'centros',
+        loadComponent: () => import('./presentation/centros/centros.component').then(m => m.CentrosComponent),
+        canActivate: [roleGuard(['Administrador'])]
+      },
+      {
+        path: 'areas',
+        loadComponent: () => import('./presentation/areas/areas.component').then(m => m.AreasComponent),
+        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+      },
+      {
+        path: 'programas',
+        loadComponent: () => import('./presentation/programas/programas.component').then(m => m.ProgramasComponent),
+        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+      },
+      {
         path: 'fichas',
-        loadComponent: () => import('./presentation/fichas/fichas.component').then(m => m.FichasComponent)
+        loadComponent: () => import('./presentation/fichas/fichas.component').then(m => m.FichasComponent),
+        canActivate: [roleGuard(['Administrador', 'Instructor'])]
       },
       {
         path: 'sitios',
-        loadComponent: () => import('./presentation/sitios/sitios.component').then(m => m.SitiosComponent)
+        loadComponent: () => import('./presentation/sitios/sitios.component').then(m => m.SitiosComponent),
+        canActivate: [roleGuard(['Administrador', 'Instructor'])]
       },
       {
         path: 'solicitudes',
@@ -63,6 +83,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'dashboard'
+    redirectTo: 'home'
   }
 ];

@@ -11,6 +11,7 @@
 @use './stylesglobales/fichas.scss';
 @use './stylesglobales/inventario.scss';
 @use './stylesglobales/modern-table.scss';
+@use './stylesglobales/toast.scss';
 
 /* CSS Imports must go after @use */
 @import "primeicons/primeicons.css";
@@ -58,9 +59,413 @@
 }
 
 /* Estilo para las opciones dentro del selector */
-.p-select-item {
+.p-select-option {
+  padding: 0.6rem 1rem !important;
+  color: #374151 !important;
+  border-radius: 8px !important;
+  margin: 2px 4px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.p-select-option:hover {
+  background: #f0fdf4 !important; /* light green background */
+  color: #39A900 !important; /* brand green text */
+}
+
+.p-select-option.p-highlight {
+  background: #39A900 !important; /* brand green background */
+  color: white !important;
+}
+
+.p-select-option-text {
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+}
+
+/* Outlined Floating Labels System */
+.floating-label-group {
+  position: relative;
+  width: 100%;
+}
+
+.floating-label-group label {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: white;
+  padding: 0 0.5rem;
+  color: #94a3b8; /* slate-400 */
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+/* Floating state when focused or having a value */
+.floating-label-group:focus-within label,
+.floating-label-group.floating label {
+  top: 0;
+  transform: translateY(-50%) scale(0.85);
+  color: #39A900; /* brand green */
+  font-weight: 700;
+}
+
+/* Keep label grey when not focused but has value */
+.floating-label-group.floating:not(:focus-within) label {
+  color: #64748b; /* slate-500 */
+  font-weight: 600;
+}
+
+/* Standardize input styling inside floating group to match the reference design */
+.floating-label-group input {
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.floating-label-group input:focus {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+  outline: none !important;
+}
+
+/* Align PrimeNG select with the floating label group design */
+.floating-label-group .p-select {
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.floating-label-group .p-select.p-focus,
+.floating-label-group .p-select:focus-within {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+}
+
+.floating-label-group .p-select-label {
+  padding-left: 1rem !important;
+  font-size: 0.875rem !important;
+  color: #1e293b !important;
+}
+
+/* Ensure password wrapper fits the floating system and positions its eye icon on the right */
+.floating-label-group .p-password {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+.floating-label-group .p-password svg,
+.floating-label-group .p-password-toggle-icon,
+.floating-label-group .p-password-icon,
+.floating-label-group .p-password-toggle-icon-show,
+.floating-label-group .p-password-toggle-icon-hide {
+  position: absolute !important;
+  top: 50% !important;
+  right: 1rem !important;
+  transform: translateY(-50%) !important;
+  color: #64748b !important; /* slate-500 */
+  cursor: pointer !important;
+  z-index: 20 !important;
+  margin: 0 !important;
+  font-size: 1rem !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* ==========================================
+   GLOBAL FORM FIELDS OUTLINED FLOATING LABELS
+   ========================================== */
+
+/* Only apply absolute positioning to label if the form-field has a text/number input, select, or password */
+.form-field:has(input:not([type="checkbox"]):not([type="radio"]):not([type="submit"])),
+.form-field:has(.p-select),
+.form-field:has(.p-password) {
+  position: relative !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Base styles for standard inputs inside .form-field (overrides previous raw borders) */
+.form-field input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]) {
+  width: 100% !important;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+  padding-left: 1.1rem !important;
+  padding-right: 1.1rem !important;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  font-size: 0.875rem !important;
+  color: #0f172a !important; /* navy */
+  transition: all 0.2s ease !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.form-field input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):focus {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+  background-color: white !important;
+}
+
+/* Base styles for PrimeNG select inside .form-field */
+.form-field .p-select {
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  height: 46px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.form-field .p-select.p-focus,
+.form-field .p-select:focus-within {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+  background-color: white !important;
+}
+
+.form-field .p-select-label {
+  padding-left: 1.1rem !important;
+  font-size: 0.875rem !important;
+  color: #1e293b !important;
+}
+
+/* Ensure password wrapper inside .form-field fits the floating system and positions its eye icon on the right */
+.form-field .p-password {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+.form-field .p-password input {
+  padding-right: 2.5rem !important; /* Space for the eye icon */
+}
+
+.form-field .p-password svg,
+.form-field .p-password-toggle-icon,
+.form-field .p-password-icon,
+.form-field .p-password-toggle-icon-show,
+.form-field .p-password-toggle-icon-hide {
+  position: absolute !important;
+  top: 50% !important;
+  right: 1rem !important;
+  transform: translateY(-50%) !important;
+  color: #64748b !important; /* slate-500 */
+  cursor: pointer !important;
+  z-index: 20 !important;
+  margin: 0 !important;
+  font-size: 1rem !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Global Outlined Red/Green Buttons for Dialog Footers */
+.dialog-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  padding: 1.25rem 2.5rem 2.5rem !important;
+}
+
+.btn-cancelar, 
+button.btn-cancelar, 
+.p-button.btn-cancelar {
   background: white !important;
-  &:hover {
-    background: #f1f5f9 !important;
+  color: #ef4444 !important; /* red-500 */
+  border: 1px solid #fca5a5 !important; /* red-300 */
+  padding: 0.65rem 1.5rem !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+  font-size: 0.875rem !important;
+  height: 44px !important;
+}
+
+.btn-cancelar:hover, 
+button.btn-cancelar:hover, 
+.p-button.btn-cancelar:hover {
+  background: #fef2f2 !important; /* light red */
+  border-color: #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+.btn-guardar, 
+button.btn-guardar, 
+.p-button.btn-guardar {
+  background: white !important;
+  color: #39A900 !important; /* brand green */
+  border: 1px solid rgba(57, 169, 0, 0.3) !important;
+  padding: 0.65rem 1.8rem !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+  font-size: 0.875rem !important;
+  height: 44px !important;
+}
+
+.btn-guardar:hover:not(:disabled), 
+button.btn-guardar:hover:not(:disabled), 
+.p-button.btn-guardar:hover:not(:disabled) {
+  background: #f0fdf4 !important; /* light green */
+  border-color: #39A900 !important;
+  color: #2d8600 !important;
+}
+
+.btn-guardar:disabled, 
+button.btn-guardar:disabled, 
+.p-button.btn-guardar:disabled {
+  opacity: 0.5 !important;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+}
+
+/* ==========================================
+   DOCUMENT INPUT GROUP (COMBINED SELECT + INPUT)
+   ========================================== */
+.document-input-group {
+  position: relative;
+  width: 100%;
+}
+
+.document-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  height: 46px !important;
+  transition: all 0.2s ease !important;
+  overflow: hidden !important;
+}
+
+.document-input-container:focus-within {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+}
+
+.document-input-select {
+  background-color: transparent !important;
+  border: none !important;
+  border-right: 1px solid #cbd5e1 !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  color: #334155 !important; /* slate-700 */
+  padding: 0 1.5rem 0 0.75rem !important;
+  height: 100% !important;
+  cursor: pointer !important;
+  outline: none !important;
+  appearance: none !important; /* remove default arrow */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.4rem center !important;
+  background-size: 1em !important;
+  width: 80px !important;
+}
+
+.document-input-select:focus {
+  outline: none !important;
+}
+
+.document-input-field {
+  flex: 1 !important;
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 0.85rem !important;
+  font-size: 0.875rem !important;
+  color: #0f172a !important; /* navy */
+  height: 100% !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.document-input-group label {
+  position: absolute !important;
+  left: 5.5rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background-color: white !important;
+  padding: 0 0.5rem !important;
+  color: #94a3b8 !important; /* slate-400 */
+  font-size: 0.875rem !important; /* text-sm */
+  font-weight: 500 !important;
+  pointer-events: none !important;
+  transition: all 0.2s ease !important;
+  z-index: 10 !important;
+}
+
+/* Floating states */
+.document-input-group:focus-within label,
+.document-input-group.floating label {
+  top: 0 !important;
+  transform: translateY(-50%) scale(0.85) !important;
+  color: #39A900 !important; /* brand green */
+  font-weight: 700 !important;
+}
+
+/* Custom iOS-style Switch */
+.custom-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+  vertical-align: middle;
+  
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    
+    &:checked + .custom-switch-slider {
+      background-color: #39A900; /* Green when checked */
+      
+      &:before {
+        transform: translateX(20px);
+      }
+    }
   }
 }
+
+.custom-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ef4444; /* Red when unchecked */
+  transition: background-color 0.25s;
+  border-radius: 24px;
+  
+  &:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #ffffff;
+    transition: transform 0.25s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+}
+
+

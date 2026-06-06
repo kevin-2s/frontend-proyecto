@@ -1,14 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-
-// PrimeNG
-import { CardModule } from 'primeng/card';
-import { TableModule } from 'primeng/table';
+import { RouterLink } from '@angular/router';
 import { SkeletonModule } from 'primeng/skeleton';
-import { TagModule } from 'primeng/tag';
 import { ChartModule } from 'primeng/chart';
-
 import { ApiService } from '../../core/services/api.service';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -16,395 +10,453 @@ import { map, catchError } from 'rxjs/operators';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    CommonModule, 
-    CardModule, 
-    TableModule, 
-    SkeletonModule, 
-    TagModule, 
-    ChartModule
-  ],
+  imports: [CommonModule, RouterLink, SkeletonModule, ChartModule],
+  styles: [`
+    :host { display: block; }
+  `],
   template: `
-    <div class="animate-fade-in px-2">
-      
-      <div class="flex items-center justify-between mb-8">
-        <div class="flex items-center gap-3">
-          <i class="pi pi-th-large text-[#39A900] text-3xl mr-2"></i>
-          <h2 class="text-[28px] font-black text-gray-900 tracking-tight m-0">Dashboard Resumen</h2>
-          <p-tag severity="info" value="Live v2.0" class="ml-2" />
+    <div class="dashboard-wrap">
+
+      <div class="db-hero">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; position:relative; z-index:1;">
+          <div>
+            <h2 class="db-hero-title">Panel de Control</h2>
+            <p class="db-hero-sub">Sistema de Gestión de Materiales de Formación · SENA</p>
+          </div>
         </div>
-        
-        <button
-          type="button"
-          class="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all cursor-pointer outline-none"
-          (click)="cargarDatos()"
-        >
-          <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-          Actualizar Datos
-        </button>
+
+        <!-- Mini KPIs en el hero -->
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-top:1.75rem; position:relative; z-index:1;">
+          <div *ngFor="let kpi of heroKpis" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:14px; padding:0.9rem 1rem;">
+            <p style="color:rgba(255,255,255,0.55); font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 0.25rem;">{{ kpi.label }}</p>
+            <ng-container *ngIf="loading(); else kpiVal">
+              <p-skeleton width="3rem" height="1.5rem" styleClass="opacity-40"></p-skeleton>
+            </ng-container>
+            <ng-template #kpiVal>
+              <p style="color:#fff; font-size:1.6rem; font-weight:900; margin:0; line-height:1;">{{ kpi.value() }}</p>
+            </ng-template>
+            <p style="color:rgba(255,255,255,0.45); font-size:0.68rem; margin:0.2rem 0 0;">{{ kpi.sub }}</p>
+          </div>
+        </div>
       </div>
 
-      <!-- Tarjetas de Resumen (Stat Cards) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        
-        <!-- Total Usuarios -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all relative overflow-hidden">
-          <p class="text-[12px] font-black text-gray-400 mb-3 uppercase tracking-widest">Total Usuarios</p>
-          <div class="flex items-center justify-between mb-4">
-            @if (loading()) {
-              <p-skeleton width="4rem" height="3rem"></p-skeleton>
-            } @else {
-              <h3 class="text-[40px] font-black text-slate-900 leading-none">{{ totalUsuarios() }}</h3>
-              <i class="pi pi-users text-blue-500 text-4xl opacity-20"></i>
-            }
-          </div>
-          <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-            <div class="bg-blue-500 h-1.5 rounded-full" style="width: 70%"></div>
-          </div>
-        </div>
+      <!-- ══════════ STAT CARDS ══════════ -->
+      <div class="db-stats-grid" style="margin-bottom:2rem;">
 
-        <!-- Total Productos -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all relative overflow-hidden">
-          <p class="text-[12px] font-black text-gray-400 mb-3 uppercase tracking-widest">Total Productos</p>
-          <div class="flex items-center justify-between mb-4">
-            @if (loading()) {
-              <p-skeleton width="4rem" height="3rem"></p-skeleton>
-            } @else {
-              <h3 class="text-[40px] font-black text-slate-900 leading-none">{{ totalProductos() }}</h3>
-              <i class="pi pi-box text-[#39A900] text-4xl opacity-20"></i>
-            }
+        <div class="db-stat-card" *ngFor="let card of statCards">
+          <div class="stat-trend" [style.background]="card.trendBg" [style.color]="card.trendColor">
+            <i [class]="card.trendIcon" style="font-size:0.65rem;"></i> {{ card.trend }}
           </div>
-          <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-            <div class="bg-[#39A900] h-1.5 rounded-full" style="width: 85%"></div>
+          <div class="stat-icon-wrap" [style.background]="card.iconBg">
+            <i [class]="'pi ' + card.icon" [style.color]="card.iconColor"></i>
           </div>
-        </div>
-
-        <!-- Solicitudes Pendientes -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all relative overflow-hidden">
-          <p class="text-[12px] font-black text-gray-400 mb-3 uppercase tracking-widest">Pendientes</p>
-          <div class="flex items-center justify-between mb-4">
-            @if (loading()) {
-              <p-skeleton width="4rem" height="3rem"></p-skeleton>
-            } @else {
-              <h3 class="text-[40px] font-black text-orange-500 leading-none">{{ solicitudesPendientes() }}</h3>
-              <i class="pi pi-clock text-orange-500 text-4xl opacity-20"></i>
-            }
-          </div>
-          <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-            <div class="bg-orange-500 h-1.5 rounded-full" style="width: 40%"></div>
-          </div>
-        </div>
-
-        <!-- Total Inventario -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all relative overflow-hidden">
-          <p class="text-[12px] font-black text-gray-400 mb-3 uppercase tracking-widest">Items Globales</p>
-          <div class="flex items-center justify-between mb-4">
-            @if (loading()) {
-              <p-skeleton width="4rem" height="3rem"></p-skeleton>
-            } @else {
-              <h3 class="text-[40px] font-black text-emerald-600 leading-none">{{ totalInventario() }}</h3>
-              <i class="pi pi-database text-emerald-500 text-4xl opacity-20"></i>
-            }
-          </div>
-          <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
-            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 65%"></div>
+          <p class="stat-label">{{ card.label }}</p>
+          <ng-container *ngIf="loading(); else statVal">
+            <p-skeleton width="4rem" height="2.5rem" styleClass="mb-3"></p-skeleton>
+          </ng-container>
+          <ng-template #statVal>
+            <h3 class="stat-value" [style.color]="card.valueColor">{{ card.value() }}</h3>
+          </ng-template>
+          <div class="stat-bar">
+            <div class="stat-bar-fill" [style.width]="getBarWidth(card.value(), card.limit)" [style.background]="card.iconColor"></div>
           </div>
         </div>
 
       </div>
 
-      <!-- Gráficas Dashboard (PrimeNG ChartModule) -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        
-        <!-- Stock Card (PrimeNG) -->
-        <div class="bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 min-h-[400px]">
-          @if (loading()) {
-            <p-skeleton width="100%" height="320px"></p-skeleton>
-          } @else {
-            <p-chart type="bar" [data]="chartStockData()" [options]="chartStockOptions()" height="320px"></p-chart>
-          }
+      <!-- ══════════ GRÁFICAS ══════════ -->
+      <p class="db-section-title"> Análisis de Inventario y Solicitudes</p>
+      <div class="db-charts-grid">
+
+        <!-- Gráfica 1: Stock por productos -->
+        <div class="db-chart-card">
+          <p style="font-size:0.78rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 1.25rem;">
+            Items Registrados por Producto
+          </p>
+          <ng-container *ngIf="loading(); else chart1">
+            <p-skeleton width="100%" height="240px"></p-skeleton>
+          </ng-container>
+          <ng-template #chart1>
+            <div *ngIf="chartStockData(); else noData1">
+              <p-chart type="bar" [data]="chartStockData()" [options]="chartStockOptions()" height="240px"></p-chart>
+            </div>
+            <ng-template #noData1>
+              <div class="db-empty"><i class="pi pi-chart-bar"></i><span>Sin datos de inventario disponibles</span></div>
+            </ng-template>
+          </ng-template>
         </div>
 
-        <!-- Donut Card (PrimeNG) -->
-        <div class="bg-white rounded-[24px] shadow-sm border border-gray-100 p-8 min-h-[400px]">
-          @if (loading()) {
-            <p-skeleton width="100%" height="320px"></p-skeleton>
-          } @else {
-            <p-chart type="doughnut" [data]="chartSitiosData()" [options]="chartSitiosOptions()" height="320px"></p-chart>
-          }
+        <!-- Gráfica 2: Distribución por sitio -->
+        <div class="db-chart-card">
+          <p style="font-size:0.78rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 1.25rem;">
+            Materiales por Sitio / Ambiente
+          </p>
+          <ng-container *ngIf="loading(); else chart2">
+            <p-skeleton width="100%" height="240px"></p-skeleton>
+          </ng-container>
+          <ng-template #chart2>
+            <div *ngIf="chartSitiosData(); else noData2">
+              <p-chart type="doughnut" [data]="chartSitiosData()" [options]="chartSitiosOptions()" height="240px"></p-chart>
+            </div>
+            <ng-template #noData2>
+              <div class="db-empty"><i class="pi pi-pie-chart"></i><span>Sin datos de sitios disponibles</span></div>
+            </ng-template>
+          </ng-template>
         </div>
+
+        <!-- Gráfica 3: Estado solicitudes -->
+        <div class="db-chart-card">
+          <p style="font-size:0.78rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 1.25rem;">
+            Estado de Solicitudes
+          </p>
+          <ng-container *ngIf="loading(); else chart3">
+            <p-skeleton width="100%" height="240px"></p-skeleton>
+          </ng-container>
+          <ng-template #chart3>
+            <div *ngIf="chartSolicitudesData(); else noData3">
+              <p-chart type="pie" [data]="chartSolicitudesData()" [options]="chartSolicitudesOptions()" height="240px"></p-chart>
+            </div>
+            <ng-template #noData3>
+              <div class="db-empty"><i class="pi pi-inbox"></i><span>Sin solicitudes registradas</span></div>
+            </ng-template>
+          </ng-template>
+        </div>
+
+        <!-- Gráfica 4: Próximos a vencer -->
+        <div class="db-chart-card">
+          <p style="font-size:0.78rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 1.25rem;">
+            Productos Próximos a Vencer (90 días)
+          </p>
+          <ng-container *ngIf="loading(); else chart4">
+            <p-skeleton width="100%" height="240px"></p-skeleton>
+          </ng-container>
+          <ng-template #chart4>
+            <div *ngIf="chartVencimientoData(); else noData4">
+              <p-chart type="bar" [data]="chartVencimientoData()" [options]="chartVencimientoOptions()" height="240px"></p-chart>
+            </div>
+            <ng-template #noData4>
+              <div class="db-empty"><i class="pi pi-calendar"></i><span>Sin productos próximos a vencer</span></div>
+            </ng-template>
+          </ng-template>
+        </div>
+
       </div>
+
+      <!-- ══════════ ACCESOS RÁPIDOS ══════════ -->
+      <p class="db-section-title" style="margin-top:0.5rem;">Accesos Rápidos</p>
+      <div class="db-bottom-grid">
+
+        <!-- Módulos del sistema -->
+        <div class="db-quick-card">
+          <p style="font-size:0.8rem; font-weight:800; color:#1e293b; margin:0 0 1rem;">
+            Módulos del Sistema
+          </p>
+          <div class="quick-item" *ngFor="let mod of modulos">
+            <div class="quick-left">
+              <div class="quick-icon" [style.background]="mod.bg" [style.color]="mod.color">
+                <i [class]="'pi ' + mod.icon"></i>
+              </div>
+              <div>
+                <p class="quick-label">{{ mod.label }}</p>
+                <p class="quick-sub">{{ mod.desc }}</p>
+              </div>
+            </div>
+            <a [routerLink]="mod.path"
+              style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.3rem 0.75rem; font-size:0.72rem; font-weight:700; color:#475569; text-decoration:none; white-space:nowrap;">
+              Ir al módulo →
+            </a>
+          </div>
+        </div>
+
+        <!-- Estado general del sistema -->
+        <div class="db-quick-card">
+          <p style="font-size:0.8rem; font-weight:800; color:#1e293b; margin:0 0 1rem;">
+            Estado General del Sistema
+          </p>
+          <div class="quick-item" *ngFor="let stat of estadoSistema">
+            <div class="quick-left">
+              <div class="quick-icon" [style.background]="stat.bg" [style.color]="stat.color">
+                <i [class]="'pi ' + stat.icon"></i>
+              </div>
+              <div>
+                <p class="quick-label">{{ stat.label }}</p>
+                <p class="quick-sub">{{ stat.desc }}</p>
+              </div>
+            </div>
+            <ng-container *ngIf="loading(); else statQuick">
+              <p-skeleton width="3rem" height="1.2rem"></p-skeleton>
+            </ng-container>
+            <ng-template #statQuick>
+              <span class="quick-value">{{ stat.value() }}</span>
+            </ng-template>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   `
 })
 export class DashboardComponent implements OnInit {
   private readonly apiService = inject(ApiService);
 
+  loading = signal<boolean>(true);
+  ultimaActualizacion = '—';
+
+  // Contadores
   totalUsuarios = signal<number>(0);
   totalProductos = signal<number>(0);
+  totalSolicitudes = signal<number>(0);
   solicitudesPendientes = signal<number>(0);
   totalInventario = signal<number>(0);
-  ultimasSolicitudes = signal<any[]>([]);
-  loading = signal<boolean>(true);
-  chartError = signal<boolean>(false);
+  totalSitios = signal<number>(0);
+  totalFichas = signal<number>(0);
+  totalCategorias = signal<number>(0);
 
-  // Señales para las Gráficas
+  // Charts
   chartStockData = signal<any>(null);
   chartStockOptions = signal<any>(null);
-
   chartVencimientoData = signal<any>(null);
   chartVencimientoOptions = signal<any>(null);
-
   chartSitiosData = signal<any>(null);
   chartSitiosOptions = signal<any>(null);
-
   chartSolicitudesData = signal<any>(null);
   chartSolicitudesOptions = signal<any>(null);
 
-  ngOnInit() {
-    this.cargarDatos();
+  // ─── Hero Mini KPIs ──────────────────────────────────────────────────────
+  heroKpis = [
+    { label: 'Usuarios', value: this.totalUsuarios, sub: 'Activos en el sistema' },
+    { label: 'Productos', value: this.totalProductos, sub: 'Tipos de material' },
+    { label: 'Solicitudes', value: this.totalSolicitudes, sub: 'Total registradas' },
+    { label: 'Fichas', value: this.totalFichas, sub: 'Fichas de formación' },
+  ];
+
+  // ─── Stat Cards ──────────────────────────────────────────────────────────
+  statCards = [
+    {
+      label: 'Total Inventario', value: this.totalInventario, limit: 100,
+      icon: 'pi-database', iconColor: '#6366f1', iconBg: '#ede9fe',
+      valueColor: '#3730a3',
+      trend: 'Activo', trendBg: '#ede9fe', trendColor: '#6366f1', trendIcon: 'pi pi-check',
+    },
+    {
+      label: 'Solicitudes Pendientes', value: this.solicitudesPendientes, limit: 20,
+      icon: 'pi-clock', iconColor: '#f59e0b', iconBg: '#fffbeb',
+      valueColor: '#b45309',
+      trend: 'Pendiente', trendBg: '#fffbeb', trendColor: '#d97706', trendIcon: 'pi pi-exclamation-circle',
+    },
+    {
+      label: 'Sitios / Ambientes', value: this.totalSitios, limit: 10,
+      icon: 'pi-map-marker', iconColor: '#10b981', iconBg: '#d1fae5',
+      valueColor: '#065f46',
+      trend: 'Activos', trendBg: '#d1fae5', trendColor: '#059669', trendIcon: 'pi pi-check-circle',
+    },
+    {
+      label: 'Categorías', value: this.totalCategorias, limit: 15,
+      icon: 'pi-tag', iconColor: '#ec4899', iconBg: '#fce7f3',
+      valueColor: '#9d174d',
+      trend: 'Registradas', trendBg: '#fce7f3', trendColor: '#be185d', trendIcon: 'pi pi-tags',
+    },
+  ];
+
+  // ─── Módulos de acceso rápido ─────────────────────────────────────────────
+  modulos = [
+    { label: 'Inventario', desc: 'Control de stock y materiales', path: '/inventario', icon: 'pi-warehouse', bg: '#d1fae5', color: '#059669' },
+    { label: 'Solicitudes', desc: 'Gestión de pedidos de material', path: '/solicitudes', icon: 'pi-inbox', bg: '#fef3c7', color: '#d97706' },
+    { label: 'Fichas', desc: 'Fichas de formación registradas', path: '/fichas', icon: 'pi-id-card', bg: '#e0e7ff', color: '#6366f1' },
+    { label: 'Usuarios', desc: 'Administración de participantes', path: '/usuarios', icon: 'pi-users', bg: '#fce7f3', color: '#ec4899' },
+    { label: 'Centros', desc: 'Centros de formación SENA', path: '/centros', icon: 'pi-briefcase', bg: '#dbeafe', color: '#3b82f6' },
+    { label: 'Sedes', desc: 'Sedes físicas del sistema', path: '/sedes', icon: 'pi-building', bg: '#f3e8ff', color: '#8b5cf6' },
+  ];
+
+  // ─── Estado general del sistema ──────────────────────────────────────────
+  estadoSistema = [
+    { label: 'Materiales en Inventario', desc: 'Ítems totales registrados', icon: 'pi-box', bg: '#f0fdf4', color: '#16a34a', value: this.totalInventario },
+    { label: 'Usuarios Registrados', desc: 'Total instructores y aprendices', icon: 'pi-users', bg: '#eff6ff', color: '#2563eb', value: this.totalUsuarios },
+    { label: 'Productos Catalogados', desc: 'Tipos de material disponible', icon: 'pi-list', bg: '#fdf4ff', color: '#9333ea', value: this.totalProductos },
+    { label: 'Sitios Habilitados', desc: 'Bodegas y ambientes activos', icon: 'pi-map', bg: '#fff7ed', color: '#ea580c', value: this.totalSitios },
+    { label: 'Fichas de Formación', desc: 'Grupos activos de aprendizaje', icon: 'pi-id-card', bg: '#f0fdfa', color: '#0d9488', value: this.totalFichas },
+    { label: 'Solicitudes Pendientes', desc: 'Requieren atención inmediata', icon: 'pi-clock', bg: '#fffbeb', color: '#d97706', value: this.solicitudesPendientes },
+  ];
+
+  ngOnInit() { this.cargarDatos(); }
+
+  getBarWidth(val: number, limit: number): string {
+    if (!val) return '0%';
+    const pct = Math.min(100, (val / limit) * 100);
+    return `${pct}%`;
   }
 
   cargarDatos() {
     this.loading.set(true);
-    this.chartError.set(false);
 
-    const reqUsuarios = this.apiService.get<any>('/usuarios').pipe(
-      map(res => Array.isArray(res) ? res : (res?.data || [])),
-      catchError(() => of([]))
-    );
-
-    const reqProductos = this.apiService.get<any>('/productos').pipe(
-      map(res => Array.isArray(res) ? res : (res?.data || [])),
-      catchError(() => of([]))
-    );
-
-    const reqSolicitudes = this.apiService.get<any>('/solicitudes').pipe(
-      map(res => Array.isArray(res) ? res : (res?.data || [])),
-      catchError(() => of([]))
-    );
-
-    const reqInventario = this.apiService.get<any>('/inventario').pipe(
-      map(res => Array.isArray(res) ? res : (res?.data || [])),
-      catchError(() => of([]))
-    );
-
-    const reqItems = this.apiService.get<any>('/items').pipe(
-      map(res => Array.isArray(res) ? res : (res?.data || [])),
-      catchError(() => of([]))
-    );
-
-    const reqSitios = this.apiService.get<any>('/sitios').pipe(
-      map(res => Array.isArray(res) ? res : (res?.data || [])),
-      catchError(() => of([]))
-    );
+    const req = (endpoint: string) =>
+      this.apiService.get<any>(endpoint).pipe(
+        map(res => Array.isArray(res) ? res : (res?.data || [])),
+        catchError(() => of([]))
+      );
 
     forkJoin({
-      usuarios: reqUsuarios,
-      productos: reqProductos,
-      solicitudes: reqSolicitudes,
-      inventario: reqInventario,
-      items: reqItems,
-      sitios: reqSitios
+      usuarios:   req('/usuarios'),
+      productos:  req('/productos'),
+      solicitudes:req('/solicitudes'),
+      inventario: req('/inventario'),
+      items:      req('/items'),
+      sitios:     req('/sitios'),
+      fichas:     req('/fichas'),
+      categorias: req('/categorias'),
     }).subscribe({
-      next: ({ usuarios, productos, solicitudes, inventario, items, sitios }) => {
-        // --- MÉTRICAS GENERALES ---
+      next: ({ usuarios, productos, solicitudes, inventario, items, sitios, fichas, categorias }) => {
+
+        // ── Contadores ────────────────────────────────────────────────────
         this.totalUsuarios.set(usuarios.length);
         this.totalProductos.set(productos.length);
-        
+        this.totalSolicitudes.set(solicitudes.length);
+        this.totalSitios.set(sitios.length);
+        this.totalFichas.set(fichas.length);
+        this.totalCategorias.set(categorias.length);
+
         const pendientes = solicitudes.filter((s: any) => {
-          const estado = s.estadoSol || s.estado;
-          return estado === 'PENDIENTE';
+          const e = (s.estadoSol || s.estado || '').toUpperCase();
+          return e === 'PENDIENTE';
         }).length;
         this.solicitudesPendientes.set(pendientes);
-        
-        const sorted = [...solicitudes].sort((a: any, b: any) => {
-          const dateA = new Date(a.fechaSol || a.fecha || a.createdAt || 0).getTime();
-          const dateB = new Date(b.fechaSol || b.fecha || b.createdAt || 0).getTime();
-          return dateB - dateA;
-        });
-        this.ultimasSolicitudes.set(sorted.slice(0, 5));
 
-        const totalInv = inventario.reduce((acc: number, curr: any) => acc + (Number(curr.cantidad) || Number(curr.stock) || 0), 0);
+        const totalInv = inventario.reduce((acc: number, cur: any) =>
+          acc + (Number(cur.cantidadActual) || Number(cur.cantidad) || Number(cur.stock) || 0), 0);
         this.totalInventario.set(totalInv);
 
-        // --- GRÁFICA 1: Productos con Stock Bajo (Items) ---
-        const itemsAgrupados = items.reduce((acc: any, item: any) => {
-          const prodId = item.id_producto || (item.producto && item.producto.id);
-          if(prodId) {
-            if (!acc[prodId]) acc[prodId] = 0;
-            acc[prodId]++;
+        this.ultimaActualizacion = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+
+        // ── Gráfica 1: Items por producto ────────────────────────────────
+        const itemsAgg: any = {};
+        items.forEach((item: any) => {
+          const pid = item.id_producto ?? item.producto?.id ?? item.productoId;
+          if (pid != null) {
+            itemsAgg[pid] = (itemsAgg[pid] || 0) + 1;
           }
-          return acc;
-        }, {});
+        });
 
-        const stockArray = Object.keys(itemsAgrupados).map(prodId => {
-          const p = productos.find((prod: any) => String(prod.id_producto || prod.id) === String(prodId));
-          return {
-            nombre: p ? p.nombre : 'Producto #' + prodId,
-            count: itemsAgrupados[prodId]
-          };
-        }).sort((a, b) => a.count - b.count).slice(0, 5);
+        const stockArr = Object.keys(itemsAgg).map(pid => {
+          const p = productos.find((pr: any) => String(pr.id_producto ?? pr.id) === String(pid));
+          return { nombre: p?.nombre || ('Producto #' + pid), count: itemsAgg[pid] };
+        }).sort((a, b) => b.count - a.count).slice(0, 8);
 
-        const stockLabels = stockArray.map(i => i.nombre);
-        const stockCounts = stockArray.map(i => i.count);
-        const stockColors = stockCounts.map(c => c < 3 ? '#ef4444' : c < 5 ? '#eab308' : '#22c55e'); // rojo < 3, amarillo < 5, verde resto
-
-        this.chartStockData.set({
-          labels: stockLabels,
-          datasets: [
-            {
-              label: 'Cantidad de Items',
-              data: stockCounts,
-              backgroundColor: stockColors,
-              borderRadius: 4
+        if (stockArr.length) {
+          this.chartStockData.set({
+            labels: stockArr.map(i => i.nombre),
+            datasets: [{
+              label: 'Cantidad de ítems',
+              data: stockArr.map(i => i.count),
+              backgroundColor: 'rgba(57,169,0,0.8)',
+              borderRadius: 8,
+              hoverBackgroundColor: '#39A900',
+            }]
+          });
+          this.chartStockOptions.set({
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: (ctx: any) => ` ${ctx.raw} ítems` } }
+            },
+            scales: {
+              x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
+              y: { grid: { display: false } }
             }
-          ]
-        });
-        this.chartStockOptions.set({
-          indexAxis: 'y', // Barra horizontal
-          maintainAspectRatio: false,
-          aspectRatio: 0.8,
-          plugins: {
-            legend: { display: false },
-            title: { display: true, text: '⚠️ Productos con Stock Bajo', font: { size: 16 } }
-          },
-          scales: {
-            x: { beginAtZero: true, ticks: { stepSize: 1 } }
+          });
+        }
+
+        // ── Gráfica 2: Materiales por sitio ─────────────────────────────
+        const sitiosMap: any = {};
+        sitios.forEach((s: any) => { sitiosMap[s.id_sitio ?? s.id] = s.nombre; });
+
+        const invSitio: any = {};
+        inventario.forEach((inv: any) => {
+          const sId = inv.id_sitio ?? inv.sitio?.id;
+          if (sId != null) {
+            invSitio[sId] = (invSitio[sId] || 0) + (Number(inv.cantidadActual) || Number(inv.cantidad) || 1);
           }
         });
 
-        // --- GRÁFICA 2: Productos próximos a vencer ---
+        const sitiosLabels = Object.keys(invSitio).map(id => sitiosMap[id] || 'Sitio #' + id);
+        const sitiosVals = Object.values(invSitio);
+        const PALETTE = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#3b82f6','#84cc16'];
+
+        if (sitiosLabels.length) {
+          this.chartSitiosData.set({
+            labels: sitiosLabels,
+            datasets: [{ data: sitiosVals, backgroundColor: PALETTE.slice(0, sitiosLabels.length), borderWidth: 2, borderColor: '#fff' }]
+          });
+          this.chartSitiosOptions.set({
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } } },
+            cutout: '65%'
+          });
+        }
+
+        // ── Gráfica 3: Estado solicitudes ────────────────────────────────
+        const solEstados: any = {};
+        solicitudes.forEach((s: any) => {
+          const st = (s.estadoSol || s.estado || 'PENDIENTE').toUpperCase();
+          solEstados[st] = (solEstados[st] || 0) + 1;
+        });
+
+        const colorMap: any = {
+          PENDIENTE: '#f59e0b', APROBADA: '#10b981', RECHAZADA: '#ef4444',
+          ENTREGADO: '#3b82f6', CANCELADO: '#6b7280', APROBADO: '#10b981', RECHAZADO: '#ef4444'
+        };
+
+        const solKeys = Object.keys(solEstados);
+        if (solKeys.length) {
+          this.chartSolicitudesData.set({
+            labels: solKeys,
+            datasets: [{
+              data: solKeys.map(k => solEstados[k]),
+              backgroundColor: solKeys.map(k => colorMap[k] || '#94a3b8'),
+              borderWidth: 2, borderColor: '#fff'
+            }]
+          });
+          this.chartSolicitudesOptions.set({
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } } }
+          });
+        }
+
+        // ── Gráfica 4: Próximos a vencer ────────────────────────────────
         const hoy = new Date();
-        const limite90 = new Date();
-        limite90.setDate(limite90.getDate() + 90);
+        const limite = new Date(); limite.setDate(limite.getDate() + 90);
 
         const aVencer = productos.filter((p: any) => {
           if (!p.fecha_vencimiento) return false;
           const fv = new Date(p.fecha_vencimiento);
-          return fv >= hoy && fv <= limite90;
-        }).sort((a: any, b: any) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime());
+          return fv >= hoy && fv <= limite;
+        }).sort((a: any, b: any) =>
+          new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime()
+        ).slice(0, 8);
 
-        const vencimientoLabels = aVencer.map((p: any) => p.nombre);
-        const vencimientoDias = aVencer.map((p: any) => {
-          const diff = new Date(p.fecha_vencimiento).getTime() - hoy.getTime();
-          return Math.ceil(diff / (1000 * 3600 * 24));
-        });
-        
-        // rojo < 30, amarillo < 60, verde < 90
-        const vencimientoColors = vencimientoDias.map((d: number) => d < 30 ? '#ef4444' : d < 60 ? '#eab308' : '#22c55e');
-
-        this.chartVencimientoData.set({
-          labels: vencimientoLabels,
-          datasets: [
-            {
-              label: 'Días restantes para vencer',
-              data: vencimientoDias,
-              backgroundColor: vencimientoColors,
-              borderRadius: 4
-            }
-          ]
-        });
-        this.chartVencimientoOptions.set({
-          maintainAspectRatio: false,
-          aspectRatio: 0.8,
-          plugins: {
-            legend: { display: false },
-            title: { display: true, text: '📅 Productos Próximos a Vencer', font: { size: 16 } }
-          },
-          scales: {
-            y: { beginAtZero: true }
-          }
-        });
-
-        // --- GRÁFICA 3: Materiales por sitio/bodega ---
-        const sitiosMap = sitios.reduce((acc: any, s: any) => {
-          acc[s.id_sitio || s.id] = s.nombre;
-          return acc;
-        }, {});
-
-        const invSitio = inventario.reduce((acc: any, inv: any) => {
-          const sId = inv.id_sitio || (inv.sitio && inv.sitio.id);
-          if (sId) {
-            if (!acc[sId]) acc[sId] = 0;
-            acc[sId] += (Number(inv.cantidad) || Number(inv.stock) || 1);
-          }
-          return acc;
-        }, {});
-
-        const sitiosLabels = Object.keys(invSitio).map(id => sitiosMap[id] || 'Sitio #' + id);
-        const sitiosData = Object.values(invSitio);
-        const bgColorsDoughnut = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
-
-        this.chartSitiosData.set({
-          labels: sitiosLabels,
-          datasets: [
-            {
-              data: sitiosData,
-              backgroundColor: bgColorsDoughnut.slice(0, sitiosLabels.length),
-              borderWidth: 0
-            }
-          ]
-        });
-        this.chartSitiosOptions.set({
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom' },
-            title: { display: true, text: '🏭 Distribución de Materiales por Sitio', font: { size: 16 } }
-          }
-        });
-
-        // --- GRÁFICA 4: Estado de solicitudes ---
-        const estadosSol = solicitudes.reduce((acc: any, sol: any) => {
-          const st = (sol.estadoSol || sol.estado || 'PENDIENTE').toUpperCase();
-          if (!acc[st]) acc[st] = 0;
-          acc[st]++;
-          return acc;
-        }, {});
-
-        const keysSol = Object.keys(estadosSol);
-        const dataSol = Object.values(estadosSol);
-        
-        const getColorEstado = (estado: string) => {
-          if (estado === 'PENDIENTE') return '#f97316'; // naranja
-          if (estado === 'APROBADA' || estado === 'APROBADO' || estado === 'ENTREGADO') return '#22c55e'; // verde
-          if (estado === 'RECHAZADA' || estado === 'RECHAZADO' || estado === 'CANCELADO') return '#ef4444'; // rojo
-          return '#64748b'; // gris fallback
-        };
-
-        this.chartSolicitudesData.set({
-          labels: keysSol,
-          datasets: [
-            {
-              data: dataSol,
-              backgroundColor: keysSol.map(getColorEstado),
-              borderWidth: 0
-            }
-          ]
-        });
-        this.chartSolicitudesOptions.set({
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom' },
-            title: { display: true, text: '📋 Estado de Solicitudes', font: { size: 16 } }
-          }
-        });
+        if (aVencer.length) {
+          const dias = aVencer.map((p: any) =>
+            Math.ceil((new Date(p.fecha_vencimiento).getTime() - hoy.getTime()) / 86400000));
+          this.chartVencimientoData.set({
+            labels: aVencer.map((p: any) => p.nombre),
+            datasets: [{
+              label: 'Días restantes',
+              data: dias,
+              backgroundColor: dias.map((d: number) => d < 30 ? '#ef4444' : d < 60 ? '#f59e0b' : '#10b981'),
+              borderRadius: 8,
+            }]
+          });
+          this.chartVencimientoOptions.set({
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => ` ${ctx.raw} días` } } },
+            scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+          });
+        }
 
         this.loading.set(false);
       },
-      error: () => {
-        this.chartError.set(true);
-        this.loading.set(false);
-      }
+      error: () => this.loading.set(false)
     });
-  }
-
-  getSeverity(estado: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | null | undefined {
-    switch(estado) {
-      case 'PENDIENTE': return 'warn';
-      case 'APROBADA': return 'success';
-      case 'RECHAZADA': return 'danger';
-      default: return 'info';
-    }
   }
 }

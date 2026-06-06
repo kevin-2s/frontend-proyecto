@@ -10,7 +10,7 @@ export class FichaService {
     return this.api.get<any>('/fichas');
   }
 
-  crearFiscal(data: { numero_ficha: string; programa: string; id_responsable?: number }): Observable<any> {
+  crearFiscal(data: { numero_ficha: string; id_programa: number; id_responsable?: number; id_sitio?: number }): Observable<any> {
     return this.api.post<any>('/fichas', data);
   }
 

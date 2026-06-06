@@ -9,8 +9,10 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmationService } from 'primeng/api';
 import { SolicitudService } from '../../infrastructure/services/solicitud.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
 
 interface Solicitud {
   id?: number;
@@ -35,7 +37,7 @@ interface Solicitud {
     TooltipModule,
   ],
   encapsulation: ViewEncapsulation.None,
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   template: `
     <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
@@ -83,7 +85,7 @@ interface Solicitud {
               <td>
                 <div class="action-buttons justify-center">
                   <button
-                    *ngIf="sol.estadoSol === 'PENDIENTE'"
+                    *ngIf="sol.estadoSol === 'PENDIENTE' && esAdmin()"
                     pButton
                     icon="pi pi-check"
                     class="p-button-text text-green-600 hover:bg-green-50"
@@ -91,7 +93,7 @@ interface Solicitud {
                     pTooltip="Aprobar solicitud"
                   ></button>
                   <button
-                    *ngIf="sol.estadoSol === 'PENDIENTE'"
+                    *ngIf="sol.estadoSol === 'PENDIENTE' && esAdmin()"
                     pButton
                     icon="pi pi-times"
                     class="p-button-text text-red-600 hover:bg-red-50"
@@ -163,8 +165,13 @@ interface Solicitud {
 })
 export class SolicitudesComponent implements OnInit {
   private solicitudService = inject(SolicitudService);
-  private messageService = inject(MessageService);
+  private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
+  private authService = inject(AuthService);
+
+  esAdmin(): boolean {
+    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+  }
   solicitudes: Solicitud[] = [];
   solicitudesFiltradas: Solicitud[] = [];
   filtro = '';
@@ -209,7 +216,7 @@ export class SolicitudesComponent implements OnInit {
       accept: () => {
         this.solicitudService.actualizarEstado(sol.id!, { estadoSol: 'APROBADA' }).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Solicitudes',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Solicitud aprobada',
@@ -217,7 +224,7 @@ export class SolicitudesComponent implements OnInit {
             this.cargarSolicitudes();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Solicitudes',
               severity: 'error',
               summary: 'Error',
               detail: 'No se pudo aprobar',
@@ -236,7 +243,7 @@ export class SolicitudesComponent implements OnInit {
       accept: () => {
         this.solicitudService.actualizarEstado(sol.id!, { estadoSol: 'RECHAZADA' }).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Solicitudes',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Solicitud rechazada',
@@ -244,7 +251,7 @@ export class SolicitudesComponent implements OnInit {
             this.cargarSolicitudes();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Solicitudes',
               severity: 'error',
               summary: 'Error',
               detail: 'No se pudo rechazar',

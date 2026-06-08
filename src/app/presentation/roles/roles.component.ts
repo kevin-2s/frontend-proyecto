@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -35,92 +35,42 @@ import { Rol } from '../../domain/models/rol.model';
   ],
   providers: [MessageService],
   styles: [`
-    /* ── Modern Premium Toggle ── */
-    .perm-toggle-track {
-      position: relative;
+    /* ── Pill Toggle Button ── */
+    .perm-pill-btn {
       display: inline-flex;
       align-items: center;
-      width: 52px;
-      height: 28px;
+      gap: 6px;
+      padding: 5px 16px;
       border-radius: 999px;
+      border: 1.8px solid;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 700;
       cursor: pointer;
-      transition: background 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
-      flex-shrink: 0;
       outline: none;
-      border: none;
-      padding: 0;
+      transition: all 0.22s cubic-bezier(.4,0,.2,1);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
-    .perm-toggle-track.off {
-      background: #1e293b;
-      box-shadow: 0 0 0 0px #39A90000, inset 0 2px 6px rgba(0,0,0,.4);
+    .perm-pill-btn.on {
+      border-color: #39A900;
+      color: #39A900;
     }
-    .perm-toggle-track.on {
-      background: linear-gradient(135deg, #39A900 0%, #5cde00 100%);
-      box-shadow: 0 0 14px 2px rgba(57,169,0,.35), inset 0 1px 3px rgba(255,255,255,.15);
+    .perm-pill-btn.on:hover {
+      background: rgba(57,169,0,.06);
+      box-shadow: 0 0 0 3px rgba(57,169,0,.12);
     }
-    .perm-toggle-thumb {
-      position: absolute;
-      top: 4px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: #fff;
-      transition: left 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
-      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    .perm-pill-btn.off {
+      border-color: #ef4444;
+      color: #ef4444;
     }
-    .perm-toggle-track.off .perm-toggle-thumb {
-      left: 4px;
-      background: #64748b;
-    }
-    .perm-toggle-track.on .perm-toggle-thumb {
-      left: 28px;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(57,169,0,.35);
-    }
-    /* glow pulse when turning on */
-    .perm-toggle-track.on {
-      animation: toggleGlow 0.4s ease;
-    }
-    @keyframes toggleGlow {
-      0%   { box-shadow: 0 0 0px 0px rgba(57,169,0,0); }
-      50%  { box-shadow: 0 0 18px 6px rgba(57,169,0,.45); }
-      100% { box-shadow: 0 0 14px 2px rgba(57,169,0,.35); }
+    .perm-pill-btn.off:hover {
+      background: rgba(239,68,68,.06);
+      box-shadow: 0 0 0 3px rgba(239,68,68,.12);
     }
 
-    /* ── Permiso card ── */
-    .perm-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-radius: 14px;
-      border: 1.5px solid #f1f5f9;
-      background: #fff;
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-      gap: 12px;
-    }
-    .perm-card.active {
-      border-color: rgba(57,169,0,.25);
-      background: linear-gradient(135deg, rgba(57,169,0,.03) 0%, #fff 100%);
-      box-shadow: 0 2px 12px rgba(57,169,0,.08);
-    }
-    .perm-card:hover {
-      border-color: rgba(57,169,0,.3);
-      box-shadow: 0 4px 16px rgba(57,169,0,.1);
-    }
-    .perm-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      font-size: 15px;
-      transition: background 0.2s;
-    }
-    .perm-icon.active { background: rgba(57,169,0,.12); color: #39A900; }
-    .perm-icon.inactive { background: #f1f5f9; color: #94a3b8; }
+    /* Removed .perm-card as per user request */
+    /* Icons removed per user request */
 
     /* ── Group header ── */
     .perm-group-header {
@@ -174,7 +124,7 @@ import { Rol } from '../../domain/models/rol.model';
             <button
               *ngIf="currentView === 'usuarios' && !showUserForm"
               type="button"
-              class="btn-add"
+              class="btn-add btn-open-form"
               (click)="toggleUserForm()"
             >
               <i class="pi pi-user-plus"></i>
@@ -193,7 +143,7 @@ import { Rol } from '../../domain/models/rol.model';
         </div>
 
         <!-- INLINE FORM FOR ROL -->
-        <div *ngIf="showRolForm" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
+        <div *ngIf="showRolForm" class="inline-form-container w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
           <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
               <i class="pi pi-shield text-[#39A900] text-xl"></i>
@@ -235,7 +185,7 @@ import { Rol } from '../../domain/models/rol.model';
         </div>
 
         <!-- INLINE FORM FOR USER -->
-        <div *ngIf="showUserForm" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
+        <div *ngIf="showUserForm" class="inline-form-container w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
           <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
               <i class="pi pi-user-edit text-[#39A900] text-xl"></i>
@@ -251,11 +201,11 @@ import { Rol } from '../../domain/models/rol.model';
               <!-- Primera Fila: Nombres y Apellidos -->
               <div class="flex flex-col sm:flex-row gap-5">
                 <div class="floating-label-group flex-1" [class.floating]="usuarioForm.nombre && usuarioForm.nombre.trim() !== ''">
-                  <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                  <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
                   <label for="nombre">Nombres <span class="text-red-500">*</span></label>
                 </div>
                 <div class="floating-label-group flex-1" [class.floating]="usuarioForm.apellidos && usuarioForm.apellidos.trim() !== ''">
-                  <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                  <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
                   <label for="apellidos">Apellidos <span class="text-red-500">*</span></label>
                 </div>
               </div>
@@ -263,16 +213,16 @@ import { Rol } from '../../domain/models/rol.model';
               <!-- Segunda Fila: Correo y Rol -->
               <div class="flex flex-col sm:flex-row gap-5">
                 <div class="floating-label-group flex-1" [class.floating]="usuarioForm.correo && usuarioForm.correo.trim() !== ''">
-                  <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                  <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
                   <label for="correo">Correo Electrónico <span class="text-red-500">*</span></label>
                 </div>
-                <div class="flex gap-2 items-end flex-1">
+                <div class="flex gap-2 items-center flex-1">
                   <div class="floating-label-group flex-1" [class.floating]="usuarioForm.id_rol !== undefined && usuarioForm.id_rol !== null">
-                    <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                    <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body"></p-select>
                     <label>Rol <span class="text-red-500">*</span></label>
                   </div>
-                  <button type="button" pTooltip="Crear nuevo rol" tooltipPosition="top" class="w-[46px] h-[46px] flex-shrink-0 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-xl cursor-pointer transition-colors outline-none" (click)="openNewRolDialog()">
-                    <i class="pi pi-plus"></i>
+                  <button type="button" class="h-[50px] w-[50px] flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-[#39A900] bg-transparent border-none cursor-pointer transition-colors outline-none btn-open-form" (click)="openNewRolDialog()">
+                    <i class="pi pi-plus font-bold text-lg"></i>
                   </button>
                 </div>
               </div>
@@ -281,7 +231,7 @@ import { Rol } from '../../domain/models/rol.model';
               <div class="flex flex-col sm:flex-row gap-5">
                 <!-- Teléfono -->
                 <div class="floating-label-group flex-1" [class.floating]="usuarioForm.telefono && usuarioForm.telefono.trim() !== ''">
-                  <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                  <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
                   <label for="telefono">Teléfono</label>
                 </div>
                 
@@ -311,13 +261,16 @@ import { Rol } from '../../domain/models/rol.model';
               <!-- Cuarta Fila: Contraseña + Estado -->
               <div class="flex flex-col sm:flex-row gap-5">
                 <div class="floating-label-group flex-1" [class.floating]="usuarioForm.password && usuarioForm.password.trim() !== ''" *ngIf="esNuevoUsuario">
-                  <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
+                  <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full text-sm text-slate-800 outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
                   <label>Contraseña <span class="text-red-500">*</span></label>
                 </div>
                 <!-- Estado del usuario -->
-                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.estado !== undefined && usuarioForm.estado !== null">
-                  <p-select [options]="estadoOpciones" [(ngModel)]="usuarioForm.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                  <label>Estado <span class="text-red-500">*</span></label>
+                <div class="flex gap-2 items-center flex-1">
+                  <div class="floating-label-group flex-1" [class.floating]="usuarioForm.estado !== undefined && usuarioForm.estado !== null">
+                    <p-select [options]="estadoOpciones" [(ngModel)]="usuarioForm.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full flex items-center" appendTo="body"></p-select>
+                    <label>Estado <span class="text-red-500">*</span></label>
+                  </div>
+                  <div class="h-[50px] w-[50px] flex-shrink-0"></div>
                 </div>
               </div>
             </div>
@@ -382,16 +335,13 @@ import { Rol } from '../../domain/models/rol.model';
                    <p-tag [value]="u.estado ? 'ACTIVO' : 'INACTIVO'" [severity]="u.estado ? 'success' : 'danger'" styleClass="px-3 py-1 rounded-lg text-[10px]"></p-tag>
                 </td>
                 <td>
-                  <div class="flex items-center justify-center gap-1">
+                  <div class="action-buttons justify-center">
                     <button
-                      type="button"
+                      pButton
+                      icon="pi pi-pencil"
+                      class="btn-table-action btn-editor btn-open-form"
                       (click)="editarUsuario(u)"
-                      class="w-8 h-8 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
-                      pTooltip="Editar"
-                      tooltipPosition="top"
-                    >
-                      <i class="pi pi-pencil"></i>
-                    </button>
+                    ></button>
                   </div>
                 </td>
               </tr>
@@ -449,7 +399,6 @@ import { Rol } from '../../domain/models/rol.model';
                       icon="pi pi-pencil"
                       class="btn-table-action btn-editor"
                       (click)="seleccionarUsuario(u)"
-                      pTooltip="Gestionar permisos"
                     ></button>
                   </div>
                 </td>
@@ -480,7 +429,6 @@ import { Rol } from '../../domain/models/rol.model';
                 </h4>
                 <p class="text-xs text-slate-500 m-0 mt-0.5">
                   Rol: <span class="font-bold text-slate-700">{{ getRolNombre(usuarioSeleccionado.id_rol) }}</span>
-                  — Activa o desactiva los permisos de acceso de este usuario
                 </p>
               </div>
             </div>
@@ -501,8 +449,9 @@ import { Rol } from '../../domain/models/rol.model';
               <span class="text-xs text-slate-400 mt-2 font-semibold">Cargando mapa de accesos...</span>
             </div>
 
-            <div *ngIf="!loadingPermisos" class="max-h-[500px] overflow-y-auto pr-1 space-y-5 custom-scrollbar">
-              <div *ngFor="let key of getKeys(permisosAgrupados)" class="bg-slate-50/60 border border-slate-100 rounded-2xl p-4">
+            <div *ngIf="!loadingPermisos" class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+              <div class="max-h-[500px] overflow-y-auto pr-3 custom-scrollbar grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
+                <div *ngFor="let key of getKeys(permisosAgrupados)">
                 <div class="perm-group-header">
                   <span class="perm-group-dot"></span>
                   <span class="text-xs font-black text-slate-700 uppercase tracking-widest">{{ key }}</span>
@@ -511,35 +460,27 @@ import { Rol } from '../../domain/models/rol.model';
                   </span>
                 </div>
 
-                <div class="space-y-2">
-                  <div *ngFor="let p of permisosAgrupados[key]"
-                       class="perm-card"
-                       [class.active]="p.tiene_permiso">
-                    <div class="flex items-center gap-3 min-w-0 flex-1">
-                      <div class="perm-icon" [class.active]="p.tiene_permiso" [class.inactive]="!p.tiene_permiso">
-                        <i [class]="p.tiene_permiso ? 'pi pi-check-circle' : 'pi pi-lock'"></i>
-                      </div>
-                      <div class="flex flex-col min-w-0">
+                  <div class="flex flex-col">
+                    <div *ngFor="let p of permisosAgrupados[key]"
+                         class="flex items-center py-3 border-b border-slate-100 last:border-0 transition-opacity"
+                         [class.opacity-60]="!p.tiene_permiso">
+                      <div class="flex flex-col min-w-0 w-1/2 pr-4">
                         <span class="font-bold text-slate-800 text-sm leading-tight truncate">{{ p.descripcion || formatPermisoName(p.nombre) }}</span>
                         <span class="text-[10.5px] text-slate-400 truncate font-mono">{{ p.nombre }}</span>
                       </div>
-                    </div>
-
-                    <div class="flex items-center gap-3 flex-shrink-0">
-                      <span *ngIf="p.heredado_de_rol"
-                        class="text-[9px] font-bold text-indigo-500 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
-                        Heredado
-                      </span>
-                      <button
-                        type="button"
-                        class="perm-toggle-track"
-                        [class.on]="p.tiene_permiso"
-                        [class.off]="!p.tiene_permiso"
-                        (click)="togglePermiso(p, !p.tiene_permiso)"
-                        [attr.aria-label]="p.tiene_permiso ? 'Desactivar permiso' : 'Activar permiso'"
-                      >
-                        <span class="perm-toggle-thumb"></span>
-                      </button>
+                      <div class="flex items-center gap-3 flex-shrink-0">
+                        <button
+                          type="button"
+                          class="perm-pill-btn"
+                          [class.on]="p.tiene_permiso"
+                          [class.off]="!p.tiene_permiso"
+                          (click)="togglePermiso(p, !p.tiene_permiso)"
+                          [attr.aria-label]="p.tiene_permiso ? 'Desactivar permiso' : 'Activar permiso'"
+                        >
+                          <i [class]="p.tiene_permiso ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                          {{ p.tiene_permiso ? 'Activo' : 'Inactivo' }}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -599,6 +540,21 @@ export class RolesComponent implements OnInit {
     this.cargarUsuarios();
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.showUserForm && !this.showRolForm) return;
+
+    const target = event.target as HTMLElement;
+    const clickedInsideForm = target.closest('.inline-form-container');
+    const clickedOpenButton = target.closest('.btn-open-form');
+    const clickedOverlay = target.closest('.p-overlaypanel, .p-select-overlay, .p-dropdown-panel, .p-datepicker-panel, .p-toast, .p-tooltip');
+
+    if (!clickedInsideForm && !clickedOpenButton && !clickedOverlay) {
+      this.showUserForm = false;
+      this.showRolForm = false;
+    }
+  }
+
   openNewRolDialog() {
     this.rol = { nombre: '' };
     this.showRolForm = true;
@@ -607,6 +563,8 @@ export class RolesComponent implements OnInit {
 
   setView(view: 'usuarios' | 'permisos') {
     this.currentView = view;
+    this.showUserForm = false;
+    this.showRolForm = false;
     if (this.usuarios.length === 0) {
       this.cargarUsuarios();
     }

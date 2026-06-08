@@ -185,14 +185,14 @@ interface Categoria {
       </div>
     </div>
 
-    <p-dialog
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       [header]="esNuevo ? '✨ Registrar Producto' : '📝 Editar Producto'"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '600px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
       appendTo="body"
     >
       <form [formGroup]="productoForm" class="form-grid mt-2">
@@ -361,14 +361,14 @@ interface Categoria {
     </p-dialog>
 
     <!-- Diálogo para agregar nueva Categoría -->
-    <p-dialog
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       header="✨ Registrar Nueva Categoría"
       [(visible)]="displayAddCategoria"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
       appendTo="body"
     >
       <div class="form-grid mt-2">
@@ -402,14 +402,14 @@ interface Categoria {
     </p-dialog>
 
     <!-- Diálogo para agregar nuevo Tipo de Material -->
-    <p-dialog
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       header="✨ Registrar Tipo de Material"
       [(visible)]="displayAddTipoMaterial"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
       appendTo="body"
     >
       <div class="form-grid mt-2">
@@ -443,14 +443,14 @@ interface Categoria {
     </p-dialog>
 
     <!-- Diálogo para agregar nueva Unidad de Medida -->
-    <p-dialog
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       header="✨ Registrar Unidad de Medida"
       [(visible)]="displayAddUnidadMedida"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
       appendTo="body"
     >
       <div class="form-grid mt-2">
@@ -484,14 +484,14 @@ interface Categoria {
     </p-dialog>
 
     <!-- Diálogo para ver items del producto -->
-    <p-dialog
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       [header]="productoSeleccionadoParaItems ? '📦 Items de: ' + productoSeleccionadoParaItems.nombre : '📦 Items del Producto'"
       [(visible)]="displayItemsDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '600px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
       appendTo="body"
     >
       <div *ngIf="cargandoItems" class="flex justify-center items-center p-8">

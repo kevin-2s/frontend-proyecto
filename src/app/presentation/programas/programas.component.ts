@@ -134,15 +134,15 @@ interface Programa {
       </div>
     </div>
 
-    <p-dialog
+    <p-dialog [dismissableMask]="true"
       [header]="esNuevo ? '✨ Registrar Nuevo Programa' : '📝 Editar Programa'"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
-      maskStyleClass="backdrop-blur-sm bg-black/40"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
+      maskStyleClass="transparent-mask"
       appendTo="body"
     >
       <div class="form-grid mt-2">

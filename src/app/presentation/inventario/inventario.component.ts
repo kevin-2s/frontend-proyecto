@@ -143,23 +143,21 @@ interface Inventario {
               <td>
                 <div class="action-buttons justify-center">
                   <button
-                    type="button"
+                    pButton
+                    icon="pi pi-pencil"
+                    class="btn-table-action btn-editor"
                     (click)="editar(inv)"
-                    class="w-8 h-8 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
                     pTooltip="Modificar Estado"
                     tooltipPosition="top"
-                  >
-                    <i class="pi pi-pencil"></i>
-                  </button>
+                  ></button>
                   <button
-                    type="button"
+                    pButton
+                    icon="pi pi-trash"
+                    class="btn-table-action btn-eliminar"
                     (click)="eliminar(inv)"
-                    class="w-8 h-8 rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
                     pTooltip="Dar de Baja"
                     tooltipPosition="top"
-                  >
-                    <i class="pi pi-trash"></i>
-                  </button>
+                  ></button>
                 </div>
               </td>
             </tr>
@@ -180,15 +178,15 @@ interface Inventario {
 
 
     <!-- Diálogo para agregar nueva Categoría -->
-    <p-dialog
+    <p-dialog [dismissableMask]="true"
       header="✨ Registrar Nueva Categoría"
       [(visible)]="displayAddCategoria"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
-      maskStyleClass="backdrop-blur-sm bg-black/40"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
+      maskStyleClass="transparent-mask"
       appendTo="body"
     >
       <div class="flex flex-col gap-4 mt-2">
@@ -220,15 +218,15 @@ interface Inventario {
     </p-dialog>
 
     <!-- Diálogo para agregar nuevo Tipo de Material -->
-    <p-dialog
+    <p-dialog [dismissableMask]="true"
       header="✨ Registrar Tipo de Material"
       [(visible)]="displayAddTipoMaterial"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
-      maskStyleClass="backdrop-blur-sm bg-black/40"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
+      maskStyleClass="transparent-mask"
       appendTo="body"
     >
       <div class="flex flex-col gap-4 mt-2">
@@ -260,15 +258,15 @@ interface Inventario {
     </p-dialog>
 
     <!-- Diálogo para agregar nueva Unidad de Medida -->
-    <p-dialog
+    <p-dialog [dismissableMask]="true"
       header="✨ Registrar Unidad de Medida"
       [(visible)]="displayAddUnidadMedida"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
-      maskStyleClass="backdrop-blur-sm bg-black/40"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
+      maskStyleClass="transparent-mask"
       appendTo="body"
     >
       <div class="flex flex-col gap-4 mt-2">

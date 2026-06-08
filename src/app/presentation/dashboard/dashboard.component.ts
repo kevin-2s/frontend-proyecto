@@ -353,19 +353,33 @@ export class DashboardComponent implements OnInit {
               hoverBackgroundColor: '#39A900',
             }]
           });
-          this.chartStockOptions.set({
-            indexAxis: 'y',
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: { label: (ctx: any) => ` ${ctx.raw} ítems` } }
-            },
-            scales: {
-              x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
-              y: { grid: { display: false } }
-            }
+        } else {
+          // MOCK DATA (Fallback)
+          this.chartStockData.set({
+            labels: ['Computadores', 'Monitores', 'Teclados', 'Mouse', 'Cables Red'],
+            datasets: [{
+              label: 'Cantidad de ítems (Demostración)',
+              data: [120, 85, 140, 150, 300],
+              backgroundColor: 'rgba(57,169,0,0.6)',
+              borderRadius: 8,
+              hoverBackgroundColor: '#39A900',
+            }]
           });
         }
+        
+        // Options are the same for real or mock data
+        this.chartStockOptions.set({
+          indexAxis: 'y',
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx: any) => ` ${ctx.raw} ítems` } }
+          },
+          scales: {
+            x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 50 } },
+            y: { grid: { display: false } }
+          }
+        });
 
         // ── Gráfica 2: Materiales por sitio ─────────────────────────────
         const sitiosMap: any = {};
@@ -388,12 +402,19 @@ export class DashboardComponent implements OnInit {
             labels: sitiosLabels,
             datasets: [{ data: sitiosVals, backgroundColor: PALETTE.slice(0, sitiosLabels.length), borderWidth: 2, borderColor: '#fff' }]
           });
-          this.chartSitiosOptions.set({
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } } },
-            cutout: '65%'
+        } else {
+          // MOCK DATA (Fallback)
+          this.chartSitiosData.set({
+            labels: ['Bodega Principal', 'Sede Norte', 'Laboratorio A', 'Sala Sistemas'],
+            datasets: [{ data: [450, 200, 120, 80], backgroundColor: PALETTE.slice(0, 4), borderWidth: 2, borderColor: '#fff' }]
           });
         }
+        
+        this.chartSitiosOptions.set({
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } } },
+          cutout: '65%'
+        });
 
         // ── Gráfica 3: Estado solicitudes ────────────────────────────────
         const solEstados: any = {};
@@ -417,11 +438,23 @@ export class DashboardComponent implements OnInit {
               borderWidth: 2, borderColor: '#fff'
             }]
           });
-          this.chartSolicitudesOptions.set({
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } } }
+        } else {
+          // MOCK DATA (Fallback)
+          const mockKeys = ['APROBADA', 'PENDIENTE', 'ENTREGADO', 'RECHAZADA'];
+          this.chartSolicitudesData.set({
+            labels: mockKeys,
+            datasets: [{
+              data: [45, 25, 20, 10],
+              backgroundColor: mockKeys.map(k => colorMap[k] || '#94a3b8'),
+              borderWidth: 2, borderColor: '#fff'
+            }]
           });
         }
+
+        this.chartSolicitudesOptions.set({
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 } } } }
+        });
 
         // ── Gráfica 4: Próximos a vencer ────────────────────────────────
         const hoy = new Date();
@@ -447,12 +480,25 @@ export class DashboardComponent implements OnInit {
               borderRadius: 8,
             }]
           });
-          this.chartVencimientoOptions.set({
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => ` ${ctx.raw} días` } } },
-            scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+        } else {
+          // MOCK DATA (Fallback)
+          const mockDias = [15, 28, 45, 70];
+          this.chartVencimientoData.set({
+            labels: ['Licencia Software', 'Reactivos Lab.', 'Tinta Impresora', 'Material Papelería'],
+            datasets: [{
+              label: 'Días restantes (Demostración)',
+              data: mockDias,
+              backgroundColor: mockDias.map((d: number) => d < 30 ? '#ef4444' : d < 60 ? '#f59e0b' : '#10b981'),
+              borderRadius: 8,
+            }]
           });
         }
+        
+        this.chartVencimientoOptions.set({
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => ` ${ctx.raw} días` } } },
+          scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+        });
 
         this.loading.set(false);
       },

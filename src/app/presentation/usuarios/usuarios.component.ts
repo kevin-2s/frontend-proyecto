@@ -86,12 +86,12 @@ interface Usuario {
     <p-confirmDialog></p-confirmDialog>
 
     <!-- Mini-diálogo: Crear Rol rápido -->
-    <p-dialog
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       [(visible)]="showRolDialog"
       [modal]="true"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="quick-rol-dialog"
+      styleClass="quick-rol-dialog shadow-2xl border border-slate-200"
       [style]="{width: '380px'}"
       appendTo="body"
     >
@@ -191,18 +191,13 @@ interface Usuario {
                 <input pInputText id="u-correo" [(ngModel)]="usuario.correo" type="email" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
                 <label for="u-correo">Correo Electrónico <span class="text-red-500">*</span></label>
               </div>
-              <div class="flex gap-2 items-end flex-1">
+              <div class="flex gap-2 items-center flex-1">
                 <div class="floating-label-group flex-1" [class.floating]="usuario.id_rol !== undefined && usuario.id_rol !== null">
-                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
                   <label>Rol <span class="text-red-500">*</span></label>
                 </div>
-                <button
-                  type="button"
-                  (click)="openRolDialog()"
-                  title="Crear nuevo rol"
-                  class="h-[46px] w-[46px] min-w-[46px] rounded-xl border-2 border-dashed border-[#39A900]/40 bg-[#39A900]/5 hover:bg-[#39A900]/15 hover:border-[#39A900] text-[#39A900] flex items-center justify-center transition-all duration-200 cursor-pointer outline-none"
-                >
-                  <i class="pi pi-plus text-base font-bold"></i>
+                <button type="button" class="h-[50px] w-[50px] flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-[#39A900] bg-transparent border-none cursor-pointer transition-colors outline-none btn-open-form" (click)="openRolDialog()">
+                  <i class="pi pi-plus font-bold text-lg"></i>
                 </button>
               </div>
             </div>
@@ -245,9 +240,12 @@ interface Usuario {
                 <label>Contraseña <span class="text-red-500">*</span></label>
               </div>
               <!-- Estado del usuario -->
-              <div class="floating-label-group flex-1" [class.floating]="usuario.estado !== undefined && usuario.estado !== null">
-                <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                <label>Estado <span class="text-red-500">*</span></label>
+              <div class="flex gap-2 items-center flex-1">
+                <div class="floating-label-group flex-1" [class.floating]="usuario.estado !== undefined && usuario.estado !== null">
+                  <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                  <label>Estado <span class="text-red-500">*</span></label>
+                </div>
+                <div class="h-[50px] w-[50px] flex-shrink-0"></div>
               </div>
             </div>
           </div>
@@ -324,25 +322,19 @@ interface Usuario {
                 </div>
               </td>
               <td>
-                <div class="flex items-center justify-center gap-1">
+                <div class="action-buttons justify-center">
                   <button
-                    type="button"
+                    pButton
+                    icon="pi pi-pencil"
+                    class="btn-table-action btn-editor"
                     (click)="editar(u)"
-                    class="w-8 h-8 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
-                    pTooltip="Editar"
-                    tooltipPosition="top"
-                  >
-                    <i class="pi pi-pencil"></i>
-                  </button>
+                  ></button>
                   <button
-                    type="button"
+                    pButton
+                    icon="pi pi-trash"
+                    class="btn-table-action btn-eliminar"
                     (click)="eliminar(u)"
-                    class="w-8 h-8 rounded-full flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
-                    pTooltip="Eliminar"
-                    tooltipPosition="top"
-                  >
-                    <i class="pi pi-trash"></i>
-                  </button>
+                  ></button>
                 </div>
               </td>
             </tr>

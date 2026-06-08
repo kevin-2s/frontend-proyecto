@@ -121,8 +121,11 @@
 
 /* Standardize input styling inside floating group to match the reference design */
 .floating-label-group input {
-  padding-top: 0.85rem !important;
-  padding-bottom: 0.85rem !important;
+  height: 50px !important;
+  padding-top: 1.25rem !important;
+  padding-bottom: 0.25rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
   border: 1px solid #cbd5e1 !important; /* slate-300 */
   background-color: white !important;
   border-radius: 12px !important;
@@ -137,10 +140,39 @@
 
 /* Align PrimeNG select with the floating label group design */
 .floating-label-group .p-select {
+  height: 50px !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
   border: 1px solid #cbd5e1 !important; /* slate-300 */
   background-color: white !important;
   border-radius: 12px !important;
   transition: all 0.2s ease !important;
+}
+
+.floating-label-group .p-select .p-select-label {
+  padding-top: 1.25rem !important;
+  padding-bottom: 0.25rem !important;
+  padding-left: 1rem !important;
+}
+
+.floating-label-group .p-select .p-select-trigger,
+.p-select .p-select-trigger {
+  position: absolute !important;
+  right: 0.75rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: auto !important;
+  width: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.p-select {
+  position: relative !important;
 }
 
 .floating-label-group .p-select.p-focus,

@@ -123,14 +123,14 @@ interface Solicitud {
       </div>
     </div>
 
-    <p-dialog
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       header="📋 Detalles de la Solicitud"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '550px' }"
-      [draggable]="false"
+      [draggable]="true"
       [resizable]="false"
-      styleClass="form-dialog"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
     >
       <div class="detail-container mt-4" *ngIf="solicitudView">
         <div class="detail-row">

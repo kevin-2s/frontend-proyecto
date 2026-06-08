@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
-import { Area } from '../../domain/models/area.model';
 
 @Injectable({ providedIn: 'root' })
 export class AreaService {
@@ -11,15 +10,15 @@ export class AreaService {
     return this.api.get<any>('/areas');
   }
 
-  getAreaPorId(id: number): Observable<any> {
+  getArea(id: number): Observable<any> {
     return this.api.get<any>(`/areas/${id}`);
   }
 
-  crearArea(data: { nombre: string; estado?: boolean }): Observable<any> {
+  crearArea(data: { nombre: string; id_sitio: number; estado?: boolean }): Observable<any> {
     return this.api.post<any>('/areas', data);
   }
 
-  actualizarArea(id: number, data: Partial<Area>): Observable<any> {
+  actualizarArea(id: number, data: any): Observable<any> {
     return this.api.patch<any>(`/areas/${id}`, data);
   }
 

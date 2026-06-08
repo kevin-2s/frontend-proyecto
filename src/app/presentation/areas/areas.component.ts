@@ -10,9 +10,26 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { SelectModule } from 'primeng/select';
+import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmationService } from 'primeng/api';
 import { AreaService } from '../../infrastructure/services/area.service';
-import { Area } from '../../domain/models/area.model';
+import { SitioService } from '../../infrastructure/services/sitio.service';
+
+interface Area {
+  id_area?: number;
+  nombre: string;
+  id_sitio?: number;
+  sitio?: {
+    id_sitio: number;
+    nombre: string;
+    centro?: {
+      id_centro: number;
+      nombre: string;
+    };
+  };
+  estado?: boolean;
+}
 
 @Component({
   selector: 'app-areas',
@@ -29,105 +46,31 @@ import { Area } from '../../domain/models/area.model';
     ConfirmDialogModule,
     ToggleSwitchModule,
     TooltipModule,
+    SelectModule,
   ],
   encapsulation: ViewEncapsulation.None,
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   template: `
-    <p-toast position="bottom-right"></p-toast>
+    <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
-
     <div class="module-container">
       <div class="module-header">
         <h3 class="page-title">
-          <i class="pi pi-clone"></i> Áreas de Formación
+          <i class="pi pi-folder"></i> Áreas
         </h3>
         <div class="header-actions">
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
-            <input
-              pInputText
-              type="text"
-              [(ngModel)]="filtro"
-              (input)="filtrar()"
-              placeholder="Buscar área..."
-              class="search-input"
-            />
+            <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
+              placeholder="Buscar área..." class="search-input" />
           </div>
-          <button
-            *ngIf="!displayDialog"
-            type="button"
-            class="btn-add"
-            (click)="openNew()"
-          >
-            <i class="pi pi-plus"></i>
-            Nueva Área
-          </button>
-          <button
-            *ngIf="displayDialog"
-            type="button"
-            class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
-            (click)="displayDialog = false"
-          >
-            <i class="pi pi-times"></i>
-            Cerrar Formulario
-          </button>
-        </div>
-      </div>
-
-      <!-- Inline Form Card -->
-      <div *ngIf="displayDialog" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
-        <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
-            <i class="pi pi-clone text-[#39A900] text-xl"></i>
-          </div>
-          <div>
-            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Registrar Nueva Área' : 'Editar Área' }}</h4>
-            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para el área de formación</p>
-          </div>
-        </div>
-        
-        <div class="p-6 flex flex-col gap-5">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-            <!-- Nombre del Área -->
-            <div class="form-field">
-              <input
-                pInputText
-                id="a-nombre"
-                [(ngModel)]="area.nombre"
-                placeholder="Ej: Teleinformática y Tecnología"
-              />
-              <label for="a-nombre">Nombre del Área *</label>
-            </div>
-
-            <!-- Estado Switch -->
-            <div class="form-field">
-              <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200/80 h-[46px]">
-                <p-toggleSwitch [(ngModel)]="area.estado"></p-toggleSwitch>
-                <span class="font-bold text-sm"
-                  [class.text-green-600]="area.estado !== false"
-                  [class.text-red-600]="area.estado === false">
-                  {{ area.estado !== false ? 'ACTIVA' : 'INACTIVA' }}
-                </span>
-              </div>
-              <label>Estado</label>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-            <button type="button" class="btn-cancelar" (click)="displayDialog = false">Cancelar</button>
-            <button
-              type="button"
-              class="btn-guardar"
-              (click)="guardar()"
-              [disabled]="saving"
-            >{{ saving ? 'Guardando...' : 'Guardar Área' }}</button>
-          </div>
+          <button pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
 
       <div class="data-table-wrapper">
         <p-table
-          [value]="areasFiltradas"
+          [value]="areasFiltrados"
           [paginator]="true"
           [rows]="10"
           styleClass="modern-table"
@@ -137,6 +80,8 @@ import { Area } from '../../domain/models/area.model';
             <tr>
               <th style="width:80px">ID</th>
               <th>Nombre del Área</th>
+              <th>Sede</th>
+              <th>Centro</th>
               <th style="width:120px">Estado</th>
               <th style="width:150px" class="text-center">Acciones</th>
             </tr>
@@ -145,6 +90,13 @@ import { Area } from '../../domain/models/area.model';
             <tr>
               <td><span class="id-badge">#{{ area.id_area }}</span></td>
               <td><span class="nombre-cell">{{ area.nombre }}</span></td>
+              <td><span class="text-slate-600 text-sm font-semibold">{{ area.sitio?.nombre || 'Sin sede' }}</span></td>
+              <td>
+                <div class="flex items-center gap-1.5">
+                  <i class="pi pi-map text-slate-500 text-base"></i>
+                  <span class="text-slate-500 text-xs font-semibold">{{ area.sitio?.centro?.nombre || 'Sin centro' }}</span>
+                </div>
+              </td>
               <td>
                 <p-tag
                   [value]="area.estado !== false ? 'ACTIVO' : 'INACTIVO'"
@@ -174,8 +126,8 @@ import { Area } from '../../domain/models/area.model';
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="4" class="empty-message">
-                <i class="pi pi-clone"></i>
+              <td colspan="6" class="empty-message">
+                <i class="pi pi-folder"></i>
                 <p>No se encontraron áreas registradas</p>
               </td>
             </tr>
@@ -183,56 +135,142 @@ import { Area } from '../../domain/models/area.model';
         </p-table>
       </div>
     </div>
+
+    <p-dialog
+      [header]="esNuevo ? '✨ Registrar Nueva Área' : '📝 Editar Área'"
+      [(visible)]="displayDialog"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '550px' }"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
+      appendTo="body"
+    >
+      <div class="form-grid mt-2">
+        <div class="form-field">
+          <label for="nombre">Nombre del Área *</label>
+          <input
+            pInputText
+            id="nombre"
+            [(ngModel)]="area.nombre"
+            placeholder="Ej: Sistemas / Electrónica"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="id_sitio">Sede (Ubicación) *</label>
+          <p-select
+            id="id_sitio"
+            [(ngModel)]="area.id_sitio"
+            [options]="sitios"
+            optionLabel="nombre"
+            optionValue="id_sitio"
+            placeholder="Seleccione sede"
+            [filter]="true"
+            filterBy="nombre"
+            styleClass="w-full"
+            appendTo="body"
+          ></p-select>
+        </div>
+
+        <div class="form-field">
+          <label>Estado</label>
+          <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <p-toggleSwitch [(ngModel)]="area.estado"></p-toggleSwitch>
+            <span class="font-bold text-sm" [class.text-green-600]="area.estado !== false" [class.text-red-600]="area.estado === false">
+               {{ area.estado !== false ? 'ACTIVO' : 'INACTIVO' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button
+          pButton
+          label="Cancelar"
+          class="btn-cancelar"
+          (click)="displayDialog = false"
+        ></button>
+        <button
+          pButton
+          [label]="saving ? 'Guardando...' : 'Guardar Área'"
+          class="btn-guardar"
+          (click)="guardar()"
+          [disabled]="saving"
+        ></button>
+      </div>
+    </p-dialog>
   `
 })
 export class AreasComponent implements OnInit {
   private areaService = inject(AreaService);
-  private messageService = inject(MessageService);
+  private sitioService = inject(SitioService);
+  private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
 
   areas: Area[] = [];
-  areasFiltradas: Area[] = [];
+  areasFiltrados: Area[] = [];
+  sitios: any[] = [];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
   saving = false;
-  area: Area = this.getNuevo();
+  area: Area = this.getNuevoArea();
 
   ngOnInit() {
-    this.cargar();
+    this.cargarAreas();
+    this.cargarSitios();
   }
 
-  cargar() {
+  cargarAreas() {
     this.areaService.getAreas().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
         this.areas = d;
-        this.areasFiltradas = d;
+        this.areasFiltrados = d;
         setTimeout(() => this.cdr.detectChanges());
       },
       error: () => {
         this.areas = [];
-        this.areasFiltradas = [];
+        this.areasFiltrados = [];
         setTimeout(() => this.cdr.detectChanges());
-      }
+      },
+    });
+  }
+
+  cargarSitios() {
+    this.sitioService.getSitios().subscribe({
+      next: (res: any) => {
+        const d = res?.data || res || [];
+        this.sitios = d;
+        setTimeout(() => this.cdr.detectChanges());
+      },
+      error: () => {
+        this.sitios = [];
+        setTimeout(() => this.cdr.detectChanges());
+      },
     });
   }
 
   filtrar() {
-    const f = this.filtro.toLowerCase().trim();
-    this.areasFiltradas = this.areas.filter(a =>
-      a.nombre?.toLowerCase().includes(f)
+    const f = this.filtro.toLowerCase();
+    this.areasFiltrados = this.areas.filter(
+      (a) =>
+        a.nombre?.toLowerCase().includes(f) ||
+        a.sitio?.nombre?.toLowerCase().includes(f) ||
+        a.sitio?.centro?.nombre?.toLowerCase().includes(f)
     );
   }
 
-  getNuevo(): Area {
+  getNuevoArea(): Area {
     return { nombre: '', estado: true };
   }
 
   openNew() {
     this.esNuevo = true;
-    this.area = this.getNuevo();
+    this.area = this.getNuevoArea();
     this.displayDialog = true;
   }
 
@@ -243,14 +281,20 @@ export class AreasComponent implements OnInit {
   }
 
   guardar() {
-    if (!this.area.nombre.trim()) {
-      this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'El nombre del área es requerido' });
+    if (!this.area.nombre || !this.area.id_sitio) {
+      this.notification.add({
+        module: 'Áreas',
+        severity: 'warn',
+        summary: 'Advertencia',
+        detail: 'Nombre del área y Sede son requeridos',
+      });
       return;
     }
 
     const payload = {
-      nombre: this.area.nombre.trim(),
-      estado: this.area.estado !== false
+      nombre: this.area.nombre,
+      id_sitio: this.area.id_sitio,
+      estado: this.area.estado !== false,
     };
 
     this.saving = true;
@@ -258,61 +302,79 @@ export class AreasComponent implements OnInit {
     if (this.esNuevo) {
       this.areaService.crearArea(payload).subscribe({
         next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Área creada correctamente' });
+          this.notification.add({
+            module: 'Áreas',
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Área creada correctamente',
+          });
           this.displayDialog = false;
           this.saving = false;
-          this.cargar();
+          this.cargarAreas();
         },
-        error: (err: any) => {
+        error: () => {
           this.saving = false;
-          this.messageService.add({
+          this.notification.add({
+            module: 'Áreas',
             severity: 'error',
             summary: 'Error',
-            detail: err.error?.message || 'No se pudo crear el área. Verifique que no exista.'
+            detail: 'No se pudo crear el área',
           });
-        }
+        },
       });
     } else {
       this.areaService.actualizarArea(this.area.id_area!, payload).subscribe({
         next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Área actualizada correctamente' });
+          this.notification.add({
+            module: 'Áreas',
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Área actualizada correctamente',
+          });
           this.displayDialog = false;
           this.saving = false;
-          this.cargar();
+          this.cargarAreas();
         },
-        error: (err: any) => {
+        error: () => {
           this.saving = false;
-          this.messageService.add({
+          this.notification.add({
+            module: 'Áreas',
             severity: 'error',
             summary: 'Error',
-            detail: err.error?.message || 'No se pudo actualizar el área'
+            detail: 'No se pudo actualizar el área',
           });
-        }
+        },
       });
     }
   }
 
   eliminar(a: Area) {
     this.confirmationService.confirm({
-      message: `¿Está seguro de eliminar el área "${a.nombre}"? Esto podría eliminar los programas asociados.`,
+      message: '¿Está seguro de eliminar el área ' + a.nombre + '?',
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.areaService.eliminarArea(a.id_area!).subscribe({
           next: () => {
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Área eliminada correctamente' });
-            this.cargar();
+            this.notification.add({
+              module: 'Áreas',
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Área eliminada correctamente',
+            });
+            this.cargarAreas();
           },
-          error: (err: any) => {
-            this.messageService.add({
+          error: () => {
+            this.notification.add({
+              module: 'Áreas',
               severity: 'error',
               summary: 'Error',
-              detail: err.error?.message || 'No se pudo eliminar el área'
+              detail: 'No se pudo eliminar el área (puede tener dependencias)',
             });
-          }
+          },
         });
-      }
+      },
     });
   }
 }

@@ -23,16 +23,6 @@ import { map, catchError } from 'rxjs/operators';
             <h2 class="db-hero-title">Panel de Control</h2>
             <p class="db-hero-sub">Sistema de Gestión de Materiales de Formación · SENA</p>
           </div>
-          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.75rem; flex-shrink:0;">
-            <button class="db-hero-refresh" (click)="cargarDatos()">
-              <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-              Actualizar
-            </button>
-            <div style="text-align:right;">
-              <p style="color:rgba(255,255,255,0.5); font-size:0.7rem; margin:0;">Última actualización</p>
-              <p style="color:#fff; font-size:0.78rem; font-weight:700; margin:0;">{{ ultimaActualizacion }}</p>
-            </div>
-          </div>
         </div>
 
         <!-- Mini KPIs en el hero -->
@@ -68,7 +58,7 @@ import { map, catchError } from 'rxjs/operators';
             <h3 class="stat-value" [style.color]="card.valueColor">{{ card.value() }}</h3>
           </ng-template>
           <div class="stat-bar">
-            <div class="stat-bar-fill" [style.width]="card.barWidth" [style.background]="card.iconColor"></div>
+            <div class="stat-bar-fill" [style.width]="getBarWidth(card.value(), card.limit)" [style.background]="card.iconColor"></div>
           </div>
         </div>
 
@@ -244,27 +234,27 @@ export class DashboardComponent implements OnInit {
   // ─── Stat Cards ──────────────────────────────────────────────────────────
   statCards = [
     {
-      label: 'Total Inventario', value: this.totalInventario,
+      label: 'Total Inventario', value: this.totalInventario, limit: 100,
       icon: 'pi-database', iconColor: '#6366f1', iconBg: '#ede9fe',
-      valueColor: '#3730a3', barWidth: '72%',
+      valueColor: '#3730a3',
       trend: 'Activo', trendBg: '#ede9fe', trendColor: '#6366f1', trendIcon: 'pi pi-check',
     },
     {
-      label: 'Solicitudes Pendientes', value: this.solicitudesPendientes,
+      label: 'Solicitudes Pendientes', value: this.solicitudesPendientes, limit: 20,
       icon: 'pi-clock', iconColor: '#f59e0b', iconBg: '#fffbeb',
-      valueColor: '#b45309', barWidth: '45%',
+      valueColor: '#b45309',
       trend: 'Pendiente', trendBg: '#fffbeb', trendColor: '#d97706', trendIcon: 'pi pi-exclamation-circle',
     },
     {
-      label: 'Sitios / Ambientes', value: this.totalSitios,
+      label: 'Sitios / Ambientes', value: this.totalSitios, limit: 10,
       icon: 'pi-map-marker', iconColor: '#10b981', iconBg: '#d1fae5',
-      valueColor: '#065f46', barWidth: '80%',
+      valueColor: '#065f46',
       trend: 'Activos', trendBg: '#d1fae5', trendColor: '#059669', trendIcon: 'pi pi-check-circle',
     },
     {
-      label: 'Categorías', value: this.totalCategorias,
+      label: 'Categorías', value: this.totalCategorias, limit: 15,
       icon: 'pi-tag', iconColor: '#ec4899', iconBg: '#fce7f3',
-      valueColor: '#9d174d', barWidth: '60%',
+      valueColor: '#9d174d',
       trend: 'Registradas', trendBg: '#fce7f3', trendColor: '#be185d', trendIcon: 'pi pi-tags',
     },
   ];
@@ -290,6 +280,12 @@ export class DashboardComponent implements OnInit {
   ];
 
   ngOnInit() { this.cargarDatos(); }
+
+  getBarWidth(val: number, limit: number): string {
+    if (!val) return '0%';
+    const pct = Math.min(100, (val / limit) * 100);
+    return `${pct}%`;
+  }
 
   cargarDatos() {
     this.loading.set(true);

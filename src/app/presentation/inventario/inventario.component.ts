@@ -9,7 +9,8 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InventarioService } from '../../infrastructure/services/inventario.service';
 import { ProductoService } from '../../infrastructure/services/producto.service';
@@ -57,7 +58,7 @@ interface Inventario {
     ConfirmDialogModule,
   ],
   encapsulation: ViewEncapsulation.None,
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   template: `
     <p-toast position="bottom-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
@@ -304,7 +305,7 @@ export class InventarioComponent implements OnInit {
   private productoService = inject(ProductoService);
   private categoriaService = inject(CategoriaService);
   private sitioService = inject(SitioService);
-  private messageService = inject(MessageService);
+  private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
 
@@ -510,7 +511,7 @@ export class InventarioComponent implements OnInit {
     if (this.esNuevo) {
       // Registrar nuevo producto y sus items en inventario
       if (!this.nuevoProducto.nombre || !this.nuevoProducto.SKU || !this.nuevoProducto.id_categoria) {
-        this.messageService.add({
+        this.notification.add({ module: 'Inventario',
           severity: 'warn',
           summary: 'Advertencia',
           detail: 'Nombre, SKU y Categoría son requeridos para el producto',
@@ -518,7 +519,7 @@ export class InventarioComponent implements OnInit {
         return;
       }
       if (!this.inventarioEdit.id_sitio || !this.inventarioEdit.estado) {
-        this.messageService.add({
+        this.notification.add({ module: 'Inventario',
           severity: 'warn',
           summary: 'Advertencia',
           detail: 'Ubicación y Estado son requeridos para registrar en inventario',
@@ -545,7 +546,7 @@ export class InventarioComponent implements OnInit {
         next: (res: any) => {
           const itemsGenerados = res?.data?.items_generados || [];
           if (itemsGenerados.length === 0) {
-            this.messageService.add({
+            this.notification.add({ module: 'Inventario',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Producto registrado correctamente, pero no se generaron items en el servidor',
@@ -567,7 +568,7 @@ export class InventarioComponent implements OnInit {
 
           forkJoin(creations).subscribe({
             next: () => {
-              this.messageService.add({
+              this.notification.add({ module: 'Inventario',
                 severity: 'success',
                 summary: 'Éxito',
                 detail: `Producto y ${itemsGenerados.length} items registrados en inventario exitosamente`,
@@ -577,7 +578,7 @@ export class InventarioComponent implements OnInit {
               this.saving = false;
             },
             error: () => {
-              this.messageService.add({
+              this.notification.add({ module: 'Inventario',
                 severity: 'warn',
                 summary: 'Éxito parcial',
                 detail: 'Producto creado, pero falló el registro de items en inventario',
@@ -590,7 +591,7 @@ export class InventarioComponent implements OnInit {
         },
         error: (err: any) => {
           this.saving = false;
-          this.messageService.add({
+          this.notification.add({ module: 'Inventario',
             severity: 'error',
             summary: 'Error',
             detail: 'No se pudo registrar el producto: ' + (err.error?.message || 'Error del servidor'),
@@ -601,7 +602,7 @@ export class InventarioComponent implements OnInit {
     } else {
       // Registrar item existente
       if (!this.inventarioEdit.id_sitio || !this.inventarioEdit.estado) {
-        this.messageService.add({
+        this.notification.add({ module: 'Inventario',
           severity: 'warn',
           summary: 'Advertencia',
           detail: 'Por favor complete todos los campos requeridos',
@@ -620,7 +621,7 @@ export class InventarioComponent implements OnInit {
 
       forkJoin(updates).subscribe({
         next: () => {
-          this.messageService.add({
+          this.notification.add({ module: 'Inventario',
             severity: 'success',
             summary: 'Éxito',
             detail: 'Estado de inventario actualizado correctamente para el grupo',
@@ -631,7 +632,7 @@ export class InventarioComponent implements OnInit {
         },
         error: () => {
           this.saving = false;
-          this.messageService.add({
+          this.notification.add({ module: 'Inventario',
             severity: 'error',
             summary: 'Error',
             detail: 'No se pudo actualizar el estado de inventario del grupo',
@@ -648,7 +649,7 @@ export class InventarioComponent implements OnInit {
     this.categoriaService.crearCategoria({ nombreCat: nombre }).subscribe({
       next: (res: any) => {
         const newCat = res?.data || res;
-        this.messageService.add({
+        this.notification.add({ module: 'Inventario',
           severity: 'success',
           summary: 'Éxito',
           detail: 'Categoría agregada correctamente',
@@ -677,7 +678,7 @@ export class InventarioComponent implements OnInit {
         });
       },
       error: (err) => {
-        this.messageService.add({
+        this.notification.add({ module: 'Inventario',
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudo crear la categoría',
@@ -698,7 +699,7 @@ export class InventarioComponent implements OnInit {
     this.nuevoProducto.tipo_material = val;
     this.displayAddTipoMaterial = false;
     this.nuevoNombreTipoMaterial = '';
-    this.messageService.add({
+    this.notification.add({ module: 'Inventario',
       severity: 'success',
       summary: 'Éxito',
       detail: 'Tipo de material agregado',
@@ -717,7 +718,7 @@ export class InventarioComponent implements OnInit {
     this.nuevoProducto.unidad_medida = val;
     this.displayAddUnidadMedida = false;
     this.nuevoNombreUnidadMedida = '';
-    this.messageService.add({
+    this.notification.add({ module: 'Inventario',
       severity: 'success',
       summary: 'Éxito',
       detail: 'Unidad de medida agregada',
@@ -736,7 +737,7 @@ export class InventarioComponent implements OnInit {
         const deletions = inv.items.map((item: any) => this.inventarioService.eliminarInventario(item.id_inventario));
         forkJoin(deletions).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Inventario',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Items retirados del inventario correctamente',
@@ -744,7 +745,7 @@ export class InventarioComponent implements OnInit {
             this.cargarInventario();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Inventario',
               severity: 'error',
               summary: 'Error',
               detail: 'No se pudieron retirar algunos items del inventario',

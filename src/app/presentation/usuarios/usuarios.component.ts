@@ -26,6 +26,8 @@ interface Usuario {
   apellidos?: string;
   correo: string;
   telefono?: string;
+  tipo_documento?: string;
+  numero_documento?: string;
   documento?: string;
   password?: string;
   estado: boolean;
@@ -173,62 +175,79 @@ interface Usuario {
           <div class="flex flex-col gap-5 pt-2">
             <!-- Primera Fila: Nombres y Apellidos -->
             <div class="flex flex-col sm:flex-row gap-5">
-              <div class="form-field flex-1">
-                <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" placeholder="Nombres" />
-                <label for="u-nombre">Nombres</label>
+              <div class="floating-label-group flex-1" [class.floating]="usuario.nombre && usuario.nombre.trim() !== ''">
+                <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                <label for="u-nombre">Nombres <span class="text-red-500">*</span></label>
               </div>
-              <div class="form-field flex-1">
-                <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" placeholder="Apellidos" />
-                <label for="u-apellidos">Apellidos</label>
+              <div class="floating-label-group flex-1" [class.floating]="usuario.apellidos && usuario.apellidos.trim() !== ''">
+                <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                <label for="u-apellidos">Apellidos <span class="text-red-500">*</span></label>
               </div>
             </div>
 
             <!-- Segunda Fila: Correo y Rol -->
             <div class="flex flex-col sm:flex-row gap-5">
-              <div class="form-field flex-1">
-                <input pInputText id="u-correo" [(ngModel)]="usuario.correo" type="email" placeholder="correo@ejemplo.com" />
-                <label for="u-correo">Correo Electrónico</label>
+              <div class="floating-label-group flex-1" [class.floating]="usuario.correo && usuario.correo.trim() !== ''">
+                <input pInputText id="u-correo" [(ngModel)]="usuario.correo" type="email" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                <label for="u-correo">Correo Electrónico <span class="text-red-500">*</span></label>
               </div>
-              <div class="form-field flex-1">
-                <div class="flex gap-2 items-end">
-                  <div class="flex-1 relative">
-                    <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                    <label style="position:absolute;top:-10px;left:12px;font-size:0.72rem;color:#39A900;background:#fff;padding:0 4px;font-weight:600;">Rol</label>
-                  </div>
-                  <button
-                    type="button"
-                    (click)="openRolDialog()"
-                    title="Crear nuevo rol"
-                    class="h-[46px] w-[46px] min-w-[46px] rounded-xl border-2 border-dashed border-[#39A900]/40 bg-[#39A900]/5 hover:bg-[#39A900]/15 hover:border-[#39A900] text-[#39A900] flex items-center justify-center transition-all duration-200 cursor-pointer outline-none"
-                  >
-                    <i class="pi pi-plus text-base font-bold"></i>
-                  </button>
+              <div class="flex gap-2 items-end flex-1">
+                <div class="floating-label-group flex-1" [class.floating]="usuario.id_rol !== undefined && usuario.id_rol !== null">
+                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                  <label>Rol <span class="text-red-500">*</span></label>
                 </div>
+                <button
+                  type="button"
+                  (click)="openRolDialog()"
+                  title="Crear nuevo rol"
+                  class="h-[46px] w-[46px] min-w-[46px] rounded-xl border-2 border-dashed border-[#39A900]/40 bg-[#39A900]/5 hover:bg-[#39A900]/15 hover:border-[#39A900] text-[#39A900] flex items-center justify-center transition-all duration-200 cursor-pointer outline-none"
+                >
+                  <i class="pi pi-plus text-base font-bold"></i>
+                </button>
               </div>
             </div>
 
-            <!-- Tercera Fila: Teléfono y Documento -->
+            <!-- Tercera Fila: Teléfono y Documento Combinado -->
             <div class="flex flex-col sm:flex-row gap-5">
-              <div class="form-field flex-1">
-                <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" placeholder="Número de teléfono" />
+              <!-- Teléfono -->
+              <div class="floating-label-group flex-1" [class.floating]="usuario.telefono && usuario.telefono.trim() !== ''">
+                <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
                 <label for="u-telefono">Teléfono</label>
               </div>
-              <div class="form-field flex-1">
-                <input pInputText id="u-documento" [(ngModel)]="usuario.documento" placeholder="Número de documento" />
-                <label for="u-documento">Documento</label>
+              
+              <!-- Documento Combinado (Selector + Número) -->
+              <div class="document-input-group flex-1" [class.floating]="usuario.numero_documento && usuario.numero_documento.trim() !== ''">
+                <div class="document-input-container">
+                  <select [(ngModel)]="usuario.tipo_documento" class="document-input-select">
+                    <option value="C.C.">C.C.</option>
+                    <option value="T.I.">T.I.</option>
+                    <option value="C.E.">C.E.</option>
+                    <option value="P.E.P.">P.E.P.</option>
+                    <option value="P.P.T.">P.P.T.</option>
+                    <option value="P.A.S.">P.A.S.</option>
+                  </select>
+                  <input 
+                    pInputText 
+                    id="u-documento" 
+                    [(ngModel)]="usuario.numero_documento" 
+                    placeholder=" " 
+                    class="document-input-field" 
+                  />
+                </div>
+                <label for="u-documento">Número de Documento <span class="text-red-500">*</span></label>
               </div>
             </div>
 
             <!-- Cuarta Fila: Contraseña + Estado -->
             <div class="flex flex-col sm:flex-row gap-5">
-              <div class="form-field flex-1" *ngIf="esNuevo">
-                <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" placeholder="Contraseña segura" [toggleMask]="true" appendTo="body"></p-password>
-                <label>Contraseña</label>
+              <div class="floating-label-group flex-1" [class.floating]="usuario.password && usuario.password.trim() !== ''" *ngIf="esNuevo">
+                <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
+                <label>Contraseña <span class="text-red-500">*</span></label>
               </div>
               <!-- Estado del usuario -->
-              <div class="form-field flex-1">
+              <div class="floating-label-group flex-1" [class.floating]="usuario.estado !== undefined && usuario.estado !== null">
                 <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                <label>Estado</label>
+                <label>Estado <span class="text-red-500">*</span></label>
               </div>
             </div>
           </div>
@@ -275,7 +294,7 @@ interface Usuario {
                   </div>
                   <div class="flex flex-col">
                     <span class="font-bold text-slate-800 leading-tight">{{ u.nombre }} {{ u.apellidos }}</span>
-                    <span class="text-[11px] text-slate-400 font-medium">CC: {{ u.documento || '---' }}</span>
+                    <span class="text-[11px] text-slate-400 font-medium">{{ formatDocumento(u.documento) }}</span>
                   </div>
                 </div>
               </td>
@@ -290,10 +309,19 @@ interface Usuario {
                 </div>
               </td>
               <td>
-                <!-- [PrimeNG] p-tag: Estado con color semántico -->
-                <p-tag [value]="u.estado ? 'ACTIVO' : 'INACTIVO'" 
-                      [severity]="u.estado ? 'success' : 'danger'"
-                      styleClass="font-bold px-3 py-1 text-xs rounded-lg"></p-tag>
+                <div class="flex items-center gap-2.5">
+                  <label class="custom-switch" pTooltip="Cambiar estado" tooltipPosition="top">
+                    <input 
+                      type="checkbox" 
+                      [checked]="u.estado !== false" 
+                      (change)="actualizarEstado(u)" 
+                    />
+                    <span class="custom-switch-slider"></span>
+                  </label>
+                  <span class="font-bold text-xs" [class.text-green-600]="u.estado !== false" [class.text-red-600]="u.estado === false">
+                    {{ u.estado !== false ? 'ACTIVO' : 'INACTIVO' }}
+                  </span>
+                </div>
               </td>
               <td>
                 <div class="flex items-center justify-center gap-1">
@@ -347,6 +375,7 @@ export class UsuariosComponent implements OnInit {
     { label: 'Activo', value: true },
     { label: 'Inactivo', value: false }
   ];
+
   filtro = '';
   displayDialog = false;
   esNuevo = true;
@@ -410,10 +439,26 @@ export class UsuariosComponent implements OnInit {
         this.usuarios = usuariosData.map((u: any) => {
           const mappedRolId = Number(u.rolId || u.id_rol || (u.rol ? u.rol.id : 0));
           const rolObj = rolesData.find((r: any) => Number(r.id_rol || r.id) === mappedRolId);
+          
+          // Separar nombre y apellidos si vienen juntos desde la base de datos
+          let nombre = u.nombre || '';
+          let apellidos = u.apellidos || '';
+          if (!apellidos && nombre) {
+            const parts = nombre.trim().split(/\s+/);
+            if (parts.length > 1) {
+              nombre = parts[0];
+              apellidos = parts.slice(1).join(' ');
+            }
+          }
+
           return {
             ...u,
             id: u.id_usuario || u.id,
+            id_usuario: u.id_usuario || u.id,
+            nombre,
+            apellidos,
             id_rol: mappedRolId,
+            estado: u.estado !== false,
             rolNombre: rolObj ? (rolObj.nombreRol || rolObj.nombre) : 'Sin rol'
           };
         });
@@ -461,6 +506,8 @@ export class UsuariosComponent implements OnInit {
       apellidos: '',
       correo: '',
       telefono: '',
+      tipo_documento: 'C.C.',
+      numero_documento: '',
       documento: '',
       password: '',
       estado: true,
@@ -476,10 +523,28 @@ export class UsuariosComponent implements OnInit {
 
   editar(u: Usuario) {
     this.esNuevo = false;
+
+    // Separar tipo de documento y número de documento
+    let tipo_documento = 'C.C.';
+    let numero_documento = u.documento || '';
+    if (u.documento) {
+      const docClean = u.documento.trim();
+      const tipos = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.', 'CC', 'TI', 'CE', 'PEP', 'PPT', 'PAS'];
+      for (const t of tipos) {
+        if (docClean.toUpperCase().startsWith(t.toUpperCase())) {
+          tipo_documento = t.includes('.') ? t : t.split('').join('.') + '.';
+          numero_documento = docClean.substring(t.length).trim();
+          break;
+        }
+      }
+    }
+
     this.usuario = { 
       ...u, 
       nombre: u.nombre,
       apellidos: u.apellidos,
+      tipo_documento,
+      numero_documento,
       password: '' // Limpiar el campo de contraseña al editar por seguridad
     };
     this.displayDialog = true;
@@ -492,9 +557,21 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
+  formatDocumento(doc: string | undefined): string {
+    if (!doc) return '---';
+    const docClean = doc.trim();
+    const tipos = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.', 'CC', 'TI', 'CE', 'PEP', 'PPT', 'PAS'];
+    for (const t of tipos) {
+      if (docClean.toUpperCase().startsWith(t.toUpperCase())) {
+        return docClean;
+      }
+    }
+    return `C.C. ${docClean}`;
+  }
+
   guardar() {
     // Validaciones basicas
-    if (!this.usuario.nombre || !this.usuario.correo || !this.usuario.id_rol) {
+    if (!this.usuario.nombre || !this.usuario.correo || !this.usuario.id_rol || !this.usuario.numero_documento) {
       this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Por favor complete todos los campos requeridos' });
       return;
     }
@@ -506,19 +583,24 @@ export class UsuariosComponent implements OnInit {
 
     this.saving = true;
 
-    // Preparamos los datos SOLO con los campos que el backend espera
-    const datosEnvio: { nombre: string; correo: string; password?: string; id_rol: number; estado?: boolean } = {
-      nombre: this.usuario.nombre,
-      correo: this.usuario.correo,
-      id_rol: this.usuario.id_rol,
-    };
-
-    if (this.usuario.password) {
-      datosEnvio.password = this.usuario.password;
-    }
+    const docCompleto = this.usuario.numero_documento ? `${this.usuario.tipo_documento} ${this.usuario.numero_documento.trim()}` : '';
 
     if (this.esNuevo) {
-      this.usuarioService.create(datosEnvio as any).subscribe({
+      const datosEnvio: any = {
+        nombre: (this.usuario.nombre.trim() + ' ' + (this.usuario.apellidos || '').trim()).trim(),
+        correo: this.usuario.correo.trim(),
+        id_rol: Number(this.usuario.id_rol),
+        password: this.usuario.password
+      };
+
+      if (this.usuario.telefono && this.usuario.telefono.trim()) {
+        datosEnvio.telefono = this.usuario.telefono.trim();
+      }
+      if (docCompleto) {
+        datosEnvio.documento = docCompleto;
+      }
+
+      this.usuarioService.create(datosEnvio).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado correctamente' });
           this.displayDialog = false;
@@ -531,11 +613,29 @@ export class UsuariosComponent implements OnInit {
         },
       });
     } else {
-      const updateData: any = {};
-      if (this.usuario.nombre !== undefined) updateData.nombre = this.usuario.nombre;
-      if (this.usuario.correo !== undefined) updateData.correo = this.usuario.correo;
-      if (this.usuario.id_rol !== undefined) updateData.id_rol = this.usuario.id_rol;
+      const updateData: any = {
+        nombre: (this.usuario.nombre.trim() + ' ' + (this.usuario.apellidos || '').trim()).trim(),
+        correo: this.usuario.correo.trim(),
+        id_rol: Number(this.usuario.id_rol),
+        estado: this.usuario.estado !== false
+      };
       
+      if (this.usuario.telefono && this.usuario.telefono.trim()) {
+        updateData.telefono = this.usuario.telefono.trim();
+      } else {
+        updateData.telefono = '';
+      }
+
+      if (docCompleto) {
+        updateData.documento = docCompleto;
+      } else {
+        updateData.documento = '';
+      }
+
+      if (this.usuario.password && this.usuario.password.trim()) {
+        updateData.password = this.usuario.password;
+      }
+
       this.usuarioService.update(this.usuario.id_usuario!, updateData).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente' });
@@ -586,14 +686,17 @@ export class UsuariosComponent implements OnInit {
   }
 
   actualizarEstado(u: Usuario) {
-    this.usuarioService.update(u.id_usuario!, { estado: u.estado }).subscribe({
+    if (!u.id_usuario) return;
+    const nuevoEstado = u.estado === false;
+    this.usuarioService.update(u.id_usuario!, { estado: nuevoEstado }).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Estado actualizado' });
+        u.estado = nuevoEstado;
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Estado actualizado correctamente' });
         this.calcularEstadisticas();
       },
       error: () => {
-        u.estado = !u.estado; // Revertir en caso de error
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cambiar el estado' });
+        this.cargarDatos();
       }
     });
   }

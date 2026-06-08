@@ -160,16 +160,7 @@ import { Rol } from '../../domain/models/rol.model';
               <i class="pi pi-search"></i>
               <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrarGlobal()" placeholder="Buscar..." class="search-input" />
             </div>
-            <!-- Botón Crear Rol (pequeño, secundario) -->
-            <button
-              *ngIf="currentView === 'usuarios' && !showRolForm"
-              type="button"
-              class="px-4 py-2.5 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
-              (click)="openNewRolDialog()"
-            >
-              <i class="pi pi-shield"></i>
-              Nuevo Rol
-            </button>
+
             <button
               *ngIf="currentView === 'usuarios' && showRolForm"
               type="button"
@@ -256,40 +247,84 @@ import { Rol } from '../../domain/models/rol.model';
           </div>
           
           <div class="p-6 flex flex-col gap-5">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-              <!-- Nombre Completo -->
-              <div class="floating-label-group" [class.floating]="usuarioForm.nombre && usuarioForm.nombre.trim() !== ''">
-                <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
-                <label for="nombre">Nombre Completo <span class="text-red-500">*</span></label>
-              </div>
-
-              <!-- Correo Electrónico -->
-              <div class="floating-label-group" [class.floating]="usuarioForm.correo && usuarioForm.correo.trim() !== ''">
-                <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
-                <label for="correo">Correo Electrónico <span class="text-red-500">*</span></label>
-              </div>
-
-              <!-- Rol Asignado -->
-              <div class="flex gap-2 items-center w-full">
-                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.id_rol !== undefined && usuarioForm.id_rol !== null">
-                  <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                  <label>Rol Asignado <span class="text-red-500">*</span></label>
+            <div class="flex flex-col gap-5 pt-2">
+              <!-- Primera Fila: Nombres y Apellidos -->
+              <div class="flex flex-col sm:flex-row gap-5">
+                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.nombre && usuarioForm.nombre.trim() !== ''">
+                  <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                  <label for="nombre">Nombres <span class="text-red-500">*</span></label>
                 </div>
-                <button type="button" pTooltip="Crear nuevo rol" tooltipPosition="top" class="w-[46px] h-[46px] flex-shrink-0 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-xl cursor-pointer transition-colors outline-none" (click)="openNewRolDialog()">
-                  <i class="pi pi-plus"></i>
-                </button>
+                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.apellidos && usuarioForm.apellidos.trim() !== ''">
+                  <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                  <label for="apellidos">Apellidos <span class="text-red-500">*</span></label>
+                </div>
               </div>
 
-              <!-- Contraseña de Acceso -->
-              <div class="floating-label-group" [class.floating]="usuarioForm.password && usuarioForm.password.trim() !== ''" *ngIf="esNuevoUsuario">
-                <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
-                <label>Contraseña de Acceso <span class="text-red-500">*</span></label>
+              <!-- Segunda Fila: Correo y Rol -->
+              <div class="flex flex-col sm:flex-row gap-5">
+                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.correo && usuarioForm.correo.trim() !== ''">
+                  <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                  <label for="correo">Correo Electrónico <span class="text-red-500">*</span></label>
+                </div>
+                <div class="flex gap-2 items-end flex-1">
+                  <div class="floating-label-group flex-1" [class.floating]="usuarioForm.id_rol !== undefined && usuarioForm.id_rol !== null">
+                    <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                    <label>Rol <span class="text-red-500">*</span></label>
+                  </div>
+                  <button type="button" pTooltip="Crear nuevo rol" tooltipPosition="top" class="w-[46px] h-[46px] flex-shrink-0 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-xl cursor-pointer transition-colors outline-none" (click)="openNewRolDialog()">
+                    <i class="pi pi-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tercera Fila: Teléfono y Documento Combinado -->
+              <div class="flex flex-col sm:flex-row gap-5">
+                <!-- Teléfono -->
+                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.telefono && usuarioForm.telefono.trim() !== ''">
+                  <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                  <label for="telefono">Teléfono</label>
+                </div>
+                
+                <!-- Documento Combinado (Selector + Número) -->
+                <div class="document-input-group flex-1" [class.floating]="usuarioForm.numero_documento && usuarioForm.numero_documento.trim() !== ''">
+                  <div class="document-input-container">
+                    <select [(ngModel)]="usuarioForm.tipo_documento" class="document-input-select">
+                      <option value="C.C.">C.C.</option>
+                      <option value="T.I.">T.I.</option>
+                      <option value="C.E.">C.E.</option>
+                      <option value="P.E.P.">P.E.P.</option>
+                      <option value="P.P.T.">P.P.T.</option>
+                      <option value="P.A.S.">P.A.S.</option>
+                    </select>
+                    <input 
+                      pInputText 
+                      id="documento" 
+                      [(ngModel)]="usuarioForm.numero_documento" 
+                      placeholder=" " 
+                      class="document-input-field" 
+                    />
+                  </div>
+                  <label for="documento">Número de Documento <span class="text-red-500">*</span></label>
+                </div>
+              </div>
+
+              <!-- Cuarta Fila: Contraseña + Estado -->
+              <div class="flex flex-col sm:flex-row gap-5">
+                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.password && usuarioForm.password.trim() !== ''" *ngIf="esNuevoUsuario">
+                  <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
+                  <label>Contraseña <span class="text-red-500">*</span></label>
+                </div>
+                <!-- Estado del usuario -->
+                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.estado !== undefined && usuarioForm.estado !== null">
+                  <p-select [options]="estadoOpciones" [(ngModel)]="usuarioForm.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full h-[46px] flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                  <label>Estado <span class="text-red-500">*</span></label>
+                </div>
               </div>
             </div>
 
             <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-              <button type="button" class="px-6 py-2.5 text-sm font-bold text-red-600 bg-white hover:bg-red-50/50 border border-red-200 hover:border-red-600 rounded-xl cursor-pointer transition-all outline-none" (click)="toggleUserForm()">Cancelar</button>
-              <button type="button" class="px-6 py-2.5 text-sm font-bold text-[#39A900] bg-white hover:bg-green-50/30 border border-[#39A900]/30 hover:border-[#39A900] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl cursor-pointer transition-all outline-none" (click)="guardarUsuario()" [disabled]="savingUser">{{ savingUser ? 'Guardando...' : 'Guardar Usuario' }}</button>
+              <button type="button" class="btn-cancelar" (click)="toggleUserForm()">Cancelar</button>
+              <button type="button" class="btn-guardar" (click)="guardarUsuario()" [disabled]="savingUser">{{ savingUser ? 'Guardando...' : 'Guardar' }}</button>
             </div>
           </div>
         </div>
@@ -332,6 +367,7 @@ import { Rol } from '../../domain/models/rol.model';
                 <th>Correo Electrónico</th>
                 <th>Rol</th>
                 <th>Estado</th>
+                <th style="width: 100px; text-align: center">Acciones</th>
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-u>
@@ -344,6 +380,19 @@ import { Rol } from '../../domain/models/rol.model';
                 </td>
                 <td>
                    <p-tag [value]="u.estado ? 'ACTIVO' : 'INACTIVO'" [severity]="u.estado ? 'success' : 'danger'" styleClass="px-3 py-1 rounded-lg text-[10px]"></p-tag>
+                </td>
+                <td>
+                  <div class="flex items-center justify-center gap-1">
+                    <button
+                      type="button"
+                      (click)="editarUsuario(u)"
+                      class="w-8 h-8 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer outline-none border-none bg-transparent"
+                      pTooltip="Editar"
+                      tooltipPosition="top"
+                    >
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             </ng-template>
@@ -526,6 +575,10 @@ export class RolesComponent implements OnInit {
   esNuevoUsuario = true;
   savingUser = false;
   usuarioForm: any = {};
+  estadoOpciones = [
+    { label: 'Activo', value: true },
+    { label: 'Inactivo', value: false }
+  ];
   
   loading = false;
   saving = false;
@@ -630,56 +683,144 @@ export class RolesComponent implements OnInit {
     }
   }
 
+  getNuevoUsuario(): any {
+    return {
+      nombre: '',
+      apellidos: '',
+      correo: '',
+      telefono: '',
+      tipo_documento: 'C.C.',
+      numero_documento: '',
+      documento: '',
+      password: '',
+      estado: true,
+      id_rol: null,
+    };
+  }
+
   openNewUsuario() {
     this.esNuevoUsuario = true;
-    this.usuarioForm = { nombre: '', correo: '', id_rol: null, password: '' };
+    this.usuarioForm = this.getNuevoUsuario();
     this.showUserForm = true;
   }
 
   editarUsuario(u: any) {
     this.esNuevoUsuario = false;
-    this.usuarioForm = { ...u, password: '' };
+
+    // Separar tipo de documento y número de documento
+    let tipo_documento = 'C.C.';
+    let numero_documento = u.documento || '';
+    if (u.documento) {
+      const docClean = u.documento.trim();
+      const tipos = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.', 'CC', 'TI', 'CE', 'PEP', 'PPT', 'PAS'];
+      for (const t of tipos) {
+        if (docClean.toUpperCase().startsWith(t.toUpperCase())) {
+          tipo_documento = t.includes('.') ? t : t.split('').join('.') + '.';
+          numero_documento = docClean.substring(t.length).trim();
+          break;
+        }
+      }
+    }
+
+    let nombre = u.nombre || '';
+    let apellidos = u.apellidos || '';
+    if (!apellidos && nombre) {
+      const parts = nombre.trim().split(/\s+/);
+      if (parts.length > 1) {
+        nombre = parts[0];
+        apellidos = parts.slice(1).join(' ');
+      }
+    }
+
+    this.usuarioForm = { 
+      ...u, 
+      nombre,
+      apellidos,
+      tipo_documento,
+      numero_documento,
+      password: '', // Limpiar contraseña por seguridad al editar
+      id_rol: Number(u.id_rol || (u.rol ? u.rol.id : null))
+    };
     this.showUserForm = true;
   }
 
   guardarUsuario() {
-    if (!this.usuarioForm.nombre || !this.usuarioForm.correo || !this.usuarioForm.id_rol) {
-      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Faltan campos requeridos' });
+    // Validaciones basicas
+    if (!this.usuarioForm.nombre || !this.usuarioForm.correo || !this.usuarioForm.id_rol || !this.usuarioForm.numero_documento) {
+      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Por favor complete todos los campos requeridos' });
       return;
     }
+
+    if (this.esNuevoUsuario && !this.usuarioForm.password) {
+      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'La contraseña es requerida para nuevos usuarios' });
+      return;
+    }
+
     this.savingUser = true;
 
-    const reqData = {
-      nombre: this.usuarioForm.nombre,
-      correo: this.usuarioForm.correo,
-      id_rol: this.usuarioForm.id_rol,
-      ...(this.usuarioForm.password ? { password: this.usuarioForm.password } : {})
-    };
+    const docCompleto = this.usuarioForm.numero_documento ? `${this.usuarioForm.tipo_documento} ${this.usuarioForm.numero_documento.trim()}` : '';
 
     if (this.esNuevoUsuario) {
-      this.usuarioService.create(reqData as any).subscribe({
+      const datosEnvio: any = {
+        nombre: (this.usuarioForm.nombre.trim() + ' ' + (this.usuarioForm.apellidos || '').trim()).trim(),
+        correo: this.usuarioForm.correo.trim(),
+        id_rol: Number(this.usuarioForm.id_rol),
+        password: this.usuarioForm.password
+      };
+
+      if (this.usuarioForm.telefono && this.usuarioForm.telefono.trim()) {
+        datosEnvio.telefono = this.usuarioForm.telefono.trim();
+      }
+      if (docCompleto) {
+        datosEnvio.documento = docCompleto;
+      }
+
+      this.usuarioService.create(datosEnvio).subscribe({
         next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado' });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado correctamente' });
           this.showUserForm = false;
           this.savingUser = false;
           this.cargarUsuarios();
         },
         error: (err) => {
           this.savingUser = false;
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al crear' });
-        }
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear el usuario' });
+        },
       });
     } else {
-      this.usuarioService.update(this.usuarioForm.id_usuario || this.usuarioForm.id, reqData).subscribe({
+      const updateData: any = {
+        nombre: (this.usuarioForm.nombre.trim() + ' ' + (this.usuarioForm.apellidos || '').trim()).trim(),
+        correo: this.usuarioForm.correo.trim(),
+        id_rol: Number(this.usuarioForm.id_rol),
+        estado: this.usuarioForm.estado !== false
+      };
+      
+      if (this.usuarioForm.telefono && this.usuarioForm.telefono.trim()) {
+        updateData.telefono = this.usuarioForm.telefono.trim();
+      } else {
+        updateData.telefono = '';
+      }
+
+      if (docCompleto) {
+        updateData.documento = docCompleto;
+      } else {
+        updateData.documento = '';
+      }
+
+      if (this.usuarioForm.password && this.usuarioForm.password.trim()) {
+        updateData.password = this.usuarioForm.password;
+      }
+
+      this.usuarioService.update(this.usuarioForm.id_usuario || this.usuarioForm.id!, updateData).subscribe({
         next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado' });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente' });
           this.showUserForm = false;
           this.savingUser = false;
           this.cargarUsuarios();
         },
         error: (err) => {
           this.savingUser = false;
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'Error al actualizar' });
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo actualizar el usuario' });
         }
       });
     }

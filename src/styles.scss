@@ -194,53 +194,6 @@
   flex-direction: column !important;
 }
 
-.form-field:has(input:not([type="checkbox"]):not([type="radio"]):not([type="submit"])) label,
-.form-field:has(.p-select) label,
-.form-field:has(.p-password) label {
-  position: absolute !important;
-  left: 1rem !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  background-color: white !important;
-  padding: 0 0.5rem !important;
-  color: #94a3b8 !important; /* slate-400 */
-  font-size: 0.875rem !important; /* text-sm */
-  font-weight: 500 !important;
-  pointer-events: none !important;
-  transition: all 0.2s ease !important;
-  z-index: 10 !important;
-}
-
-/* Floating states */
-.form-field:has(input:focus) label,
-.form-field:has(input.p-filled) label,
-.form-field:has(input:not(:placeholder-shown)) label,
-.form-field:has(.p-select.p-focus) label,
-.form-field:has(.p-select:focus-within) label,
-.form-field:has(.p-select.p-inputwrapper-filled) label,
-.form-field:has(.p-password.p-inputwrapper-filled) label,
-.form-field:has(.p-password.p-focus) label,
-.form-field:has(.p-password:focus-within) label {
-  top: 0 !important;
-  transform: translateY(-50%) scale(0.85) !important;
-  color: #39A900 !important; /* brand green */
-  font-weight: 700 !important;
-}
-
-/* Keep label gray when blurred but filled */
-.form-field:has(input.p-filled):not(:focus-within) label,
-.form-field:has(input:not(:placeholder-shown)):not(:focus-within) label,
-.form-field:has(.p-select.p-inputwrapper-filled):not(:focus-within) label,
-.form-field:has(.p-password.p-inputwrapper-filled):not(:focus-within) label {
-  color: #64748b !important; /* slate-500 */
-  font-weight: 600 !important;
-}
-
-/* Hide input placeholders when they are not focused to avoid overlapping */
-.form-field input:not(:focus)::placeholder {
-  color: transparent !important;
-}
-
 /* Base styles for standard inputs inside .form-field (overrides previous raw borders) */
 .form-field input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]) {
   width: 100% !important;
@@ -382,6 +335,137 @@ button.btn-guardar:disabled,
   cursor: not-allowed !important;
 }
 
+/* ==========================================
+   DOCUMENT INPUT GROUP (COMBINED SELECT + INPUT)
+   ========================================== */
+.document-input-group {
+  position: relative;
+  width: 100%;
+}
 
+.document-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  background-color: white !important;
+  border-radius: 12px !important;
+  height: 46px !important;
+  transition: all 0.2s ease !important;
+  overflow: hidden !important;
+}
+
+.document-input-container:focus-within {
+  border-color: #39A900 !important;
+  box-shadow: 0 0 0 1px #39A900 !important;
+}
+
+.document-input-select {
+  background-color: transparent !important;
+  border: none !important;
+  border-right: 1px solid #cbd5e1 !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  color: #334155 !important; /* slate-700 */
+  padding: 0 1.5rem 0 0.75rem !important;
+  height: 100% !important;
+  cursor: pointer !important;
+  outline: none !important;
+  appearance: none !important; /* remove default arrow */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.4rem center !important;
+  background-size: 1em !important;
+  width: 80px !important;
+}
+
+.document-input-select:focus {
+  outline: none !important;
+}
+
+.document-input-field {
+  flex: 1 !important;
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 0.85rem !important;
+  font-size: 0.875rem !important;
+  color: #0f172a !important; /* navy */
+  height: 100% !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.document-input-group label {
+  position: absolute !important;
+  left: 5.5rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background-color: white !important;
+  padding: 0 0.5rem !important;
+  color: #94a3b8 !important; /* slate-400 */
+  font-size: 0.875rem !important; /* text-sm */
+  font-weight: 500 !important;
+  pointer-events: none !important;
+  transition: all 0.2s ease !important;
+  z-index: 10 !important;
+}
+
+/* Floating states */
+.document-input-group:focus-within label,
+.document-input-group.floating label {
+  top: 0 !important;
+  transform: translateY(-50%) scale(0.85) !important;
+  color: #39A900 !important; /* brand green */
+  font-weight: 700 !important;
+}
+
+/* Custom iOS-style Switch */
+.custom-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+  vertical-align: middle;
+  
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    
+    &:checked + .custom-switch-slider {
+      background-color: #39A900; /* Green when checked */
+      
+      &:before {
+        transform: translateX(20px);
+      }
+    }
+  }
+}
+
+.custom-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ef4444; /* Red when unchecked */
+  transition: background-color 0.25s;
+  border-radius: 24px;
+  
+  &:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #ffffff;
+    transition: transform 0.25s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+}
 
 

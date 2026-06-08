@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
-import { Centro } from '../../domain/models/centro.model';
 
 @Injectable({ providedIn: 'root' })
 export class CentroService {
@@ -11,15 +10,15 @@ export class CentroService {
     return this.api.get<any>('/centros');
   }
 
-  getCentroPorId(id: number): Observable<any> {
+  getCentro(id: number): Observable<any> {
     return this.api.get<any>(`/centros/${id}`);
   }
 
-  crearCentro(data: { nombre: string; codigo: string; regional: string; estado?: boolean }): Observable<any> {
+  crearCentro(data: { nombre: string; estado?: boolean }): Observable<any> {
     return this.api.post<any>('/centros', data);
   }
 
-  actualizarCentro(id: number, data: Partial<Centro>): Observable<any> {
+  actualizarCentro(id: number, data: any): Observable<any> {
     return this.api.patch<any>(`/centros/${id}`, data);
   }
 

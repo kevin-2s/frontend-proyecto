@@ -1,8 +1,9 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { catchError, throwError, timeout, TimeoutError } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 const backends = [
-  'http://localhost:3000',       // Local (Principal)
+  environment.apiUrl,             // Local (Principal) configurable
   'http://187.124.69.191:3000'   // VPS (Respaldo)
 ];
 

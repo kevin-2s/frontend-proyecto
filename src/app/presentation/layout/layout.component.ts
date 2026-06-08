@@ -1,5 +1,6 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,109 +19,124 @@ import { FormsModule } from '@angular/forms';
 
       <!-- Sidebar Responsivo -->
       <aside 
-        class="bg-white flex flex-col border-r border-gray-100 transition-all duration-300 overflow-hidden flex-shrink-0 
-               fixed lg:static h-full z-[50]"
-        [class.w-[260px]]="isSidebarVisible()"
-        [class.w-0]="!isSidebarVisible()"
-        [class.shadow-2xl]="isSidebarVisible()">
+         class="bg-white flex flex-col border-r border-gray-100 transition-all duration-300 overflow-hidden flex-shrink-0 
+            fixed lg:static h-full z-[50]"
+         [class.w-[260px]]="isSidebarVisible() && !sidebarCollapsed()"
+         [class.w-16]="isSidebarVisible() && sidebarCollapsed()"
+         [class.w-0]="!isSidebarVisible() && !sidebarCollapsed()"
+         [class.shadow-2xl]="isSidebarVisible()">
         
         <!-- Logo -->
-        <div class="h-20 flex items-center px-6 border-b border-gray-100 flex-shrink-0">
-          <div class="flex items-center gap-3">
-            <img src="LogoLogitmat_sin_fondo.png" alt="Logitma" class="w-9 h-9 object-contain">
-            <span class="text-[20px] font-black text-[#1e293b] tracking-tight">Logitma</span>
+        <div class="flex flex-col items-center justify-center border-b border-gray-100 flex-shrink-0 transition-all duration-300"
+             [class.py-6]="!sidebarCollapsed()"
+             [class.h-20]="sidebarCollapsed()"
+             [class.px-6]="!sidebarCollapsed()"
+             [class.px-2]="sidebarCollapsed()">
+          <div class="flex items-center justify-center">
+            <img src="LogoLogitmat_sin_fondo.png" 
+                 alt="Logitma" 
+                 [class.w-36]="!sidebarCollapsed()"
+                 [class.h-auto]="!sidebarCollapsed()"
+                 [class.w-10]="sidebarCollapsed()"
+                 [class.h-10]="sidebarCollapsed()"
+                 class="object-contain transition-all duration-300">
           </div>
         </div>
 
         <!-- Navigation -->
         <nav class="flex-1 overflow-y-auto py-3 px-4">
           <ul class="space-y-1">
-            <li *ngFor="let item of menuItems">
-              <!-- Item con Submódulos -->
-              <div *ngIf="item.children; else simpleLink">
-                <a 
-                  [routerLink]="item.path"
-                  routerLinkActive="active"
-                  #rlaParent="routerLinkActive"
-                  (click)="toggleMenuItem(item)"
-                  [class.bg-[#111827]]="rlaParent.isActive"
-                  [class.text-white]="rlaParent.isActive"
-                  [class.text-slate-500]="!rlaParent.isActive && !item.expanded"
-                  [class.text-slate-800]="!rlaParent.isActive && item.expanded"
-                  [class.bg-slate-50]="!rlaParent.isActive && item.expanded"
-                  class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold hover:bg-slate-50">
-                  <div class="flex items-center">
-                    <i [class]="'pi ' + item.icon + ' mr-3 text-base'"
-                       [class.text-white]="rlaParent.isActive"
-                       [class.text-[#39A900]]="!rlaParent.isActive && item.expanded"
-                       [class.text-slate-400]="!rlaParent.isActive && !item.expanded"></i>
-                    {{ item.title }}
-                  </div>
-                  <i class="pi pi-chevron-down text-[10px] transition-transform duration-200" 
-                     [class.rotate-180]="item.expanded"
-                     [class.text-white]="rlaParent.isActive"
-                     [class.text-slate-400]="!rlaParent.isActive"></i>
-                </a>
-                
-                <!-- Submenú -->
-                <ul *ngIf="item.expanded" class="pl-6 mt-1 space-y-1">
-                  <li *ngFor="let child of item.children">
-                    <a [routerLink]="child.path"
-                       routerLinkActive="active-sub"
-                       #rlaSub="routerLinkActive"
-                       [class.bg-[#39A900]/10]="rlaSub.isActive"
-                       [class.text-[#39A900]]="rlaSub.isActive"
-                       [class.text-slate-500]="!rlaSub.isActive"
-                       class="flex items-center px-4 py-2.5 rounded-xl text-[12.5px] transition-all cursor-pointer font-medium hover:bg-slate-50">
-                      <i [class]="'pi ' + child.icon + ' mr-3 text-sm'"
-                         [class.text-[#39A900]]="rlaSub.isActive"
-                         [class.text-slate-400]="!rlaSub.isActive"></i>
-                      {{ child.title }}
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              <!-- Item simple sin hijos -->
-              <ng-template #simpleLink>
-                <a [routerLink]="item.path" 
-                   routerLinkActive="active"
-                   #rla="routerLinkActive"
-                   [class.bg-[#111827]]="rla.isActive"
-                   [class.text-white]="rla.isActive"
-                   [class.text-slate-500]="!rla.isActive"
-                   class="flex items-center px-4 py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold hover:bg-slate-50">
-                 <i [class]="'pi ' + item.icon + ' mr-3 text-base'"
-                    [class.text-white]="rla.isActive"
-                    [class.text-slate-400]="!rla.isActive"></i>
-                 {{ item.title }}
-                 <span *ngIf="item.title === 'Solicitudes'" 
-                       class="ml-auto flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold"
-                       [class.bg-[#3b82f6]]="!rla.isActive"
-                       [class.bg-white]="rla.isActive"
-                       [class.text-white]="!rla.isActive"
-                       [class.text-[#111827]]="rla.isActive">
-                   3
-                 </span>
-                </a>
-              </ng-template>
+            <!-- Dashboard Link -->
+            <li>
+              <a [routerLink]="dashboardItem.path"
+                 routerLinkActive="active"
+                 #rlaDash="routerLinkActive"
+                 [class.bg-[#111827]]="rlaDash.isActive"
+                 [class.text-white]="rlaDash.isActive"
+                 [class.bg-transparent]="!rlaDash.isActive"
+                 [class.text-slate-500]="!rlaDash.isActive"
+                 [class.hover:bg-slate-50]="!rlaDash.isActive"
+                 [attr.title]="dashboardItem.title"
+                 [class.justify-center]="sidebarCollapsed()"
+                 [class.px-4]="!sidebarCollapsed()"
+                 [class.px-2]="sidebarCollapsed()"
+                 class="flex items-center py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold">
+                <i [class]="'pi ' + dashboardItem.icon + ' text-base'"
+                   [class.mr-3]="!sidebarCollapsed()"
+                   [class.mr-0]="sidebarCollapsed()"
+                   [class.text-lg]="sidebarCollapsed()"
+                   [class.text-white]="rlaDash.isActive"
+                   [class.text-slate-400]="!rlaDash.isActive"></i>
+                <span *ngIf="!sidebarCollapsed()">{{ dashboardItem.title }}</span>
+              </a>
             </li>
+
+            <!-- Loop over sections -->
+            <ng-container *ngFor="let section of menuSections">
+              <ng-container *ngIf="hasSectionAccess(section)">
+                <!-- Section Header -->
+                <li *ngIf="!sidebarCollapsed()" class="mt-4 mb-2">
+                  <div (click)="section.expanded = !section.expanded" 
+                       class="flex items-center justify-between px-4 py-1 text-[11px] font-bold text-slate-400 tracking-wider cursor-pointer hover:text-slate-600 select-none">
+                    <span>{{ section.title }}</span>
+                    <i class="pi pi-chevron-down text-[8px] transition-transform duration-200"
+                       [class.rotate-180]="!section.expanded"></i>
+                  </div>
+                </li>
+
+                <!-- Section Items -->
+                <ng-container *ngIf="section.expanded || sidebarCollapsed()">
+                  <ng-container *ngFor="let item of section.items">
+                    <li *ngIf="hasAccess(item.path)">
+                      <a [routerLink]="item.path"
+                         routerLinkActive="active"
+                         #rla="routerLinkActive"
+                         [class.bg-[#111827]]="rla.isActive"
+                         [class.text-white]="rla.isActive"
+                         [class.bg-transparent]="!rla.isActive"
+                         [class.text-slate-500]="!rla.isActive"
+                         [class.hover:bg-slate-50]="!rla.isActive"
+                         [attr.title]="item.title"
+                         [class.justify-center]="sidebarCollapsed()"
+                         [class.px-4]="!sidebarCollapsed()"
+                         [class.px-2]="sidebarCollapsed()"
+                         class="flex items-center py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold">
+                        <i [class]="'pi ' + item.icon + ' text-base'"
+                           [class.mr-3]="!sidebarCollapsed()"
+                           [class.mr-0]="sidebarCollapsed()"
+                           [class.text-lg]="sidebarCollapsed()"
+                           [class.text-white]="rla.isActive"
+                           [class.text-slate-400]="!rla.isActive"></i>
+                        <span *ngIf="!sidebarCollapsed()">{{ item.title }}</span>
+                      </a>
+                    </li>
+                  </ng-container>
+                </ng-container>
+              </ng-container>
+            </ng-container>
           </ul>
         </nav>
 
         <!-- User Footer -->
         <div class="p-4 border-t border-gray-100 flex-shrink-0 relative">
-          <!-- Dropdown Menu (Opens Upward) -->
+          <!-- Dropdown Menu (Opens Upward or to the Right depending on collapse state) -->
           <div *ngIf="isProfileMenuOpen()" 
-               class="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-[60] transition-all">
+               [class.w-48]="sidebarCollapsed()"
+               [class.left-16]="sidebarCollapsed()"
+               [class.bottom-0]="sidebarCollapsed()"
+               [class.absolute]="true"
+               [class.bottom-full]="!sidebarCollapsed()"
+               [class.left-4]="!sidebarCollapsed()"
+               [class.right-4]="!sidebarCollapsed()"
+               class="mb-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-[60] transition-all">
             <!-- Profile Summary Header -->
             <div class="px-4 py-2 border-b border-gray-50 flex items-center gap-3">
               <div class="w-9 h-9 rounded-full bg-emerald-100 text-[#39A900] flex items-center justify-center font-bold text-xs">
-                AD
+                {{ getUserInitials() }}
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-bold text-slate-800">Administrador</span>
-                <span class="text-[10px] text-slate-400 truncate">admin&#64;sena.edu.co</span>
+                <span class="text-xs font-bold text-slate-800">{{ getUserRoleName() }}</span>
+                <span class="text-[10px] text-slate-400 truncate">Sesión activa</span>
               </div>
             </div>
             
@@ -154,17 +170,18 @@ import { FormsModule } from '@angular/forms';
 
           <!-- Clickable Profile Block -->
           <div (click)="toggleProfileMenu()" 
+               [attr.title]="getUserRoleName()"
                class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
-            <div class="flex items-center gap-3 min-w-0">
+            <div class="flex items-center gap-3 min-w-0" [class.justify-center]="sidebarCollapsed()">
               <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs">
-                AD
+                {{ getUserInitials() }}
               </div>
-              <div class="flex flex-col min-w-0">
-                <span class="text-[12px] font-bold text-gray-900 truncate">Administrador</span>
-                <span class="text-[10px] text-gray-400 truncate">admin&#64;sena.edu.co</span>
+              <div *ngIf="!sidebarCollapsed()" class="flex flex-col min-w-0">
+                <span class="text-[12px] font-bold text-gray-900 truncate">{{ getUserRoleName() }}</span>
+                <span class="text-[10px] text-gray-400 truncate">Sesión activa</span>
               </div>
             </div>
-            <i class="pi pi-chevron-up text-slate-400 text-xs transition-transform duration-200" [class.rotate-180]="isProfileMenuOpen()"></i>
+            <i *ngIf="!sidebarCollapsed()" class="pi pi-chevron-up text-slate-400 text-xs transition-transform duration-200" [class.rotate-180]="isProfileMenuOpen()"></i>
           </div>
         </div>
       </aside>
@@ -208,63 +225,119 @@ import { FormsModule } from '@angular/forms';
     </div>
   `
 })
-export class LayoutComponent implements OnInit {
+export class LayoutComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
 
   isSidebarVisible = signal(true);
+  sidebarCollapsed = signal(false);
   isProfileMenuOpen = signal(false);
   globalSearch = '';
+  private routerEventsSub?: Subscription;
 
-  menuItems: any[] = [
-    { title: 'Dashboard',   path: '/dashboard',   icon: 'pi-home' },
-    { title: 'Usuarios',    path: '/usuarios',    icon: 'pi-users' },
-    { title: 'Roles',       path: '/roles',       icon: 'pi-shield' },
-    { 
-      title: 'Inventario',  
-      path: '/inventario',  
-      icon: 'pi-warehouse',
-      expanded: false,
-      children: [
-        { title: 'Productos',   path: '/inventario/productos',   icon: 'pi-box' },
-        { title: 'Categorías',  path: '/inventario/categoria',   icon: 'pi-tag' }
+  dashboardItem = { title: 'Dashboard', path: 'home', icon: 'pi-home' };
+
+  menuSections = [
+    {
+      title: 'ESTRUCTURA',
+      expanded: true,
+      items: [
+        { title: 'Centros', path: 'centros', icon: 'pi-briefcase' },
+        { title: 'Sedes', path: 'sitios', icon: 'pi-map-marker' },
+        { title: 'Áreas', path: 'areas', icon: 'pi-clone' },
+        { title: 'Programas', path: 'programas', icon: 'pi-bookmark' },
+        { title: 'Fichas', path: 'fichas', icon: 'pi-id-card' }
       ]
     },
-    { title: 'Fichas',      path: '/fichas',      icon: 'pi-id-card' },
-    { title: 'Sitios',      path: '/sitios',      icon: 'pi-map-marker' },
-    { title: 'Centros',     path: '/centros',     icon: 'pi-briefcase' },
-    { title: 'Sedes',       path: '/sedes',       icon: 'pi-building' },
-    { title: 'Áreas',       path: '/areas',       icon: 'pi-clone' },
-    { title: 'Programas',   path: '/programas',   icon: 'pi-bookmark' },
-    { title: 'Solicitudes', path: '/solicitudes', icon: 'pi-inbox' },
-    { title: 'Movimientos', path: '/movimientos', icon: 'pi-arrows-h' }
+    {
+      title: 'ADMINISTRACIÓN',
+      expanded: true,
+      items: [
+        { title: 'Usuarios', path: 'usuarios', icon: 'pi-users' },
+        { title: 'Roles', path: 'roles', icon: 'pi-shield' }
+      ]
+    },
+    {
+      title: 'INVENTARIO',
+      expanded: true,
+      items: [
+        { title: 'Productos', path: 'inventario/productos', icon: 'pi-box' },
+        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' }
+      ]
+    },
+    {
+      title: 'MOVIMIENTOS',
+      expanded: true,
+      items: [
+        { title: 'Solicitudes', path: 'solicitudes', icon: 'pi-inbox' },
+        { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h' }
+      ]
+    }
   ];
 
   ngOnInit() {
     const currentUrl = this.router.url;
-    this.menuItems.forEach(item => {
-      if (item.children) {
-        const hasActiveChild = item.children.some((child: any) => currentUrl.includes(child.path));
-        if (hasActiveChild) {
-          item.expanded = true;
+    console.log('[Layout] ngOnInit currentUrl=', currentUrl);
+    if (currentUrl === '/' || currentUrl.includes('/home')) {
+      this.sidebarCollapsed.set(false);
+    } else {
+      try {
+        const saved = localStorage.getItem('sidebarCollapsed');
+        if (saved !== null) this.sidebarCollapsed.set(saved === 'true');
+      } catch (e) {
+        // ignore
+      }
+    }
+    
+    this.menuSections.forEach(section => {
+      const hasActiveChild = section.items.some(item => currentUrl.includes(item.path));
+      if (hasActiveChild) {
+        section.expanded = true;
+      }
+    });
+
+    this.routerEventsSub = this.router.events.subscribe((ev: any) => {
+      if (ev instanceof NavigationEnd) {
+        const urlDest = ev.urlAfterRedirects || ev.url || '';
+        if (urlDest === '/' || urlDest.includes('/home')) {
+          this.sidebarCollapsed.set(false);
+          this.isSidebarVisible.set(true);
         }
       }
     });
   }
 
-  toggleMenuItem(item: any): void {
-    item.expanded = !item.expanded;
+  ngOnDestroy() {
+    if (this.routerEventsSub) this.routerEventsSub.unsubscribe();
   }
 
   onGlobalSearch(term: string) {
     const lower = term.toLowerCase().trim();
     if (!lower) return;
-    const match = this.menuItems.find(i => i.title.toLowerCase().includes(lower));
-    if (match) this.router.navigate([match.path]);
+    if (this.dashboardItem.title.toLowerCase().includes(lower)) {
+      this.router.navigate([this.dashboardItem.path]);
+      return;
+    }
+    for (const section of this.menuSections) {
+      const match = section.items.find(i => i.title.toLowerCase().includes(lower));
+      if (match) {
+        this.router.navigate([match.path]);
+        return;
+      }
+    }
   }
 
   toggleSidebar(): void {
-    this.isSidebarVisible.update(v => !v);
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    if (isDesktop) {
+      this.sidebarCollapsed.update(v => {
+        const next = !v;
+        try { localStorage.setItem('sidebarCollapsed', String(next)); } catch(e) {}
+        return next;
+      });
+    } else {
+      this.isSidebarVisible.update(v => !v);
+    }
   }
 
   toggleProfileMenu(): void {
@@ -273,5 +346,46 @@ export class LayoutComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  hasAccess(path: string): boolean {
+    const role = this.authService.getUserRole()?.toUpperCase() || '';
+    if (role === 'ADMINISTRADOR') {
+      return true;
+    }
+    
+    if (role === 'INSTRUCTOR') {
+      const instructorPaths = [
+        'sitios', 'areas', 'programas', 'fichas', 
+        'inventario/productos', 'inventario/categoria', 
+        'solicitudes', 'movimientos', 'home'
+      ];
+      return instructorPaths.includes(path);
+    }
+    
+    if (role === 'APRENDIZ') {
+      const aprendizPaths = [
+        'inventario/productos', 'inventario/categoria', 
+        'solicitudes', 'home'
+      ];
+      return aprendizPaths.includes(path);
+    }
+    
+    return false;
+  }
+
+  hasSectionAccess(section: any): boolean {
+    return section.items.some((item: any) => this.hasAccess(item.path));
+  }
+
+  getUserInitials(): string {
+    const role = this.authService.getUserRole() || '';
+    if (!role) return 'US';
+    return role.substring(0, 2).toUpperCase();
+  }
+  
+  getUserRoleName(): string {
+    const role = this.authService.getUserRole() || 'Usuario';
+    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
   }
 }

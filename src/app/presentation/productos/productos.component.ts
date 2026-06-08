@@ -11,10 +11,12 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SelectModule } from 'primeng/select';
 import { FileUploadModule } from 'primeng/fileupload';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { ProductoService } from '../../infrastructure/services/producto.service';
 import { CategoriaService } from '../../infrastructure/services/categoria.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
 
 interface Producto {
   id_producto: number;
@@ -60,9 +62,9 @@ interface Categoria {
     TooltipModule
   ],
   encapsulation: ViewEncapsulation.None,
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   template: `
-    <p-toast position="bottom-right"></p-toast>
+    <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
 
     <div class="module-container">
@@ -76,198 +78,7 @@ interface Categoria {
             <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
               placeholder="Buscar producto, SKU..." class="search-input" />
           </div>
-          <button
-            *ngIf="!displayDialog"
-            type="button"
-            class="btn-add"
-            (click)="openNew()"
-          >
-            <i class="pi pi-plus"></i>
-            Nuevo Producto
-          </button>
-          <button
-            *ngIf="displayDialog"
-            type="button"
-            class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
-            (click)="displayDialog = false"
-          >
-            <i class="pi pi-times"></i>
-            Cerrar Formulario
-          </button>
-        </div>
-      </div>
-
-      <!-- Inline Form Card -->
-      <div *ngIf="displayDialog" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
-        <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
-            <i class="pi pi-box text-[#39A900] text-xl"></i>
-          </div>
-          <div>
-            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Registrar Producto' : 'Editar Producto' }}</h4>
-            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para el producto en el catálogo</p>
-          </div>
-        </div>
-        
-        <div class="p-6 flex flex-col gap-5">
-          <form [formGroup]="productoForm" class="form-grid mt-2">
-            <div class="form-field">
-              <input
-                pInputText
-                id="nombre"
-                formControlName="nombre"
-                placeholder="Ej: Martillo"
-              />
-              <label for="nombre">Nombre *</label>
-            </div>
-
-            <div class="product-form-row">
-              <div class="form-field">
-                <input
-                  pInputText
-                  id="codigo_unspsc"
-                  formControlName="codigo_unspsc"
-                  placeholder="27111600"
-                />
-                <label for="codigo_unspsc">Código UNSPSC</label>
-              </div>
-              <div class="form-field">
-                <input 
-                  pInputText 
-                  id="SKU" 
-                  formControlName="SKU" 
-                  placeholder="MAR-001" 
-                />
-                <label for="SKU">SKU *</label>
-              </div>
-            </div>
-
-            <div class="product-form-row">
-              <div class="form-field">
-                <div class="input-with-button">
-                  <p-select
-                    id="tipo_material"
-                    formControlName="tipo_material"
-                    [options]="tiposMaterial"
-                    placeholder=" "
-                    appendTo="body"
-                    styleClass="w-full"
-                  ></p-select>
-                  <button
-                    type="button"
-                    class="btn-inline-add"
-                    (click)="displayAddTipoMaterial = true"
-                    pTooltip="Agregar tipo de material"
-                  >
-                    <i class="pi pi-plus"></i>
-                  </button>
-                </div>
-                <label for="tipo_material">Tipo de Material *</label>
-              </div>
-              <div class="form-field">
-                <div class="input-with-button">
-                  <p-select
-                    id="unidad_medida"
-                    formControlName="unidad_medida"
-                    [options]="unidadesMedida"
-                    placeholder=" "
-                    appendTo="body"
-                    styleClass="w-full"
-                  ></p-select>
-                  <button
-                    type="button"
-                    class="btn-inline-add"
-                    (click)="displayAddUnidadMedida = true"
-                    pTooltip="Agregar unidad de medida"
-                  >
-                    <i class="pi pi-plus"></i>
-                  </button>
-                </div>
-                <label for="unidad_medida">Unidad de Medida *</label>
-              </div>
-            </div>
-
-            <div class="product-form-row">
-              <div *ngIf="esNuevo" class="form-field">
-                <input
-                  pInputText
-                  type="number"
-                  id="cantidad"
-                  formControlName="cantidad"
-                  placeholder="Ej: 5"
-                  min="1"
-                />
-                <label for="cantidad">Cantidad de unidades *</label>
-              </div>
-              <div class="form-field">
-                <input
-                  pInputText
-                  type="number"
-                  id="stock_minimo"
-                  formControlName="stock_minimo"
-                  placeholder="Ej: 2"
-                  min="1"
-                />
-                <label for="stock_minimo">Stock mínimo para alertas *</label>
-              </div>
-            </div>
-
-            <div class="product-form-row items-center gap-5">
-              <div class="form-field flex flex-row items-center gap-2 py-1">
-                <input type="checkbox" formControlName="es_psd" (change)="onPsdChange($event)" id="es_psd" class="w-4 h-4 cursor-pointer" />
-                <label for="es_psd" class="text-xs font-bold text-slate-800 cursor-pointer select-none">¿Es PSD?</label>
-              </div>
-              <div *ngIf="psdChecked" class="form-field">
-                <input
-                  pInputText
-                  type="date"
-                  id="fecha_vencimiento"
-                  formControlName="fecha_vencimiento"
-                  class="w-full animate-fade-in"
-                />
-                <label for="fecha_vencimiento">Fecha de Vencimiento</label>
-              </div>
-            </div>
-
-            <div class="form-field">
-              <div class="input-with-button">
-                <p-select
-                  id="id_categoria"
-                  formControlName="id_categoria"
-                  [options]="categorias"
-                  optionLabel="nombre"
-                  optionValue="id_categoria"
-                  placeholder=" "
-                  [showClear]="true"
-                  appendTo="body"
-                  styleClass="w-full"
-                ></p-select>
-                <button
-                  type="button"
-                  class="btn-inline-add"
-                  (click)="displayAddCategoria = true"
-                  pTooltip="Agregar nueva categoría"
-                >
-                  <i class="pi pi-plus"></i>
-                </button>
-              </div>
-              <label for="id_categoria">Categoría *</label>
-            </div>
-          </form>
-
-          <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              class="btn-cancelar"
-              (click)="displayDialog = false"
-            >Cancelar</button>
-            <button
-              type="button"
-              class="btn-guardar"
-              [disabled]="productoForm.invalid"
-              (click)="guardar()"
-            >Guardar Producto</button>
-          </div>
+          <button *ngIf="esAdmin()" pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
 
@@ -343,6 +154,7 @@ interface Categoria {
                     pTooltip="Ver items"
                   ></button>
                   <button
+                    *ngIf="esAdmin()"
                     pButton
                     icon="pi pi-pencil"
                     class="btn-table-action btn-editor"
@@ -350,6 +162,7 @@ interface Categoria {
                     pTooltip="Editar producto"
                   ></button>
                   <button
+                    *ngIf="esAdmin()"
                     pButton
                     icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
@@ -372,7 +185,180 @@ interface Categoria {
       </div>
     </div>
 
+    <p-dialog
+      [header]="esNuevo ? '✨ Registrar Producto' : '📝 Editar Producto'"
+      [(visible)]="displayDialog"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '600px' }"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
+      appendTo="body"
+    >
+      <form [formGroup]="productoForm" class="form-grid mt-2">
+        <div class="form-field">
+          <label for="nombre">Nombre *</label>
+          <input
+            pInputText
+            id="nombre"
+            formControlName="nombre"
+            placeholder="Ej: Martillo"
+          />
+        </div>
 
+
+        <div class="product-form-row">
+          <div class="form-field">
+            <label for="codigo_unspsc">Código UNSPSC</label>
+            <input
+              pInputText
+              id="codigo_unspsc"
+              formControlName="codigo_unspsc"
+              placeholder="27111600"
+            />
+          </div>
+          <div class="form-field">
+            <label for="SKU">SKU *</label>
+            <input 
+              pInputText 
+              id="SKU" 
+              formControlName="SKU" 
+              placeholder="MAR-001" 
+            />
+          </div>
+        </div>
+
+        <div class="product-form-row">
+          <div class="form-field">
+            <label for="tipo_material">Tipo de Material *</label>
+            <div class="input-with-button">
+              <p-select
+                id="tipo_material"
+                formControlName="tipo_material"
+                [options]="tiposMaterial"
+                placeholder="Seleccione tipo"
+                appendTo="body"
+                styleClass="w-full"
+              ></p-select>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                class="btn-inline-add"
+                (click)="displayAddTipoMaterial = true"
+                pTooltip="Agregar tipo de material"
+              ></button>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="unidad_medida">Unidad de Medida *</label>
+            <div class="input-with-button">
+              <p-select
+                id="unidad_medida"
+                formControlName="unidad_medida"
+                [options]="unidadesMedida"
+                placeholder="Seleccione unidad"
+                appendTo="body"
+                styleClass="w-full"
+              ></p-select>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                class="btn-inline-add"
+                (click)="displayAddUnidadMedida = true"
+                pTooltip="Agregar unidad de medida"
+              ></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-form-row">
+          <div *ngIf="esNuevo" class="form-field">
+            <label for="cantidad">Cantidad de unidades *</label>
+            <input
+              pInputText
+              type="number"
+              id="cantidad"
+              formControlName="cantidad"
+              placeholder="Ej: 5"
+              min="1"
+            />
+          </div>
+          <div class="form-field">
+            <label for="stock_minimo">Stock mínimo para alertas *</label>
+            <input
+              pInputText
+              type="number"
+              id="stock_minimo"
+              formControlName="stock_minimo"
+              placeholder="Ej: 2"
+              min="1"
+            />
+          </div>
+        </div>
+
+        <div class="product-form-row">
+          <div class="form-field">
+            <label for="es_psd">¿Es PSD?</label>
+            <input type="checkbox" formControlName="es_psd" (change)="onPsdChange($event)" class="w-4 h-4" />
+          </div>
+          <div *ngIf="psdChecked" class="form-field">
+            <label for="fecha_vencimiento">Fecha de Vencimiento</label>
+            <input
+              pInputText
+              type="date"
+              id="fecha_vencimiento"
+              formControlName="fecha_vencimiento"
+              class="w-full"
+            />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="id_categoria">Categoría *</label>
+          <div class="input-with-button">
+            <p-select
+              id="id_categoria"
+              formControlName="id_categoria"
+              [options]="categorias"
+              optionLabel="nombre"
+              optionValue="id_categoria"
+              placeholder="Seleccione una categoría"
+              [showClear]="true"
+              appendTo="body"
+              styleClass="w-full"
+            ></p-select>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-plus"
+              class="btn-inline-add"
+              (click)="displayAddCategoria = true"
+              pTooltip="Agregar nueva categoría"
+            ></button>
+          </div>
+        </div>
+      </form>
+
+      <ng-template pTemplate="footer">
+        <div class="dialog-footer">
+          <button
+            pButton
+            label="Cancelar"
+            class="btn-cancelar"
+            (click)="displayDialog = false"
+          ></button>
+          <button
+            pButton
+            label="Guardar"
+            class="btn-guardar"
+            [disabled]="productoForm.invalid"
+            (click)="guardar()"
+          ></button>
+        </div>
+      </ng-template>
+    </p-dialog>
 
     <!-- Diálogo para agregar nueva Categoría -->
     <p-dialog
@@ -572,9 +558,14 @@ export class ProductosComponent implements OnInit {
   private fb = inject(FormBuilder);
   private productoService = inject(ProductoService);
   private categoriaService = inject(CategoriaService);
-  private messageService = inject(MessageService);
+  private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
+
+  esAdmin(): boolean {
+    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+  }
 
   productos: Producto[] = [];
   productosFiltrados: Producto[] = [];
@@ -752,7 +743,7 @@ export class ProductosComponent implements OnInit {
 
   guardar() {
     if (this.productoForm.invalid) {
-      this.messageService.add({
+      this.notification.add({ module: 'Productos',
         severity: 'warn',
         summary: 'Advertencia',
         detail: 'Por favor complete los campos requeridos',
@@ -782,7 +773,7 @@ export class ProductosComponent implements OnInit {
     if (this.esNuevo) {
       this.productoService.crearProducto(productoData).subscribe({
         next: () => {
-          this.messageService.add({
+          this.notification.add({ module: 'Productos',
             severity: 'success',
             summary: 'Éxito',
             detail: 'Producto creado correctamente',
@@ -791,7 +782,7 @@ export class ProductosComponent implements OnInit {
           this.cargarDatos();
         },
         error: (err) => {
-          this.messageService.add({
+          this.notification.add({ module: 'Productos',
             severity: 'error',
             summary: 'Error',
             detail: 'No se pudo crear el producto: ' + (err?.message || 'Error desconocido'),
@@ -801,7 +792,7 @@ export class ProductosComponent implements OnInit {
     } else {
       this.productoService.actualizarProducto(formValue.id_producto, productoData).subscribe({
         next: () => {
-          this.messageService.add({
+          this.notification.add({ module: 'Productos',
             severity: 'success',
             summary: 'Éxito',
             detail: 'Producto actualizado correctamente',
@@ -810,7 +801,7 @@ export class ProductosComponent implements OnInit {
           this.cargarDatos();
         },
         error: (err) => {
-          this.messageService.add({
+          this.notification.add({ module: 'Productos',
             severity: 'error',
             summary: 'Error',
             detail: 'No se pudo actualizar el producto',
@@ -827,7 +818,7 @@ export class ProductosComponent implements OnInit {
     this.categoriaService.crearCategoria({ nombreCat: nombre }).subscribe({
       next: (res: any) => {
         const newCat = res?.data || res;
-        this.messageService.add({
+        this.notification.add({ module: 'Productos',
           severity: 'success',
           summary: 'Éxito',
           detail: 'Categoría agregada correctamente',
@@ -856,7 +847,7 @@ export class ProductosComponent implements OnInit {
         });
       },
       error: (err) => {
-        this.messageService.add({
+        this.notification.add({ module: 'Productos',
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudo crear la categoría',
@@ -877,7 +868,7 @@ export class ProductosComponent implements OnInit {
     this.productoForm.patchValue({ tipo_material: val });
     this.displayAddTipoMaterial = false;
     this.nuevoNombreTipoMaterial = '';
-    this.messageService.add({
+    this.notification.add({ module: 'Productos',
       severity: 'success',
       summary: 'Éxito',
       detail: 'Tipo de material agregado',
@@ -896,7 +887,7 @@ export class ProductosComponent implements OnInit {
     this.productoForm.patchValue({ unidad_medida: val });
     this.displayAddUnidadMedida = false;
     this.nuevoNombreUnidadMedida = '';
-    this.messageService.add({
+    this.notification.add({ module: 'Productos',
       severity: 'success',
       summary: 'Éxito',
       detail: 'Unidad de medida agregada',
@@ -912,7 +903,7 @@ export class ProductosComponent implements OnInit {
       accept: () => {
         this.productoService.eliminarProducto(producto.id_producto).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Productos',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Producto eliminado correctamente',
@@ -920,7 +911,7 @@ export class ProductosComponent implements OnInit {
             this.cargarDatos();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Productos',
               severity: 'error',
               summary: 'Error',
               detail: 'No se pudo eliminar el producto',
@@ -944,7 +935,7 @@ export class ProductosComponent implements OnInit {
         setTimeout(() => this.cdr.detectChanges());
       },
       error: (err) => {
-        this.messageService.add({
+        this.notification.add({ module: 'Productos',
           severity: 'error',
           summary: 'Error',
           detail: 'No se pudieron cargar los items del producto',
@@ -983,7 +974,7 @@ export class ProductosComponent implements OnInit {
         const ids = this.selectedProducts.map((p) => p.id_producto);
         this.productoService.eliminarMultiples(ids).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Productos',
               severity: 'success',
               summary: 'Éxito',
               detail: 'Productos eliminados correctamente',
@@ -992,7 +983,7 @@ export class ProductosComponent implements OnInit {
             this.cargarDatos();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Productos',
               severity: 'error',
               summary: 'Error',
               detail: 'No se pudieron eliminar los productos',

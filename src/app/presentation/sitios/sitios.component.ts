@@ -8,24 +8,21 @@ import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
-import { MessageService, ConfirmationService } from 'primeng/api';
+import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmationService } from 'primeng/api';
 import { SitioService } from '../../infrastructure/services/sitio.service';
-import { UsuarioService } from '../../infrastructure/services/usuario.service';
+import { CentroService } from '../../infrastructure/services/centro.service';
 
 interface Sitio {
   id_sitio?: number;
   nombre: string;
-  tipo: string;
-  id_responsable?: number;
-  responsable?: {
-    id_usuario: number;
+  id_centro?: number;
+  centro?: {
+    id_centro: number;
     nombre: string;
-    correo: string;
   };
-  estado?: boolean;
 }
 
 @Component({
@@ -41,125 +38,26 @@ interface Sitio {
     TagModule,
     ToastModule,
     ConfirmDialogModule,
-    ToggleSwitchModule,
     TooltipModule,
     SelectModule,
   ],
   encapsulation: ViewEncapsulation.None,
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   template: `
-    <p-toast position="bottom-right"></p-toast>
+    <p-toast position="top-right"></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <div class="module-container">
       <div class="module-header">
         <h3 class="page-title">
-          <i class="pi pi-map-marker"></i> Sitios y Bodegas
+          <i class="pi pi-map-marker"></i> Sedes
         </h3>
         <div class="header-actions">
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
             <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
-              placeholder="Buscar sitio..." class="search-input" />
+              placeholder="Buscar sede..." class="search-input" />
           </div>
-          <button
-            *ngIf="!displayDialog"
-            type="button"
-            class="btn-add"
-            (click)="openNew()"
-          >
-            <i class="pi pi-plus"></i>
-            Nuevo Sitio
-          </button>
-          <button
-            *ngIf="displayDialog"
-            type="button"
-            class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
-            (click)="displayDialog = false"
-          >
-            <i class="pi pi-times"></i>
-            Cerrar Formulario
-          </button>
-        </div>
-      </div>
-
-      <!-- Inline Form Card -->
-      <div *ngIf="displayDialog" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
-        <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
-            <i class="pi pi-map-marker text-[#39A900] text-xl"></i>
-          </div>
-          <div>
-            <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Registrar Nuevo Sitio' : 'Editar Ubicación' }}</h4>
-            <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información requerida para el sitio en el sistema</p>
-          </div>
-        </div>
-        
-        <div class="p-6 flex flex-col gap-5">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-            <!-- Nombre de la Ubicación -->
-            <div class="form-field">
-              <input
-                pInputText
-                id="nombre"
-                [(ngModel)]="sitio.nombre"
-                placeholder="Ej: Bodega de Electrónica"
-              />
-              <label for="nombre">Nombre de la Ubicación *</label>
-            </div>
-
-            <!-- Tipo de Ambiente -->
-            <div class="form-field">
-              <p-select
-                id="tipo"
-                [(ngModel)]="sitio.tipo"
-                [options]="tipos"
-                optionLabel="label"
-                optionValue="value"
-                placeholder=" "
-                styleClass="w-full"
-                appendTo="body"
-              ></p-select>
-              <label for="tipo">Tipo de Ambiente *</label>
-            </div>
-
-            <!-- Responsable -->
-            <div class="form-field">
-              <p-select
-                id="id_responsable"
-                [(ngModel)]="sitio.id_responsable"
-                [options]="usuarios"
-                optionLabel="nombre"
-                optionValue="id_usuario"
-                placeholder=" "
-                [filter]="true"
-                filterBy="nombre,correo"
-                styleClass="w-full"
-                appendTo="body"
-              ></p-select>
-              <label for="id_responsable">Responsable</label>
-            </div>
-
-            <!-- Estado Switch -->
-            <div class="form-field">
-              <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200/80 h-[46px]">
-                <p-toggleSwitch [(ngModel)]="sitio.estado"></p-toggleSwitch>
-                <span class="font-bold text-sm" [class.text-green-600]="sitio.estado !== false" [class.text-red-600]="sitio.estado === false">
-                   {{ sitio.estado !== false ? 'SITIO ACTIVO' : 'SITIO INACTIVO' }}
-                </span>
-              </div>
-              <label>Estado Operativo</label>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-            <button type="button" class="btn-cancelar" (click)="displayDialog = false">Cancelar</button>
-            <button
-              type="button"
-              class="btn-guardar"
-              (click)="guardar()"
-              [disabled]="saving"
-            >{{ saving ? 'Guardando...' : 'Guardar Ubicación' }}</button>
-          </div>
+          <button pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
 
@@ -174,10 +72,8 @@ interface Sitio {
           <ng-template pTemplate="header">
             <tr>
               <th style="width:80px">ID</th>
-              <th>Nombre del Sitio</th>
-              <th>Responsable</th>
-              <th>Tipo</th>
-              <th style="width:120px">Estado</th>
+              <th>Nombre de la Sede</th>
+              <th>Centro</th>
               <th style="width:150px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
@@ -185,36 +81,20 @@ interface Sitio {
             <tr>
               <td><span class="id-badge">#{{ sitio.id_sitio }}</span></td>
               <td><span class="nombre-cell">{{ sitio.nombre }}</span></td>
-              <td><span class="text-slate-600 text-sm">{{ sitio.responsable?.nombre || 'Sin responsable' }}</span></td>
               <td>
-                <p-tag 
-                  [value]="sitio.tipo.toUpperCase()" 
-                  [severity]="getTipoSeverity(sitio.tipo)"
-                  styleClass="px-3 py-1 font-bold rounded-lg"
-                ></p-tag>
-              </td>
-              <td>
-                <p-tag
-                  [value]="sitio.estado !== false ? 'DISPONIBLE' : 'INACTIVO'"
-                  [severity]="sitio.estado !== false ? 'success' : 'danger'"
-                  styleClass="px-3 py-1 font-bold rounded-lg"
-                ></p-tag>
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-map text-slate-500 text-base"></i>
+                  <span class="text-slate-600 text-sm font-semibold">{{ sitio.centro?.nombre || 'Sin centro' }}</span>
+                </div>
               </td>
               <td>
                 <div class="action-buttons justify-center">
                   <button
                     pButton
-                    icon="pi pi-pencil"
-                    class="btn-table-action btn-editor"
-                    (click)="editar(sitio)"
-                    pTooltip="Editar sitio"
-                  ></button>
-                  <button
-                    pButton
                     icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
                     (click)="eliminar(sitio)"
-                    pTooltip="Eliminar sitio"
+                    pTooltip="Eliminar sede"
                   ></button>
                 </div>
               </td>
@@ -222,9 +102,9 @@ interface Sitio {
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="6" class="empty-message">
+              <td colspan="4" class="empty-message">
                 <i class="pi pi-map-marker"></i>
-                <p>No se encontraron sitios registrados</p>
+                <p>No se encontraron sedes registradas</p>
               </td>
             </tr>
           </ng-template>
@@ -232,34 +112,94 @@ interface Sitio {
       </div>
     </div>
 
+    <p-dialog
+      header="✨ Registrar Nueva Sede"
+      [(visible)]="displayDialog"
+      [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '550px' }"
+      [draggable]="false"
+      [resizable]="false"
+      styleClass="form-dialog"
+      maskStyleClass="backdrop-blur-sm bg-black/40"
+      appendTo="body"
+    >
+      <div class="form-grid mt-2">
+        <div class="form-field">
+          <label for="nombre">Nombre de la Sede *</label>
+          <input
+            pInputText
+            id="nombre"
+            [(ngModel)]="sitio.nombre"
+            placeholder="Ej: Comercios y Servicios / Yamboro"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="id_centro">Centro *</label>
+          <p-select
+            id="id_centro"
+            [(ngModel)]="sitio.id_centro"
+            [options]="centros"
+            optionLabel="nombre"
+            optionValue="id_centro"
+            placeholder="Seleccione centro"
+            [filter]="true"
+            filterBy="nombre"
+            styleClass="w-full"
+            appendTo="body"
+          >
+            <ng-template let-dep pTemplate="selectedItem">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-map text-slate-600 text-base"></i>
+                <span class="font-semibold text-sm">{{ dep.nombre }}</span>
+              </div>
+            </ng-template>
+            <ng-template let-dep pTemplate="item">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-map text-slate-500 text-base"></i>
+                <span class="text-sm">{{ dep.nombre }}</span>
+              </div>
+            </ng-template>
+          </p-select>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button
+          pButton
+          label="Cancelar"
+          class="btn-cancelar"
+          (click)="displayDialog = false"
+        ></button>
+        <button
+          pButton
+          [label]="saving ? 'Guardando...' : 'Guardar Sede'"
+          class="btn-guardar"
+          (click)="guardar()"
+          [disabled]="saving"
+        ></button>
+      </div>
+    </p-dialog>
   `
 })
 export class SitiosComponent implements OnInit {
   private sitioService = inject(SitioService);
-  private usuarioService = inject(UsuarioService);
-  private messageService = inject(MessageService);
+  private centroService = inject(CentroService);
+  private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
 
   sitios: Sitio[] = [];
   sitiosFiltrados: Sitio[] = [];
-  usuarios: any[] = [];
+  centros: any[] = [];
   filtro = '';
   displayDialog = false;
-  esNuevo = true;
   saving = false;
   sitio: Sitio = this.getNuevoSitio();
-  tipos = [
-    { label: 'Bodega', value: 'Bodega' },
-    { label: 'Laboratorio', value: 'Laboratorio' },
-    { label: 'Aula', value: 'Aula' },
-    { label: 'Oficina', value: 'Oficina' },
-    { label: 'Almacén', value: 'Almacén' },
-  ];
 
   ngOnInit() {
     this.cargarSitios();
-    this.cargarUsuarios();
+    this.cargarCentros();
   }
 
   cargarSitios() {
@@ -278,15 +218,15 @@ export class SitiosComponent implements OnInit {
     });
   }
 
-  cargarUsuarios() {
-    this.usuarioService.getAll().subscribe({
+  cargarCentros() {
+    this.centroService.getCentros().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.usuarios = d;
+        this.centros = d;
         setTimeout(() => this.cdr.detectChanges());
       },
       error: () => {
-        this.usuarios = [];
+        this.centros = [];
         setTimeout(() => this.cdr.detectChanges());
       },
     });
@@ -297,127 +237,86 @@ export class SitiosComponent implements OnInit {
     this.sitiosFiltrados = this.sitios.filter(
       (s) =>
         s.nombre?.toLowerCase().includes(f) ||
-        s.tipo?.toLowerCase().includes(f) ||
-        s.responsable?.nombre?.toLowerCase().includes(f),
+        s.centro?.nombre?.toLowerCase().includes(f)
     );
   }
 
   getNuevoSitio(): Sitio {
-    return { nombre: '', tipo: '', estado: true };
+    return { nombre: '' };
   }
 
   openNew() {
-    this.esNuevo = true;
     this.sitio = this.getNuevoSitio();
     this.displayDialog = true;
   }
 
-  editar(s: Sitio) {
-    this.esNuevo = false;
-    this.sitio = { ...s };
-    this.displayDialog = true;
-  }
-
   guardar() {
-    if (!this.sitio.nombre || !this.sitio.tipo) {
-      this.messageService.add({
+    if (!this.sitio.nombre || !this.sitio.id_centro) {
+      this.notification.add({ module: 'Sedes',
         severity: 'warn',
         summary: 'Advertencia',
-        detail: 'Todos los campos son requeridos',
+        detail: 'Nombre y Centro son requeridos',
       });
       return;
     }
 
     const payload: any = {
       nombre: this.sitio.nombre,
-      tipo: this.sitio.tipo,
-      estado: this.sitio.estado !== false,
+      tipo: 'Sede',
+      id_centro: this.sitio.id_centro,
+      estado: true,
+      id_responsable: null
     };
-    if (this.sitio.id_responsable) payload.id_responsable = this.sitio.id_responsable;
 
     this.saving = true;
 
-    if (this.esNuevo) {
-      this.sitioService.crearSitio(payload).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Sitio creado correctamente',
-          });
-          this.displayDialog = false;
-          this.saving = false;
-          this.cargarSitios();
-        },
-        error: () => {
-          this.saving = false;
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo crear el sitio',
-          });
-        },
-      });
-    } else {
-      this.sitioService.actualizarSitio(this.sitio.id_sitio!, payload).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Sitio actualizado correctamente',
-          });
-          this.displayDialog = false;
-          this.saving = false;
-          this.cargarSitios();
-        },
-        error: () => {
-          this.saving = false;
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo actualizar el sitio',
-          });
-        },
-      });
-    }
+    this.sitioService.crearSitio(payload).subscribe({
+      next: () => {
+        this.notification.add({ module: 'Sedes',
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Sede creada correctamente',
+        });
+        this.displayDialog = false;
+        this.saving = false;
+        this.cargarSitios();
+      },
+      error: () => {
+        this.saving = false;
+        this.notification.add({ module: 'Sedes',
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo crear la sede',
+        });
+      },
+    });
   }
 
   eliminar(s: Sitio) {
     this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar el sitio ' + s.nombre + '?',
+      message: '¿Está seguro de eliminar la sede ' + s.nombre + '?',
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.sitioService.eliminarSitio(s.id_sitio!).subscribe({
           next: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Sedes',
               severity: 'success',
               summary: 'Éxito',
-              detail: 'Sitio eliminado correctamente',
+              detail: 'Sede de formación eliminada correctamente',
             });
             this.cargarSitios();
           },
           error: () => {
-            this.messageService.add({
+            this.notification.add({ module: 'Sedes',
               severity: 'error',
               summary: 'Error',
-              detail: 'No se pudo eliminar el sitio',
+              detail: 'No se pudo eliminar la sede (puede tener dependencias)',
             });
           },
         });
       },
     });
-  }
-
-  getTipoSeverity(tipo: string): 'warn' | 'info' | 'success' | 'secondary' {
-    const map: any = {
-      Bodega: 'warn',
-      Laboratorio: 'info',
-      Aula: 'success',
-      Oficina: 'secondary',
-      Almacén: 'warn',
-    };
-    return map[tipo] || 'secondary';
   }
 }

@@ -262,7 +262,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
       expanded: true,
       items: [
         { title: 'Productos', path: 'inventario/productos', icon: 'pi-box' },
-        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' }
+        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' },
+        { title: 'Proveedores', path: 'proveedores', icon: 'pi-building' }
       ]
     },
     {
@@ -270,7 +271,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
       expanded: true,
       items: [
         { title: 'Solicitudes', path: 'solicitudes', icon: 'pi-inbox' },
-        { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h' }
+        { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h' },
+        { title: 'Préstamos', path: 'prestamos', icon: 'pi-sync' }
       ]
     }
   ];
@@ -358,7 +360,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       const instructorPaths = [
         'sitios', 'areas', 'programas', 'fichas', 
         'inventario/productos', 'inventario/categoria', 
-        'solicitudes', 'movimientos', 'home'
+        'solicitudes', 'movimientos', 'home', 'proveedores', 'prestamos'
       ];
       return instructorPaths.includes(path);
     }

@@ -1,0 +1,169 @@
+<p-toast></p-toast>
+
+<div class="module-container">
+
+  <!-- Header -->
+  <div class="module-header" style="align-items: flex-start; flex-direction: column;">
+    <div class="w-full flex justify-between items-center mb-4">
+      <h3 class="page-title mb-0">
+        <i class="pi pi-building"></i> Gestión de Proveedores
+      </h3>
+      <div class="header-actions">
+        <div class="search-wrapper">
+          <i class="pi pi-search"></i>
+          <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrarGlobal()" placeholder="Buscar..." class="search-input" />
+        </div>
+
+        <button
+          *ngIf="!showForm"
+          type="button"
+          class="btn-add btn-open-form"
+          (click)="toggleForm()"
+        >
+          <i class="pi pi-plus"></i>
+          Añadir Proveedor
+        </button>
+        <button
+          *ngIf="showForm"
+          type="button"
+          class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
+          (click)="toggleForm()"
+        >
+          <i class="pi pi-times"></i>
+          Cerrar Formulario
+        </button>
+      </div>
+    </div>
+
+    <!-- INLINE FORM FOR PROVEEDOR -->
+    <div *ngIf="showForm" class="inline-form-container w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
+      <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
+          <i class="pi pi-building text-[#39A900] text-xl"></i>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">{{ esNuevo ? 'Añadir Nuevo Proveedor' : 'Editar Proveedor' }}</h4>
+          <p class="text-xs text-slate-500 m-0 mt-0.5">Completa la información del proveedor para el sistema SGM</p>
+        </div>
+      </div>
+      
+      <div class="p-6 flex flex-col gap-5">
+        <div class="flex flex-col gap-5 pt-2">
+          <!-- Primera Fila: Nombre Empresa y NIT -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="floating-label-group flex-[2]" [class.floating]="proveedorForm.nombre_empresa && proveedorForm.nombre_empresa.trim() !== ''">
+              <input pInputText id="nombre_empresa" [(ngModel)]="proveedorForm.nombre_empresa" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+              <label for="nombre_empresa">Nombre de la Empresa <span class="text-red-500">*</span></label>
+            </div>
+            <div class="floating-label-group flex-1" [class.floating]="proveedorForm.nit && proveedorForm.nit.trim() !== ''">
+              <input pInputText id="nit" [(ngModel)]="proveedorForm.nit" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+              <label for="nit">NIT / RUC</label>
+            </div>
+          </div>
+
+          <!-- Segunda Fila: Contacto y Teléfono -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="floating-label-group flex-1" [class.floating]="proveedorForm.contacto && proveedorForm.contacto.trim() !== ''">
+              <input pInputText id="contacto" [(ngModel)]="proveedorForm.contacto" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+              <label for="contacto">Persona de Contacto</label>
+            </div>
+            <div class="floating-label-group flex-1" [class.floating]="proveedorForm.telefono && proveedorForm.telefono.trim() !== ''">
+              <input pInputText id="telefono" [(ngModel)]="proveedorForm.telefono" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+              <label for="telefono">Teléfono</label>
+            </div>
+          </div>
+
+          <!-- Tercera Fila: Correo y Dirección -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="floating-label-group flex-1" [class.floating]="proveedorForm.correo && proveedorForm.correo.trim() !== ''">
+              <input pInputText type="email" id="correo" [(ngModel)]="proveedorForm.correo" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+              <label for="correo">Correo Electrónico</label>
+            </div>
+            <div class="floating-label-group flex-[2]" [class.floating]="proveedorForm.direccion && proveedorForm.direccion.trim() !== ''">
+              <input pInputText id="direccion" [(ngModel)]="proveedorForm.direccion" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+              <label for="direccion">Dirección</label>
+            </div>
+          </div>
+
+          <!-- Cuarta Fila: Estado -->
+          <div class="flex flex-col sm:flex-row gap-5">
+            <div class="flex gap-2 items-center w-1/3">
+              <div class="floating-label-group w-full" [class.floating]="proveedorForm.estado !== undefined && proveedorForm.estado !== null">
+                <p-select [options]="estadoOpciones" [(ngModel)]="proveedorForm.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full flex items-center" appendTo="body"></p-select>
+                <label>Estado <span class="text-red-500">*</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+          <button type="button" class="btn-cancelar" (click)="toggleForm()">Cancelar</button>
+          <button type="button" class="btn-guardar" (click)="guardarProveedor()" [disabled]="saving">{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view-content">
+    <div class="table-card">
+      <p-table
+        [value]="proveedoresFiltrados"
+        [paginator]="true"
+        [rows]="10"
+        styleClass="modern-table"
+        [loading]="loading"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 80px">ID</th>
+            <th>Empresa</th>
+            <th>Contacto</th>
+            <th>Teléfono / Correo</th>
+            <th style="width: 100px">Estado</th>
+            <th style="width: 100px; text-align: center">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-p>
+          <tr>
+            <td><span class="id-badge">#{{ p.id_proveedor }}</span></td>
+            <td>
+              <div class="flex flex-col">
+                <span class="font-bold text-slate-800">{{ p.nombre_empresa }}</span>
+                <span class="text-xs text-slate-500 font-mono">{{ p.nit || 'Sin NIT' }}</span>
+              </div>
+            </td>
+            <td>{{ p.contacto || '-' }}</td>
+            <td>
+              <div class="flex flex-col">
+                <span class="text-sm text-slate-700">{{ p.telefono || '-' }}</span>
+                <span class="text-xs text-slate-500">{{ p.correo || '-' }}</span>
+              </div>
+            </td>
+            <td>
+               <p-tag [value]="p.estado ? 'ACTIVO' : 'INACTIVO'" [severity]="p.estado ? 'success' : 'danger'" styleClass="px-3 py-1 rounded-lg text-[10px]"></p-tag>
+            </td>
+            <td>
+              <div class="action-buttons justify-center">
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="btn-table-action btn-editor btn-open-form"
+                  (click)="editarProveedor(p)"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="empty-message">
+              <i class="pi pi-building"></i>
+              <p>No hay proveedores registrados para mostrar</p>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+</div>

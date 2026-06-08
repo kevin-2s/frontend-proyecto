@@ -94,6 +94,16 @@ export const routes: Routes = [
       {
         path: 'programas',
         loadComponent: () => import('./presentation/programas/programas.component').then(m => m.ProgramasComponent)
+      },
+      {
+        path: 'proveedores',
+        loadComponent: () => import('./presentation/proveedores/proveedores').then(m => m.Proveedores),
+        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+      },
+      {
+        path: 'prestamos',
+        loadComponent: () => import('./presentation/prestamos/prestamos').then(m => m.PrestamosComponent),
+        canActivate: [roleGuard(['Administrador', 'Instructor'])]
       }
     ]
   },

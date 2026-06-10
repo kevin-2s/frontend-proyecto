@@ -1,53 +1,50 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface Prestamo {
-  id_prestamo?: number;
-  id_item: number;
-  id_usuario: number;
-  id_ficha?: number;
-  fecha_prestamo?: string;
+  id_prestamo: number;
+  fecha_prestamo: string;
   fecha_devolucion_esperada: string;
-  fecha_devolucion_real?: string;
-  estado?: string;
-  estado_devolucion?: string;
-  observacion?: string;
-  observacion_devolucion?: string;
+  fecha_devolucion_real: string | null;
+  estado: 'ACTIVO' | 'DEVUELTO' | 'VENCIDO';
+  observacion: string | null;
+  id_item: number;
+  id_usuario_solicitante: number;
+  id_usuario_responsable: number;
   item?: any;
-  usuario?: any;
+  usuario_solicitante?: any;
+  usuario_responsable?: any;
 }
 
-export interface RegistrarDevolucionDto {
-  estado_devolucion: string;
-  observacion_devolucion?: string;
+export interface CreatePrestamoDto {
+  fecha_devolucion_esperada: string;
+  observacion?: string;
+  id_item: number;
+  id_usuario_solicitante: number;
+  id_usuario_responsable: number;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class PrestamosService {
-  private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/prestamos`;
 
-  getAll(): Observable<Prestamo[]> {
-    return this.http.get<Prestamo[]>(this.apiUrl);
+  constructor(private http: HttpClient) {}
+
+  getAll(): Observable<{ data: Prestamo[] }> {
+    return this.http.get<{ data: Prestamo[] }>(this.apiUrl);
   }
 
-  getActivos(): Observable<Prestamo[]> {
-    return this.http.get<Prestamo[]>(`${this.apiUrl}/activos`);
+  getActivos(): Observable<{ data: Prestamo[] }> {
+    return this.http.get<{ data: Prestamo[] }>(`${this.apiUrl}/activos`);
   }
 
-  getById(id: number): Observable<Prestamo> {
-    return this.http.get<Prestamo>(`${this.apiUrl}/${id}`);
+  create(dto: CreatePrestamoDto): Observable<{ data: Prestamo }> {
+    return this.http.post<{ data: Prestamo }>(this.apiUrl, dto);
   }
 
-  create(prestamo: Partial<Prestamo>): Observable<Prestamo> {
-    return this.http.post<Prestamo>(this.apiUrl, prestamo);
-  }
-
-  registrarDevolucion(id: number, dto: RegistrarDevolucionDto): Observable<Prestamo> {
-    return this.http.put<Prestamo>(`${this.apiUrl}/${id}/devolver`, dto);
+  registrarDevolucion(id: number, observacion?: string): Observable<{ data: Prestamo }> {
+    return this.http.patch<{ data: Prestamo }>(`${this.apiUrl}/${id}/devolucion`, { observacion });
   }
 }

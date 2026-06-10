@@ -101,9 +101,24 @@ export const routes: Routes = [
         canActivate: [roleGuard(['Administrador', 'Instructor'])]
       },
       {
+        path: 'movimientos',
+        loadComponent: () => import('./presentation/movimientos/movimientos.component').then(m => m.MovimientosComponent)
+      },
+      {
         path: 'prestamos',
-        loadComponent: () => import('./presentation/prestamos/prestamos').then(m => m.PrestamosComponent),
-        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+        loadComponent: () => import('./presentation/prestamos/prestamos').then(m => m.PrestamosComponent)
+      },
+      {
+        path: 'kardex',
+        loadComponent: () => import('./presentation/kardex/kardex').then(m => m.Kardex)
+      },
+      {
+        path: 'reportes',
+        loadComponent: () => import('./presentation/reportes/reportes.component').then(m => m.ReportesComponent)
+      },
+      {
+        path: 'qr',
+        loadComponent: () => import('./presentation/qr-scanner/qr-scanner.component').then(m => m.QrScannerComponent)
       }
     ]
   },

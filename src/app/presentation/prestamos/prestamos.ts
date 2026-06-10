@@ -1,203 +1,234 @@
-import { Component, OnInit, inject, HostListener } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { ToastModule } from 'primeng/toast';
-import { TagModule } from 'primeng/tag';
-import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
-import { PrestamosService, Prestamo } from '../../services/prestamos/prestamos.service';
-import { UsuarioService } from '../../infrastructure/services/usuario.service';
+import { PrestamosService, Prestamo, CreatePrestamoDto } from '../../services/prestamos/prestamos.service';
 
 @Component({
   selector: 'app-prestamos',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    ToastModule,
-    TagModule,
-    SelectModule
-  ],
-  providers: [MessageService],
-  templateUrl: './prestamos.html',
-  styleUrl: './prestamos.scss',
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div class="p-6 min-h-screen bg-[#F1F5F9]">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Préstamos y Devoluciones</h1>
+          <p class="text-gray-500 text-sm mt-1">Gestión de equipos prestados y registro de devoluciones</p>
+        </div>
+        <button (click)="abrirModal()"
+          class="flex items-center gap-2 bg-[#39A900] text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-[#2e8a00] transition-colors shadow-md">
+          <i class="pi pi-plus"></i> Nuevo Préstamo
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-5">
+        <button (click)="vistaActual.set('todos')"
+          [class.bg-[#111827]]="vistaActual() === 'todos'"
+          [class.text-white]="vistaActual() === 'todos'"
+          [class.bg-white]="vistaActual() !== 'todos'"
+          [class.text-gray-600]="vistaActual() !== 'todos'"
+          class="px-5 py-2 rounded-xl text-sm font-semibold transition-all border border-gray-200">
+          Todos
+        </button>
+        <button (click)="vistaActual.set('activos')"
+          [class.bg-[#111827]]="vistaActual() === 'activos'"
+          [class.text-white]="vistaActual() === 'activos'"
+          [class.bg-white]="vistaActual() !== 'activos'"
+          [class.text-gray-600]="vistaActual() !== 'activos'"
+          class="px-5 py-2 rounded-xl text-sm font-semibold transition-all border border-gray-200">
+          Activos
+        </button>
+      </div>
+
+      <!-- Tabla -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+          <h2 class="font-semibold text-gray-800">Lista de Préstamos</h2>
+          <span class="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">{{ prestamosFiltrados().length }} registros</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                <th class="px-5 py-3 text-left font-semibold">ID</th>
+                <th class="px-5 py-3 text-left font-semibold">Item</th>
+                <th class="px-5 py-3 text-left font-semibold">Solicitante</th>
+                <th class="px-5 py-3 text-left font-semibold">F. Préstamo</th>
+                <th class="px-5 py-3 text-left font-semibold">F. Dev. Esperada</th>
+                <th class="px-5 py-3 text-left font-semibold">F. Dev. Real</th>
+                <th class="px-5 py-3 text-left font-semibold">Estado</th>
+                <th class="px-5 py-3 text-left font-semibold">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of prestamosFiltrados()" class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
+                <td class="px-5 py-3 text-gray-500 font-mono">{{ p.id_prestamo }}</td>
+                <td class="px-5 py-3 font-semibold text-gray-800">
+                  {{ p.item?.producto?.nombre ?? ('Item #' + p.id_item) }}
+                </td>
+                <td class="px-5 py-3 text-gray-600">{{ p.usuario_solicitante?.nombre ?? ('Usuario #' + p.id_usuario_solicitante) }}</td>
+                <td class="px-5 py-3 text-gray-500">{{ p.fecha_prestamo | date:'dd/MM/yyyy' }}</td>
+                <td class="px-5 py-3 text-gray-500">{{ p.fecha_devolucion_esperada | date:'dd/MM/yyyy' }}</td>
+                <td class="px-5 py-3 text-gray-500">
+                  {{ p.fecha_devolucion_real ? (p.fecha_devolucion_real | date:'dd/MM/yyyy') : '—' }}
+                </td>
+                <td class="px-5 py-3">
+                  <span [class]="getBadgeClass(p.estado)" class="px-3 py-1 rounded-full text-xs font-semibold">
+                    {{ p.estado }}
+                  </span>
+                </td>
+                <td class="px-5 py-3">
+                  <button *ngIf="p.estado === 'ACTIVO'"
+                    (click)="registrarDevolucion(p)"
+                    class="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-lg font-semibold transition-colors">
+                    <i class="pi pi-check-circle"></i> Devolver
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="prestamosFiltrados().length === 0">
+                <td colspan="8" class="px-5 py-10 text-center text-gray-400">
+                  <i class="pi pi-inbox text-3xl mb-2 block"></i>
+                  No hay préstamos registrados
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal Nuevo Préstamo -->
+      <div *ngIf="mostrarModal()" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div class="p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900">Registrar Nuevo Préstamo</h3>
+            <p class="text-gray-500 text-sm mt-1">Ingresa la información del equipo a prestar</p>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">ID del Item *</label>
+              <input type="number" [(ngModel)]="nuevoDto.id_item"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
+                placeholder="Ingresa el ID del item">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">ID Usuario Solicitante *</label>
+              <input type="number" [(ngModel)]="nuevoDto.id_usuario_solicitante"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
+                placeholder="ID del usuario">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">ID Usuario Responsable *</label>
+              <input type="number" [(ngModel)]="nuevoDto.id_usuario_responsable"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
+                placeholder="ID del responsable">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">Fecha Devolución Esperada *</label>
+              <input type="date" [(ngModel)]="nuevoDto.fecha_devolucion_esperada"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">Observación</label>
+              <textarea [(ngModel)]="nuevoDto.observacion" rows="2"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900] resize-none"
+                placeholder="Observaciones opcionales..."></textarea>
+            </div>
+          </div>
+          <div class="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <button (click)="cerrarModal()"
+              class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-colors text-sm">
+              Cancelar
+            </button>
+            <button (click)="guardarPrestamo()" [disabled]="guardando()"
+              class="px-5 py-2.5 rounded-xl bg-[#39A900] text-white font-semibold hover:bg-[#2e8a00] transition-colors text-sm disabled:opacity-60">
+              {{ guardando() ? 'Guardando...' : 'Registrar Préstamo' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
 })
 export class PrestamosComponent implements OnInit {
-  private prestamosService = inject(PrestamosService);
-  private usuarioService = inject(UsuarioService);
-  private messageService = inject(MessageService);
+  prestamos = signal<Prestamo[]>([]);
+  vistaActual = signal<'todos' | 'activos'>('todos');
+  mostrarModal = signal(false);
+  guardando = signal(false);
 
-  prestamos: Prestamo[] = [];
-  prestamosFiltrados: Prestamo[] = [];
-  filtro = '';
-  vistaActual: 'activos' | 'todos' = 'activos';
+  nuevoDto: CreatePrestamoDto = {
+    id_item: 0,
+    id_usuario_solicitante: 0,
+    id_usuario_responsable: 0,
+    fecha_devolucion_esperada: '',
+    observacion: '',
+  };
 
-  loading = false;
-  saving = false;
-  showFormPrestamo = false;
-  showFormDevolucion = false;
-  prestamoSeleccionado: Prestamo | null = null;
-
-  usuarios: any[] = [];
-  items: any[] = [];
-
-  prestamoForm: Partial<Prestamo> = {};
-  devolucionForm = { estado_devolucion: '', observacion_devolucion: '' };
-
-  estadoDevolucionOpciones = [
-    { label: 'Bueno', value: 'BUENO' },
-    { label: 'Regular', value: 'REGULAR' },
-    { label: 'Dañado', value: 'DAÑADO' },
-    { label: 'Perdido', value: 'PERDIDO' },
-  ];
+  constructor(private readonly svc: PrestamosService) {}
 
   ngOnInit() {
     this.cargarPrestamos();
-    this.cargarUsuarios();
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent) {
-    if (!this.showFormPrestamo && !this.showFormDevolucion) return;
-    const target = event.target as HTMLElement;
-    const inside = target.closest('.inline-form-container');
-    const btn = target.closest('.btn-open-form');
-    const overlay = target.closest('.p-overlaypanel, .p-select-overlay, .p-dropdown-panel, .p-toast');
-    if (!inside && !btn && !overlay) {
-      this.showFormPrestamo = false;
-      this.showFormDevolucion = false;
-    }
   }
 
   cargarPrestamos() {
-    this.loading = true;
-    const obs = this.vistaActual === 'activos'
-      ? this.prestamosService.getActivos()
-      : this.prestamosService.getAll();
-
-    obs.subscribe({
-      next: (data) => {
-        this.prestamos = data;
-        this.prestamosFiltrados = data;
-        this.loading = false;
-      },
-      error: () => {
-        this.loading = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los préstamos' });
-      }
+    this.svc.getAll().subscribe({
+      next: (res) => this.prestamos.set(res.data ?? []),
+      error: () => this.prestamos.set([]),
     });
   }
 
-  cargarUsuarios() {
-    this.usuarioService.getAll().subscribe({
-      next: (data: any) => {
-        this.usuarios = Array.isArray(data) ? data : (data.data || []);
-      },
-      error: () => {}
-    });
-  }
-
-  setVista(vista: 'activos' | 'todos') {
-    this.vistaActual = vista;
-    this.cargarPrestamos();
-  }
-
-  filtrarGlobal() {
-    const f = this.filtro.toLowerCase();
-    this.prestamosFiltrados = this.prestamos.filter((p) =>
-      (p.item?.producto?.nombre || '').toLowerCase().includes(f) ||
-      (p.usuario?.nombre || '').toLowerCase().includes(f) ||
-      (p.item?.codigo_sku || '').toLowerCase().includes(f)
-    );
-  }
-
-  toggleFormPrestamo() {
-    if (this.showFormPrestamo) {
-      this.showFormPrestamo = false;
-    } else {
-      this.prestamoForm = {
-        fecha_devolucion_esperada: '',
-        observacion: '',
-      };
-      this.showFormPrestamo = true;
-      this.showFormDevolucion = false;
+  prestamosFiltrados() {
+    if (this.vistaActual() === 'activos') {
+      return this.prestamos().filter(p => p.estado === 'ACTIVO');
     }
+    return this.prestamos();
   }
 
-  abrirFormDevolucion(prestamo: Prestamo) {
-    this.prestamoSeleccionado = prestamo;
-    this.devolucionForm = { estado_devolucion: '', observacion_devolucion: '' };
-    this.showFormDevolucion = true;
-    this.showFormPrestamo = false;
+  getBadgeClass(estado: string): string {
+    const map: Record<string, string> = {
+      ACTIVO: 'bg-blue-100 text-blue-700',
+      DEVUELTO: 'bg-emerald-100 text-emerald-700',
+      VENCIDO: 'bg-red-100 text-red-700',
+    };
+    return map[estado] ?? 'bg-gray-100 text-gray-600';
+  }
+
+  abrirModal() {
+    this.nuevoDto = {
+      id_item: 0,
+      id_usuario_solicitante: 0,
+      id_usuario_responsable: 0,
+      fecha_devolucion_esperada: '',
+      observacion: '',
+    };
+    this.mostrarModal.set(true);
+  }
+
+  cerrarModal() {
+    this.mostrarModal.set(false);
   }
 
   guardarPrestamo() {
-    if (!this.prestamoForm.id_item || !this.prestamoForm.id_usuario || !this.prestamoForm.fecha_devolucion_esperada) {
-      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Complete todos los campos requeridos' });
-      return;
-    }
-    this.saving = true;
-    this.prestamosService.create(this.prestamoForm).subscribe({
-      next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Préstamo registrado correctamente' });
-        this.showFormPrestamo = false;
-        this.saving = false;
+    if (!this.nuevoDto.id_item || !this.nuevoDto.fecha_devolucion_esperada) return;
+    this.guardando.set(true);
+    this.svc.create(this.nuevoDto).subscribe({
+      next: (res) => {
         this.cargarPrestamos();
+        this.cerrarModal();
+        this.guardando.set(false);
       },
-      error: (err) => {
-        this.saving = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo registrar el préstamo' });
-      }
+      error: () => {
+        this.guardando.set(false);
+        alert('Error al registrar el préstamo');
+      },
     });
   }
 
-  registrarDevolucion() {
-    if (!this.devolucionForm.estado_devolucion) {
-      this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Seleccione el estado de la devolución' });
-      return;
-    }
-    this.saving = true;
-    this.prestamosService.registrarDevolucion(this.prestamoSeleccionado!.id_prestamo!, this.devolucionForm).subscribe({
-      next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Devolución registrada correctamente' });
-        this.showFormDevolucion = false;
-        this.saving = false;
-        this.prestamoSeleccionado = null;
-        this.cargarPrestamos();
-      },
-      error: (err) => {
-        this.saving = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo registrar la devolución' });
-      }
+  registrarDevolucion(prestamo: Prestamo) {
+    const obs = prompt('Observación de devolución (opcional):') ?? undefined;
+    this.svc.registrarDevolucion(prestamo.id_prestamo, obs).subscribe({
+      next: () => this.cargarPrestamos(),
+      error: () => alert('Error al registrar devolución'),
     });
-  }
-
-  getEstadoSeverity(estado: string): any {
-    switch (estado) {
-      case 'ACTIVO': return 'info';
-      case 'DEVUELTO': return 'success';
-      case 'VENCIDO': return 'danger';
-      default: return 'secondary';
-    }
-  }
-
-  getEstadoDevolucionSeverity(estado: string): any {
-    switch (estado) {
-      case 'BUENO': return 'success';
-      case 'REGULAR': return 'warn';
-      case 'DAÑADO': return 'danger';
-      case 'PERDIDO': return 'danger';
-      default: return 'secondary';
-    }
-  }
-
-  isVencido(fechaEsperada: string): boolean {
-    return new Date(fechaEsperada) < new Date();
   }
 }

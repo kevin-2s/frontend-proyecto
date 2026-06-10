@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { NotificacionService, Notificacion } from '../../infrastructure/services/notificacion.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -208,10 +209,47 @@ import { FormsModule } from '@angular/forms';
                     class="w-full pl-9 pr-4 py-2 bg-white/90 backdrop-blur border-none rounded-xl text-sm focus:outline-none focus:bg-white text-slate-700 placeholder-slate-400 transition-all">
                </div>
             </div>
-            <div class="flex items-center gap-3 flex-shrink-0">
-               <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white relative cursor-pointer hover:bg-white/20 transition-colors">
+            <div class="flex items-center gap-3 flex-shrink-0 relative">
+               <!-- Notification Bell -->
+               <div (click)="toggleNotifPanel()" 
+                    class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white relative cursor-pointer hover:bg-white/20 transition-colors">
                   <i class="pi pi-bell text-base"></i>
-                  <span class="absolute top-1 right-1 w-2 h-2 bg-red-400 rounded-full border border-white/50"></span>
+                  <span *ngIf="notifNoLeidas() > 0"
+                        class="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 rounded-full border-2 border-white text-[10px] font-bold text-white flex items-center justify-center px-1">
+                    {{ notifNoLeidas() > 9 ? '9+' : notifNoLeidas() }}
+                  </span>
+                  <span *ngIf="notifNoLeidas() === 0"
+                        class="absolute top-1 right-1 w-2 h-2 bg-slate-400 rounded-full border border-white/50"></span>
+               </div>
+
+               <!-- Notification Dropdown -->
+               <div *ngIf="notifPanelOpen()" 
+                    class="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[200] overflow-hidden">
+                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                   <span class="font-bold text-sm text-gray-800">Notificaciones</span>
+                   <span *ngIf="notifNoLeidas() > 0" class="text-xs text-[#39A900] font-semibold cursor-pointer hover:underline" (click)="marcarTodasLeidas()">Marcar todas leídas</span>
+                 </div>
+                 <div class="max-h-72 overflow-y-auto">
+                   <div *ngFor="let n of notificaciones()" 
+                        class="flex items-start gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                        [class.bg-blue-50]="!n.leida"
+                        (click)="marcarLeida(n)">
+                     <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
+                          [class.bg-blue-100]="!n.leida"
+                          [class.bg-gray-100]="n.leida">
+                       <i class="pi pi-bell text-xs" [class.text-blue-500]="!n.leida" [class.text-gray-400]="n.leida"></i>
+                     </div>
+                     <div class="flex-1 min-w-0">
+                       <p class="text-xs text-gray-800 leading-snug" [class.font-semibold]="!n.leida">{{ n.mensaje }}</p>
+                       <span class="text-[10px] text-gray-400 mt-0.5 block">{{ n.fecha | date: 'dd/MM/yy HH:mm' }}</span>
+                     </div>
+                     <span *ngIf="!n.leida" class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5"></span>
+                   </div>
+                   <div *ngIf="notificaciones().length === 0" class="px-4 py-8 text-center text-gray-400">
+                     <i class="pi pi-bell-slash text-2xl mb-2 block"></i>
+                     <span class="text-xs">No hay notificaciones</span>
+                   </div>
+                 </div>
                </div>
             </div>
           </header>
@@ -228,12 +266,16 @@ import { FormsModule } from '@angular/forms';
 export class LayoutComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private notifService = inject(NotificacionService);
 
   isSidebarVisible = signal(true);
   sidebarCollapsed = signal(false);
   isProfileMenuOpen = signal(false);
+  notifPanelOpen = signal(false);
+  notificaciones = signal<Notificacion[]>([]);
   globalSearch = '';
   private routerEventsSub?: Subscription;
+  private notifInterval?: any;
 
   dashboardItem = { title: 'Dashboard', path: 'home', icon: 'pi-home' };
 
@@ -272,7 +314,28 @@ export class LayoutComponent implements OnInit, OnDestroy {
       items: [
         { title: 'Solicitudes', path: 'solicitudes', icon: 'pi-inbox' },
         { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h' },
-        { title: 'Préstamos', path: 'prestamos', icon: 'pi-sync' }
+        { title: 'Préstamos', path: 'prestamos', icon: 'pi-send' }
+      ]
+    },
+    {
+      title: 'AUDITORÍA',
+      expanded: true,
+      items: [
+        { title: 'Kardex', path: 'kardex', icon: 'pi-history' }
+      ]
+    },
+    {
+      title: 'REPORTES',
+      expanded: true,
+      items: [
+        { title: 'Reportes', path: 'reportes', icon: 'pi-chart-bar' }
+      ]
+    },
+    {
+      title: 'UTILIDADES',
+      expanded: true,
+      items: [
+        { title: 'Escáner QR', path: 'qr', icon: 'pi-qrcode' }
       ]
     }
   ];
@@ -305,12 +368,57 @@ export class LayoutComponent implements OnInit, OnDestroy {
           this.sidebarCollapsed.set(false);
           this.isSidebarVisible.set(true);
         }
+        // Close notification panel on navigation
+        this.notifPanelOpen.set(false);
       }
     });
+
+    // Load notifications
+    this.cargarNotificaciones();
+    // Refresh every 60 seconds
+    this.notifInterval = setInterval(() => this.cargarNotificaciones(), 60000);
   }
 
   ngOnDestroy() {
     if (this.routerEventsSub) this.routerEventsSub.unsubscribe();
+    if (this.notifInterval) clearInterval(this.notifInterval);
+  }
+
+  cargarNotificaciones() {
+    const userId = this.authService.getUserId();
+    if (!userId) return;
+    this.notifService.getNotificacionesUsuario(userId).subscribe({
+      next: (res: any) => {
+        this.notificaciones.set(res?.data || res || []);
+      },
+      error: () => { /* silent */ }
+    });
+  }
+
+  notifNoLeidas(): number {
+    return this.notificaciones().filter(n => !n.leida).length;
+  }
+
+  toggleNotifPanel() {
+    this.notifPanelOpen.update(v => !v);
+    if (this.isProfileMenuOpen()) this.isProfileMenuOpen.set(false);
+  }
+
+  marcarLeida(n: Notificacion) {
+    if (n.leida) return;
+    this.notifService.marcarLeida(n.id_notificacion).subscribe({
+      next: () => {
+        this.notificaciones.update(list =>
+          list.map(item => item.id_notificacion === n.id_notificacion ? { ...item, leida: true } : item)
+        );
+      },
+      error: () => { /* silent */ }
+    });
+  }
+
+  marcarTodasLeidas() {
+    const noLeidas = this.notificaciones().filter(n => !n.leida);
+    noLeidas.forEach(n => this.marcarLeida(n));
   }
 
   onGlobalSearch(term: string) {
@@ -360,7 +468,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
       const instructorPaths = [
         'sitios', 'areas', 'programas', 'fichas', 
         'inventario/productos', 'inventario/categoria', 
-        'solicitudes', 'movimientos', 'home', 'proveedores', 'prestamos'
+        'solicitudes', 'movimientos', 'home', 'proveedores',
+        'kardex', 'reportes', 'qr'
       ];
       return instructorPaths.includes(path);
     }
@@ -368,7 +477,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
     if (role === 'APRENDIZ') {
       const aprendizPaths = [
         'inventario/productos', 'inventario/categoria', 
-        'solicitudes', 'home'
+        'solicitudes', 'home', 'qr'
       ];
       return aprendizPaths.includes(path);
     }

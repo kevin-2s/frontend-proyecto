@@ -14,14 +14,14 @@ import { SelectModule } from 'primeng/select';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmationService } from 'primeng/api';
 import { AreaService } from '../../infrastructure/services/area.service';
-import { SitioService } from '../../infrastructure/services/sitio.service';
+import { SedeService } from '../../infrastructure/services/sede.service';
 
 interface Area {
   id_area?: number;
   nombre: string;
-  id_sitio?: number;
-  sitio?: {
-    id_sitio: number;
+  id_sede?: number;
+  sede?: {
+    id_sede: number;
     nombre: string;
     centro?: {
       id_centro: number;
@@ -72,7 +72,7 @@ interface Area {
         <p-table
           [value]="areasFiltrados"
           [paginator]="true"
-          [rows]="10"
+          [rows]="15"
           styleClass="modern-table"
           [rowHover]="true"
         >
@@ -90,11 +90,11 @@ interface Area {
             <tr>
               <td><span class="id-badge">#{{ area.id_area }}</span></td>
               <td><span class="nombre-cell">{{ area.nombre }}</span></td>
-              <td><span class="text-slate-600 text-sm font-semibold">{{ area.sitio?.nombre || 'Sin sede' }}</span></td>
+              <td><span class="text-slate-600 text-sm font-semibold">{{ area.sede?.nombre || 'Sin sede' }}</span></td>
               <td>
                 <div class="flex items-center gap-1.5">
                   <i class="pi pi-map text-slate-500 text-base"></i>
-                  <span class="text-slate-500 text-xs font-semibold">{{ area.sitio?.centro?.nombre || 'Sin centro' }}</span>
+                  <span class="text-slate-500 text-xs font-semibold">{{ area.sede?.centro?.nombre || 'Sin centro' }}</span>
                 </div>
               </td>
               <td>
@@ -159,13 +159,13 @@ interface Area {
         </div>
 
         <div class="form-field">
-          <label for="id_sitio">Sede (Ubicación) *</label>
+          <label for="id_sede">Sede (Ubicación) *</label>
           <p-select
-            id="id_sitio"
-            [(ngModel)]="area.id_sitio"
-            [options]="sitios"
+            id="id_sede"
+            [(ngModel)]="area.id_sede"
+            [options]="sedes"
             optionLabel="nombre"
-            optionValue="id_sitio"
+            optionValue="id_sede"
             placeholder="Seleccione sede"
             [filter]="true"
             filterBy="nombre"
@@ -205,14 +205,14 @@ interface Area {
 })
 export class AreasComponent implements OnInit {
   private areaService = inject(AreaService);
-  private sitioService = inject(SitioService);
+  private sedeService = inject(SedeService);
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
 
   areas: Area[] = [];
   areasFiltrados: Area[] = [];
-  sitios: any[] = [];
+  sedes: any[] = [];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
@@ -221,7 +221,7 @@ export class AreasComponent implements OnInit {
 
   ngOnInit() {
     this.cargarAreas();
-    this.cargarSitios();
+    this.cargarSedes();
   }
 
   cargarAreas() {
@@ -240,15 +240,15 @@ export class AreasComponent implements OnInit {
     });
   }
 
-  cargarSitios() {
-    this.sitioService.getSitios().subscribe({
+  cargarSedes() {
+    this.sedeService.getSedes().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.sitios = d;
+        this.sedes = d;
         setTimeout(() => this.cdr.detectChanges());
       },
       error: () => {
-        this.sitios = [];
+        this.sedes = [];
         setTimeout(() => this.cdr.detectChanges());
       },
     });
@@ -259,8 +259,8 @@ export class AreasComponent implements OnInit {
     this.areasFiltrados = this.areas.filter(
       (a) =>
         a.nombre?.toLowerCase().includes(f) ||
-        a.sitio?.nombre?.toLowerCase().includes(f) ||
-        a.sitio?.centro?.nombre?.toLowerCase().includes(f)
+        a.sede?.nombre?.toLowerCase().includes(f) ||
+        a.sede?.centro?.nombre?.toLowerCase().includes(f)
     );
   }
 
@@ -281,7 +281,7 @@ export class AreasComponent implements OnInit {
   }
 
   guardar() {
-    if (!this.area.nombre || !this.area.id_sitio) {
+    if (!this.area.nombre || !this.area.id_sede) {
       this.notification.add({
         module: 'Áreas',
         severity: 'warn',
@@ -293,7 +293,7 @@ export class AreasComponent implements OnInit {
 
     const payload = {
       nombre: this.area.nombre,
-      id_sitio: this.area.id_sitio,
+      id_sede: Number(this.area.id_sede),
       estado: this.area.estado !== false,
     };
 

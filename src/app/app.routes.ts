@@ -95,11 +95,7 @@ export const routes: Routes = [
         path: 'programas',
         loadComponent: () => import('./presentation/programas/programas.component').then(m => m.ProgramasComponent)
       },
-      {
-        path: 'proveedores',
-        loadComponent: () => import('./presentation/proveedores/proveedores').then(m => m.Proveedores),
-        canActivate: [roleGuard(['Administrador', 'Instructor'])]
-      },
+
       {
         path: 'movimientos',
         loadComponent: () => import('./presentation/movimientos/movimientos.component').then(m => m.MovimientosComponent)

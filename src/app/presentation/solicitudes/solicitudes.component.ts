@@ -73,7 +73,7 @@ interface Solicitud {
 
       <!-- Stats -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;">
-        <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+        <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,.05)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
             <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Total</span>
             <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center">
@@ -82,7 +82,7 @@ interface Solicitud {
           </div>
           <p style="font-size:24px;font-weight:800;color:#111827;margin:0">{{ solicitudes.length }}</p>
         </div>
-        <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+        <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,.05)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
             <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Pendientes</span>
             <div style="width:32px;height:32px;border-radius:8px;background:#fef9c3;display:flex;align-items:center;justify-content:center">
@@ -91,7 +91,7 @@ interface Solicitud {
           </div>
           <p style="font-size:24px;font-weight:800;color:#eab308;margin:0">{{ contarEstado('PENDIENTE') }}</p>
         </div>
-        <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+        <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,.05)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
             <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Aprobadas</span>
             <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;display:flex;align-items:center;justify-content:center">
@@ -100,7 +100,7 @@ interface Solicitud {
           </div>
           <p style="font-size:24px;font-weight:800;color:#10b981;margin:0">{{ contarEstado('APROBADA') }}</p>
         </div>
-        <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+        <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,.05)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
             <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Rechazadas</span>
             <div style="width:32px;height:32px;border-radius:8px;background:#fef2f2;display:flex;align-items:center;justify-content:center">
@@ -115,7 +115,7 @@ interface Solicitud {
         <p-table
           [value]="solicitudesFiltradas"
           [paginator]="true"
-          [rows]="10"
+          [rows]="15"
           styleClass="modern-table"
           [rowHover]="true"
         >
@@ -174,14 +174,14 @@ interface Solicitud {
                     *ngIf="sol.estado === 'APROBADA' && esAdmin()"
                     pButton
                     icon="pi pi-send"
-                    class="p-button-text text-blue-600 hover:bg-blue-50"
+                    class="p-button-text text-emerald-600 hover:bg-emerald-50"
                     (click)="entregar(sol)"
                     pTooltip="Marcar como entregada"
                   ></button>
                   <button
                     pButton
                     icon="pi pi-eye"
-                    class="p-button-text text-blue-600 hover:bg-blue-50"
+                    class="p-button-text text-emerald-600 hover:bg-emerald-50"
                     (click)="ver(sol)"
                     pTooltip="Ver detalles"
                   ></button>

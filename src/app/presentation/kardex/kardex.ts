@@ -22,7 +22,7 @@ interface KardexEntry {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 min-h-screen bg-[#F1F5F9]">
+    <div class="p-6 min-h-screen bg-[#f0fdf4]">
       <!-- Header -->
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Kardex / Auditoría</h1>
@@ -54,8 +54,8 @@ interface KardexEntry {
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Movimientos</span>
-            <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-              <i class="pi pi-list text-blue-500 text-sm"></i>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <i class="pi pi-list text-emerald-500 text-sm"></i>
             </div>
           </div>
           <p class="text-2xl font-bold text-gray-900">{{ kardex().length }}</p>

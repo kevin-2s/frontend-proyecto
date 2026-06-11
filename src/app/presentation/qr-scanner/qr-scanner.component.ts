@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 min-h-screen bg-[#F1F5F9]">
+    <div class="p-6 min-h-screen bg-[#f0fdf4]">
       <!-- Header -->
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Escáner de Códigos QR</h1>

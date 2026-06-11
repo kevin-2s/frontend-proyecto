@@ -81,7 +81,7 @@ interface Item {
 
       <!-- Cards de resumen -->
       <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem;">
-        <div class="stat-card" style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+        <div class="stat-card" style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,.05)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
             <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Total</span>
             <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center">
@@ -90,7 +90,7 @@ interface Item {
           </div>
           <p style="font-size:24px;font-weight:800;color:#111827;margin:0">{{ movimientos.length }}</p>
         </div>
-        <div class="stat-card" style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+        <div class="stat-card" style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,.05)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
             <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Entradas</span>
             <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;display:flex;align-items:center;justify-content:center">
@@ -99,7 +99,7 @@ interface Item {
           </div>
           <p style="font-size:24px;font-weight:800;color:#10b981;margin:0">{{ contarTipo('ENTRADA') }}</p>
         </div>
-        <div class="stat-card" style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+        <div class="stat-card" style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,.05)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
             <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Salidas</span>
             <div style="width:32px;height:32px;border-radius:8px;background:#fef2f2;display:flex;align-items:center;justify-content:center">

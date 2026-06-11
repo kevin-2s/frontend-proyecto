@@ -71,7 +71,7 @@ interface Usuario {
     }
     :host ::ng-deep .quick-rol-dialog .p-dialog-header {
       background: #fff !important;
-      border-bottom: 1px solid #f1f5f9 !important;
+      border-bottom: 1px solid #f0fdf4 !important;
       border-radius: 16px 16px 0 0 !important;
       padding: 1.25rem 1.5rem !important;
     }
@@ -268,7 +268,7 @@ interface Usuario {
 
       <!-- [PrimeNG] p-table: La potencia de manejo de datos -->
       <div class="data-table-wrapper">
-        <p-table [value]="usuariosFiltrados" [paginator]="true" [rows]="10"
+        <p-table [value]="usuariosFiltrados" [paginator]="true" [rows]="15"
           styleClass="modern-table" [loading]="loading" [rowHover]="true">
           
           <ng-template pTemplate="header">

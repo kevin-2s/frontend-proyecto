@@ -73,7 +73,7 @@ interface Programa {
         <p-table
           [value]="programasFiltrados"
           [paginator]="true"
-          [rows]="10"
+          [rows]="15"
           styleClass="modern-table"
           [rowHover]="true"
         >

@@ -376,7 +376,7 @@ export class DashboardComponent implements OnInit {
             tooltip: { callbacks: { label: (ctx: any) => ` ${ctx.raw} ítems` } }
           },
           scales: {
-            x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 50 } },
+            x: { beginAtZero: true, grid: { color: '#f0fdf4' }, ticks: { stepSize: 50 } },
             y: { grid: { display: false } }
           }
         });
@@ -497,7 +497,7 @@ export class DashboardComponent implements OnInit {
         this.chartVencimientoOptions.set({
           maintainAspectRatio: false,
           plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => ` ${ctx.raw} días` } } },
-          scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+          scales: { y: { beginAtZero: true, grid: { color: '#f0fdf4' } }, x: { grid: { display: false } } }
         });
 
         this.loading.set(false);

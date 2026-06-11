@@ -87,8 +87,8 @@ interface Categoria {
         <p-table
           [value]="productosFiltrados"
           [paginator]="true"
-          [rows]="10"
-          [rowsPerPageOptions]="[5, 10, 20]"
+          [rows]="15"
+          [rowsPerPageOptions]="[5, 15, 20]"
           [(selection)]="selectedProducts"
           styleClass="modern-table"
           [rowHover]="true"
@@ -149,7 +149,7 @@ interface Categoria {
                     pButton
                     icon="pi pi-eye"
                     class="btn-table-action btn-editor"
-                    style="background-color: #f1f5f9 !important; color: #475569 !important;"
+                    style="background-color: #f0fdf4 !important; color: #475569 !important;"
                     (click)="verItems(producto)"
                     pTooltip="Ver items"
                   ></button>
@@ -495,7 +495,7 @@ interface Categoria {
       appendTo="body"
     >
       <div *ngIf="cargandoItems" class="flex justify-center items-center p-8">
-        <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+        <i class="pi pi-spin pi-spinner text-4xl text-emerald-500"></i>
       </div>
 
       <div *ngIf="!cargandoItems">

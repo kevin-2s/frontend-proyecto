@@ -15,6 +15,8 @@ import { CentroService } from '../../infrastructure/services/centro.service';
 interface Centro {
   id_centro?: number;
   nombre: string;
+  codigo?: string;
+  regional?: string;
 }
 
 @Component({
@@ -56,26 +58,30 @@ interface Centro {
         <p-table
           [value]="centrosFiltrados"
           [paginator]="true"
-          [rows]="10"
+          [rows]="15"
           styleClass="modern-table"
           [rowHover]="true"
         >
           <ng-template pTemplate="header">
             <tr>
               <th style="width:80px">ID</th>
+              <th style="width:120px">Código</th>
               <th>Nombre del Centro</th>
+              <th>Regional</th>
               <th style="width:150px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-centro>
             <tr>
               <td><span class="id-badge">#{{ centro.id_centro }}</span></td>
+              <td><span class="font-mono text-sm font-semibold text-slate-700">{{ centro.codigo }}</span></td>
               <td>
                 <div class="flex items-center gap-2">
                   <i class="pi pi-map text-slate-500 text-base"></i>
                   <span class="nombre-cell font-semibold">{{ centro.nombre }}</span>
                 </div>
               </td>
+              <td><span class="text-slate-600 text-sm">{{ centro.regional }}</span></td>
               <td>
                 <div class="action-buttons justify-center">
                   <button
@@ -112,7 +118,7 @@ interface Centro {
       maskStyleClass="transparent-mask"
       appendTo="body"
     >
-      <div class="form-grid mt-2">
+      <div class="form-grid mt-2 flex flex-col gap-4">
         <div class="form-field">
           <label for="nombre">Nombre del Centro *</label>
           <input
@@ -120,6 +126,26 @@ interface Centro {
             id="nombre"
             [(ngModel)]="centro.nombre"
             placeholder="Ej: Centro De Gestion Y Desarrollo Sostenible Sur Colombiano"
+            class="w-full"
+          />
+        </div>
+        <div class="form-field">
+          <label for="codigo">Código del Centro *</label>
+          <input
+            pInputText
+            id="codigo"
+            [(ngModel)]="centro.codigo"
+            placeholder="Ej: 9201"
+            class="w-full"
+          />
+        </div>
+        <div class="form-field">
+          <label for="regional">Regional *</label>
+          <input
+            pInputText
+            id="regional"
+            [(ngModel)]="centro.regional"
+            placeholder="Ej: Distrito Capital"
             class="w-full"
           />
         </div>
@@ -185,7 +211,7 @@ export class CentrosComponent implements OnInit {
   }
 
   getNuevoCentro(): Centro {
-    return { nombre: '' };
+    return { nombre: '', codigo: '', regional: '' };
   }
 
   openNew() {
@@ -194,18 +220,20 @@ export class CentrosComponent implements OnInit {
   }
 
   guardar() {
-    if (!this.centro.nombre) {
+    if (!this.centro.nombre || !this.centro.codigo || !this.centro.regional) {
       this.notification.add({
         module: 'Centros',
         severity: 'warn',
         summary: 'Advertencia',
-        detail: 'El nombre del centro es requerido',
+        detail: 'Todos los campos (*) son requeridos',
       });
       return;
     }
 
     const payload = {
       nombre: this.centro.nombre,
+      codigo: this.centro.codigo,
+      regional: this.centro.regional,
       estado: true,
     };
 

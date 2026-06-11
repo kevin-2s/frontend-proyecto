@@ -24,7 +24,7 @@
   }
   .p-dialog-header {
     background: white !important;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f0fdf4;
     padding: 1.5rem !important;
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
@@ -361,7 +361,7 @@ button.btn-guardar:hover:not(:disabled),
 button.btn-guardar:disabled, 
 .p-button.btn-guardar:disabled {
   opacity: 0.5 !important;
-  background-color: #f1f5f9 !important;
+  background-color: #f0fdf4 !important;
   border-color: #cbd5e1 !important;
   color: #94a3b8 !important;
   cursor: not-allowed !important;

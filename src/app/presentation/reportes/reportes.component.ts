@@ -8,7 +8,7 @@ import { environment } from '../../../environments/environment';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="p-6 min-h-screen bg-[#F1F5F9]">
+    <div class="p-6 min-h-screen bg-[#f0fdf4]">
       <!-- Header -->
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Reportes</h1>
@@ -60,8 +60,8 @@ import { environment } from '../../../environments/environment';
         <!-- Solicitudes PDF -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
           <div class="flex items-center gap-4 mb-5">
-            <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
-              <i class="pi pi-inbox text-blue-500 text-2xl"></i>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
+              <i class="pi pi-inbox text-emerald-500 text-2xl"></i>
             </div>
             <div>
               <h3 class="font-bold text-gray-900 text-sm">Solicitudes del Sistema</h3>
@@ -72,7 +72,7 @@ import { environment } from '../../../environments/environment';
             Historial completo de solicitudes de materiales procesadas, aprobadas y rechazadas.
           </p>
           <button (click)="descargar('solicitudes', 'pdf')" [disabled]="cargando()"
-            class="w-full py-2.5 bg-blue-50 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+            class="w-full py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-semibold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
             <i class="pi pi-download"></i> Descargar PDF
           </button>
         </div>

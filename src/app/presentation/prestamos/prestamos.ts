@@ -8,7 +8,7 @@ import { PrestamosService, Prestamo, CreatePrestamoDto } from '../../services/pr
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 min-h-screen bg-[#F1F5F9]">
+    <div class="p-6 min-h-screen bg-[#f0fdf4]">
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -186,7 +186,7 @@ export class PrestamosComponent implements OnInit {
 
   getBadgeClass(estado: string): string {
     const map: Record<string, string> = {
-      ACTIVO: 'bg-blue-100 text-blue-700',
+      ACTIVO: 'bg-emerald-100 text-emerald-700',
       DEVUELTO: 'bg-emerald-100 text-emerald-700',
       VENCIDO: 'bg-red-100 text-red-700',
     };

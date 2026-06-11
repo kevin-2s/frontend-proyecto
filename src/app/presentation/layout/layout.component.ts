@@ -21,11 +21,11 @@ import { FormsModule } from '@angular/forms';
       <!-- Sidebar Responsivo -->
       <aside 
          class="bg-white flex flex-col border-r border-gray-100 transition-all duration-300 overflow-hidden flex-shrink-0 
-            fixed lg:static h-full z-[50]"
+            fixed lg:static h-full z-[50] rounded-r-[40px]"
          [class.w-[260px]]="isSidebarVisible() && !sidebarCollapsed()"
          [class.w-16]="isSidebarVisible() && sidebarCollapsed()"
          [class.w-0]="!isSidebarVisible() && !sidebarCollapsed()"
-         [class.shadow-2xl]="isSidebarVisible()">
+         [class.shadow-[0_0_40px_rgba(0,48,77,0.4)]]="isSidebarVisible()">
         
         <!-- Logo -->
         <div class="flex flex-col items-center justify-center border-b border-gray-100 flex-shrink-0 transition-all duration-300"
@@ -285,7 +285,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       expanded: true,
       items: [
         { title: 'Centros', path: 'centros', icon: 'pi-briefcase' },
-        { title: 'Sedes', path: 'sitios', icon: 'pi-map-marker' },
+        { title: 'Sedes', path: 'sedes', icon: 'pi-map-marker' },
         { title: 'Áreas', path: 'areas', icon: 'pi-clone' },
         { title: 'Programas', path: 'programas', icon: 'pi-bookmark' },
         { title: 'Fichas', path: 'fichas', icon: 'pi-id-card' }
@@ -304,8 +304,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       expanded: true,
       items: [
         { title: 'Productos', path: 'inventario/productos', icon: 'pi-box' },
-        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' },
-        { title: 'Proveedores', path: 'proveedores', icon: 'pi-building' }
+        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' }
       ]
     },
     {
@@ -314,13 +313,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       items: [
         { title: 'Solicitudes', path: 'solicitudes', icon: 'pi-inbox' },
         { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h' },
-        { title: 'Préstamos', path: 'prestamos', icon: 'pi-send' }
-      ]
-    },
-    {
-      title: 'AUDITORÍA',
-      expanded: true,
-      items: [
+        { title: 'Préstamos', path: 'prestamos', icon: 'pi-send' },
         { title: 'Kardex', path: 'kardex', icon: 'pi-history' }
       ]
     },
@@ -466,9 +459,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
     
     if (role === 'INSTRUCTOR') {
       const instructorPaths = [
-        'sitios', 'areas', 'programas', 'fichas', 
+        'sedes', 'sitios', 'areas', 'programas', 'fichas', 
         'inventario/productos', 'inventario/categoria', 
-        'solicitudes', 'movimientos', 'home', 'proveedores',
+        'solicitudes', 'movimientos', 'home', 
         'kardex', 'reportes', 'qr'
       ];
       return instructorPaths.includes(path);

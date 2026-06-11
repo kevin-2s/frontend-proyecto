@@ -65,7 +65,7 @@ interface Sitio {
         <p-table
           [value]="sitiosFiltrados"
           [paginator]="true"
-          [rows]="10"
+          [rows]="15"
           styleClass="modern-table"
           [rowHover]="true"
         >

@@ -161,7 +161,7 @@ import { Centro } from '../../domain/models/centro.model';
         <p-table
           [value]="sedesFiltradas"
           [paginator]="true"
-          [rows]="10"
+          [rows]="15"
           styleClass="modern-table"
           [rowHover]="true"
         >

@@ -14,7 +14,7 @@ export class AreaService {
     return this.api.get<any>(`/areas/${id}`);
   }
 
-  crearArea(data: { nombre: string; id_sitio: number; estado?: boolean }): Observable<any> {
+  crearArea(data: { nombre: string; id_sede: number; estado?: boolean }): Observable<any> {
     return this.api.post<any>('/areas', data);
   }
 

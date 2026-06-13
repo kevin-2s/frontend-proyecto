@@ -47,6 +47,10 @@ export const routes: Routes = [
           {
             path: 'categoria',
             loadComponent: () => import('./presentation/categoria/categoria.component').then(m => m.CategoriaComponent)
+          },
+          {
+            path: 'bodega',
+            loadComponent: () => import('./presentation/bodega/bodega.component').then(m => m.BodegaComponent)
           }
         ]
       },

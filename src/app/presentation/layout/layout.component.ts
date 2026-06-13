@@ -304,7 +304,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
       expanded: true,
       items: [
         { title: 'Productos', path: 'inventario/productos', icon: 'pi-box' },
-        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' }
+        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' },
+        { title: 'Bodegas', path: 'inventario/bodega', icon: 'pi-home' }
       ]
     },
     {
@@ -459,9 +460,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
     
     if (role === 'INSTRUCTOR') {
       const instructorPaths = [
-        'sedes', 'sitios', 'areas', 'programas', 'fichas', 
-        'inventario/productos', 'inventario/categoria', 
-        'solicitudes', 'movimientos', 'home', 
+        'sedes', 'sitios', 'areas', 'programas', 'fichas',
+        'inventario/productos', 'inventario/categoria', 'inventario/bodega',
+        'solicitudes', 'movimientos', 'home',
         'kardex', 'reportes', 'qr'
       ];
       return instructorPaths.includes(path);

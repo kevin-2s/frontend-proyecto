@@ -10,12 +10,14 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SelectModule } from 'primeng/select';
+import { TextareaModule } from 'primeng/textarea';
 import { FileUploadModule } from 'primeng/fileupload';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { ProductoService } from '../../infrastructure/services/producto.service';
 import { CategoriaService } from '../../infrastructure/services/categoria.service';
+import { SitioService } from '../../infrastructure/services/sitio.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
 
 interface Producto {
@@ -32,10 +34,10 @@ interface Producto {
   stock_minimo?: number;
   itemsDisponibles?: number;
   totalItems?: number;
-  categoria?: {
-    id_categoria: number;
-    nombre: string;
-  };
+  unidad_peso_bulto?: string;
+  peso_por_bulto?: number;
+  id_sitio?: number | null;
+  categoria?: { id_categoria: number; nombre: string };
 }
 
 interface Categoria {
@@ -43,23 +45,16 @@ interface Categoria {
   nombre: string;
 }
 
+type SelectOption = { label: string; value: string };
+
 @Component({
   selector: 'app-productos',
   standalone: true,
   imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    DialogModule,
-    TagModule,
-    ToastModule,
-    ConfirmDialogModule,
-    SelectModule,
-    FileUploadModule,
-    TooltipModule
+    CommonModule, ReactiveFormsModule, FormsModule,
+    TableModule, ButtonModule, InputTextModule, DialogModule,
+    TagModule, ToastModule, ConfirmDialogModule, SelectModule,
+    TextareaModule, FileUploadModule, TooltipModule
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [ConfirmationService],
@@ -69,486 +64,453 @@ interface Categoria {
 
     <div class="module-container">
       <div class="module-header">
-        <h3 class="page-title">
-          <i class="pi pi-box"></i> Catálogo de Productos
-        </h3>
+        <h3 class="page-title"><i class="pi pi-box"></i> Catálogo de Productos</h3>
         <div class="header-actions">
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
             <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
-              placeholder="Buscar producto, SKU..." class="search-input" />
+              placeholder="Buscar producto, Placa SENA..." class="search-input" />
           </div>
           <button *ngIf="esAdmin()" pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
 
       <div class="data-table-wrapper">
-
-        <p-table
-          [value]="productosFiltrados"
-          [paginator]="true"
-          [rows]="15"
-          [rowsPerPageOptions]="[5, 15, 20]"
-          [(selection)]="selectedProducts"
-          styleClass="modern-table"
-          [rowHover]="true"
-          dataKey="id_producto"
-        >
+        <p-table [value]="productosFiltrados" [paginator]="true" [rows]="15"
+          [rowsPerPageOptions]="[5,15,20]" [(selection)]="selectedProducts"
+          styleClass="modern-table" [rowHover]="true" dataKey="id_producto">
           <ng-template pTemplate="header">
             <tr>
-              <th style="width: 4rem">
-                <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
-              </th>
-              <th>SKU</th>
-              <th>Nombre</th>
-              <th>Categoría</th>
-              <th>Código UNSPSC</th>
-              <th>Tipo Material</th>
-              <th class="text-center">Stock Mínimo</th>
-              <th class="text-center">Cantidad</th>
-              <th class="text-center">Acciones</th>
+              <th style="width:3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
+              <th style="min-width:90px">Placa SENA</th>
+              <th style="min-width:140px">Nombre</th>
+              <th style="min-width:110px">Bodega</th>
+              <th style="min-width:110px">Categoría</th>
+              <th style="min-width:120px">Código UNSPSC</th>
+              <th style="min-width:110px">Tipo Material</th>
+              <th style="min-width:100px">Unidad</th>
+              <th style="min-width:130px" class="text-center">Info Bulto</th>
+              <th style="min-width:110px" class="text-center">Vencimiento</th>
+              <th style="min-width:60px" class="text-center">Stock<br/>Mín.</th>
+              <th style="min-width:60px" class="text-center">Items</th>
+              <th style="min-width:110px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-producto>
             <tr>
+              <td><p-tableCheckbox [value]="producto"></p-tableCheckbox></td>
+
+              <!-- Placa SENA -->
+              <td><span class="sku-cell">{{ producto.SKU || '—' }}</span></td>
+
+              <!-- Nombre + descripción como tooltip -->
               <td>
-                <p-tableCheckbox [value]="producto"></p-tableCheckbox>
+                <span class="product-name" [pTooltip]="producto.descripcion || ''"
+                  [tooltipDisabled]="!producto.descripcion" tooltipPosition="top">
+                  {{ producto.nombre }}
+                </span>
+                <i *ngIf="producto.descripcion" class="pi pi-info-circle ml-1 text-xs text-slate-400"></i>
               </td>
+
+              <!-- Bodega -->
               <td>
-                <span class="sku-cell">{{ producto.SKU }}</span>
+                <div class="flex items-center gap-1">
+                  <i class="pi pi-home text-indigo-400 text-xs"></i>
+                  <span class="text-sm font-semibold text-indigo-700">{{ getBodegaNombre(producto.id_sitio) }}</span>
+                </div>
               </td>
+
+              <!-- Categoría -->
               <td>
-                <span class="product-name">{{ producto.nombre }}</span>
+                <p-tag [value]="producto.categoria?.nombre || 'Sin categoría'"
+                  severity="secondary" styleClass="px-2 py-1 text-xs font-bold rounded-lg"></p-tag>
               </td>
+
+              <!-- UNSPSC -->
               <td>
-                <p-tag
-                  [value]="producto.categoria?.nombre || 'Sin categoría'"
-                  severity="secondary"
-                  styleClass="px-3 py-1 font-bold rounded-lg"
-                ></p-tag>
+                <span *ngIf="producto.codigo_unspsc" class="text-xs text-slate-500 font-mono"
+                  [pTooltip]="getUnspscLabel(producto.codigo_unspsc)" tooltipPosition="top">
+                  {{ producto.codigo_unspsc }}
+                </span>
+                <span *ngIf="!producto.codigo_unspsc" class="text-slate-300">—</span>
               </td>
+
+              <!-- Tipo Material -->
               <td>
-                <span>{{ producto.codigo_unspsc || '-' }}</span>
+                <p-tag [value]="producto.tipo_material || '—'"
+                  [severity]="getTipoMaterialSeverity(producto.tipo_material)"
+                  styleClass="px-2 py-1 text-xs font-bold rounded-lg"></p-tag>
               </td>
+
+              <!-- Unidad de Medida -->
               <td>
-                <p-tag
-                  [value]="producto.tipo_material || '-'"
-                  severity="info"
-                  styleClass="px-3 py-1 font-bold rounded-lg"
-                ></p-tag>
+                <span class="text-sm font-semibold text-slate-600">{{ producto.unidad_medida || '—' }}</span>
               </td>
+
+              <!-- Info Bulto (peso por bulto + unidad peso) -->
               <td class="text-center">
-                <span>{{ producto.stock_minimo || 0 }}</span>
+                <ng-container *ngIf="producto.unidad_medida === 'BULTO' && producto.peso_por_bulto; else noBulto">
+                  <span class="inline-flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg px-2 py-1 text-xs font-bold">
+                    <i class="pi pi-box text-xs"></i>
+                    {{ producto.peso_por_bulto }} {{ producto.unidad_peso_bulto || '' }}
+                  </span>
+                </ng-container>
+                <ng-template #noBulto>
+                  <span class="text-slate-300 text-xs">—</span>
+                </ng-template>
               </td>
+
+              <!-- Fecha Vencimiento -->
+              <td class="text-center">
+                <ng-container *ngIf="producto.tipo_material === 'PERECEDERO' && producto.fecha_vencimiento; else sinFecha">
+                  <span [ngClass]="getFechaClass(producto.fecha_vencimiento)"
+                    class="text-xs font-semibold px-2 py-1 rounded-lg inline-block">
+                    <i class="pi pi-calendar mr-1"></i>{{ producto.fecha_vencimiento | date:'dd/MM/yy' }}
+                  </span>
+                </ng-container>
+                <ng-template #sinFecha>
+                  <span class="text-slate-300 text-xs">—</span>
+                </ng-template>
+              </td>
+
+              <!-- Stock Mínimo -->
+              <td class="text-center"><span class="text-sm">{{ producto.stock_minimo || 0 }}</span></td>
+
+              <!-- Total Items -->
               <td class="text-center">
                 <span class="font-bold text-slate-700">{{ producto.totalItems || 0 }}</span>
               </td>
+
+              <!-- Acciones -->
               <td>
                 <div class="action-buttons justify-center">
-                  <button
-                    pButton
-                    icon="pi pi-eye"
-                    class="btn-table-action btn-editor"
-                    style="background-color: #f0fdf4 !important; color: #475569 !important;"
-                    (click)="verItems(producto)"
-                    pTooltip="Ver items"
-                  ></button>
-                  <button
-                    *ngIf="esAdmin()"
-                    pButton
-                    icon="pi pi-pencil"
-                    class="btn-table-action btn-editor"
-                    (click)="editar(producto)"
-                    pTooltip="Editar producto"
-                  ></button>
-                  <button
-                    *ngIf="esAdmin()"
-                    pButton
-                    icon="pi pi-trash"
-                    class="btn-table-action btn-eliminar"
-                    (click)="eliminar(producto)"
-                    pTooltip="Eliminar producto"
-                  ></button>
+                  <button pButton icon="pi pi-eye" class="btn-table-action btn-editor"
+                    style="background-color:#f0fdf4!important;color:#475569!important"
+                    (click)="verItems(producto)" pTooltip="Ver items"></button>
+                  <button *ngIf="esAdmin()" pButton icon="pi pi-pencil"
+                    class="btn-table-action btn-editor" (click)="editar(producto)" pTooltip="Editar"></button>
+                  <button *ngIf="esAdmin()" pButton icon="pi pi-trash"
+                    class="btn-table-action btn-eliminar" (click)="eliminar(producto)" pTooltip="Eliminar"></button>
                 </div>
               </td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="8" class="text-center p-4">
-                <i class="pi pi-box text-4xl text-slate-300 mb-2"></i>
-                <p>No se encontraron productos</p>
-              </td>
-            </tr>
+            <tr><td colspan="13" class="text-center p-4">
+              <i class="pi pi-box text-4xl text-slate-300 mb-2"></i>
+              <p>No se encontraron productos</p>
+            </td></tr>
           </ng-template>
         </p-table>
       </div>
     </div>
 
+    <!-- ===== DIÁLOGO CREAR / EDITAR ===== -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       [header]="esNuevo ? '✨ Registrar Producto' : '📝 Editar Producto'"
-      [(visible)]="displayDialog"
-      [modal]="true"
-      [style]="{ width: '90vw', maxWidth: '600px' }"
-      [draggable]="true"
-      [resizable]="false"
-      styleClass="form-dialog shadow-2xl border border-slate-200"
-      appendTo="body"
-    >
+      [(visible)]="displayDialog" [modal]="true"
+      [style]="{ width: '94vw', maxWidth: '660px' }"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
+
       <form [formGroup]="productoForm" class="form-grid mt-2">
+
+        <!-- Nombre -->
         <div class="form-field">
           <label for="nombre">Nombre *</label>
-          <input
-            pInputText
-            id="nombre"
-            formControlName="nombre"
-            placeholder="Ej: Martillo"
-          />
+          <input pInputText id="nombre" formControlName="nombre" placeholder="Ej: Arroz blanco" />
         </div>
 
+        <!-- Descripción -->
+        <div class="form-field">
+          <label for="descripcion">Descripción</label>
+          <textarea
+            pTextarea
+            id="descripcion"
+            formControlName="descripcion"
+            placeholder="Descripción detallada del producto..."
+            [rows]="3"
+            style="resize:vertical; min-height:68px; width:100%; border:2px solid #1e293b; border-radius:8px; padding:8px 10px; font-size:0.875rem; background:#fff; color:#1e293b; outline:none; box-sizing:border-box;"
+          ></textarea>
+        </div>
 
+        <!-- UNSPSC + Placa SENA -->
         <div class="product-form-row">
-          <div class="form-field">
-            <label for="codigo_unspsc">Código UNSPSC</label>
-            <input
-              pInputText
+          <div class="form-field" [style.flex]="esGastronomia ? '1' : '2'">
+            <label for="codigo_unspsc">
+              Código UNSPSC
+              <span class="text-xs text-slate-400 font-normal ml-1">(Colombia Compra Eficiente)</span>
+            </label>
+            <p-select
               id="codigo_unspsc"
               formControlName="codigo_unspsc"
-              placeholder="27111600"
-            />
+              [options]="codigosUnspsc"
+              [filter]="true"
+              [editable]="true"
+              filterPlaceholder="Buscar código o producto..."
+              placeholder="Seleccione o escriba el código"
+              appendTo="body"
+              styleClass="w-full"
+              [showClear]="true"
+              (onChange)="onUnspscChange($event.value)"
+            ></p-select>
+            <small *ngIf="esGastronomia" class="text-emerald-600 font-semibold mt-1 block">
+              <i class="pi pi-seedling mr-1"></i>Producto de gastronomía — Placa SENA no requerida
+            </small>
           </div>
-          <div class="form-field">
-            <label for="SKU">SKU *</label>
-            <input 
-              pInputText 
-              id="SKU" 
-              formControlName="SKU" 
-              placeholder="MAR-001" 
-            />
+          <div *ngIf="!esGastronomia" class="form-field" style="flex:1">
+            <label for="SKU">Placa SENA *</label>
+            <input pInputText id="SKU" formControlName="SKU" placeholder="Ej: ALI-001" />
           </div>
         </div>
 
+        <!-- Tipo de Material + Unidad de Medida -->
         <div class="product-form-row">
           <div class="form-field">
             <label for="tipo_material">Tipo de Material *</label>
             <div class="input-with-button">
-              <p-select
-                id="tipo_material"
-                formControlName="tipo_material"
-                [options]="tiposMaterial"
-                placeholder="Seleccione tipo"
-                appendTo="body"
-                styleClass="w-full"
-              ></p-select>
-              <button
-                pButton
-                type="button"
-                icon="pi pi-plus"
-                class="btn-inline-add"
-                (click)="displayAddTipoMaterial = true"
-                pTooltip="Agregar tipo de material"
-              ></button>
+              <p-select id="tipo_material" formControlName="tipo_material"
+                [options]="tiposMaterial" placeholder="Seleccione tipo"
+                appendTo="body" styleClass="w-full"
+                (onChange)="onTipoMaterialChange($event.value)"></p-select>
+              <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
+                (click)="displayAddTipoMaterial=true" pTooltip="Agregar tipo"></button>
             </div>
           </div>
           <div class="form-field">
             <label for="unidad_medida">Unidad de Medida *</label>
             <div class="input-with-button">
-              <p-select
-                id="unidad_medida"
-                formControlName="unidad_medida"
-                [options]="unidadesMedida"
-                placeholder="Seleccione unidad"
-                appendTo="body"
-                styleClass="w-full"
-              ></p-select>
-              <button
-                pButton
-                type="button"
-                icon="pi pi-plus"
-                class="btn-inline-add"
-                (click)="displayAddUnidadMedida = true"
-                pTooltip="Agregar unidad de medida"
-              ></button>
+              <p-select id="unidad_medida" formControlName="unidad_medida"
+                [options]="unidadesDisponibles" placeholder="Seleccione unidad"
+                appendTo="body" styleClass="w-full"
+                (onChange)="onUnidadMedidaChange($event.value)"></p-select>
+              <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
+                (click)="displayAddUnidadMedida=true" pTooltip="Agregar unidad"></button>
             </div>
+            <small *ngIf="codigoUnspscSeleccionado" class="text-blue-500 mt-1 block text-xs">
+              <i class="pi pi-filter mr-1"></i>Unidades filtradas para el producto seleccionado
+            </small>
           </div>
         </div>
 
+        <!-- Campos especiales BULTO -->
+        <div *ngIf="esBulto" class="product-form-row" style="background:#fff7ed;border-radius:10px;padding:10px 8px 4px;margin-bottom:2px;border:1px solid #fed7aa;">
+          <div class="form-field">
+            <label style="color:#c2410c;font-weight:700;">
+              <i class="pi pi-box mr-1"></i>Unidad de peso del bulto
+            </label>
+            <p-select formControlName="unidad_peso_bulto" [options]="unidadesPeso"
+              placeholder="kg / g / lb..." appendTo="body" styleClass="w-full"
+              [showClear]="true"></p-select>
+          </div>
+          <div class="form-field" *ngIf="mostrarPesoPorBulto">
+            <label style="color:#c2410c;font-weight:700;">
+              Peso por bulto ({{ productoForm.get('unidad_peso_bulto')?.value | lowercase }})
+            </label>
+            <input pInputText type="number" formControlName="peso_por_bulto"
+              placeholder="Ej: 50" min="0.01" step="0.01" />
+          </div>
+        </div>
+
+        <!-- Peso / volumen por presentación — solo para unidades de peso/volumen (no BULTO) -->
+        <div *ngIf="esMedidaPesoVol"
+          style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 10px 8px;margin-bottom:2px;">
+          <label style="color:#1d4ed8;font-weight:700;font-size:0.875rem;display:block;margin-bottom:6px;">
+            <i class="pi pi-info-circle mr-1"></i>
+            ¿Cuántos {{ unidadActual | lowercase }} tiene cada presentación/bolsa?
+            <span style="font-weight:400;color:#64748b;font-size:0.78rem;margin-left:4px;">(Opcional)</span>
+          </label>
+          <input pInputText type="number" formControlName="peso_por_bulto"
+            [placeholder]="'Ej: si cada bolsa pesa 10 ' + (unidadActual | lowercase) + ', ingrese 10'"
+            min="0.001" step="0.001" />
+          <small style="color:#3b82f6;font-size:0.75rem;margin-top:4px;display:block;">
+            Si el producto no viene en presentaciones de peso fijo, deje este campo vacío.
+          </small>
+        </div>
+
+        <!-- Cantidad + Stock mínimo -->
         <div class="product-form-row">
           <div *ngIf="esNuevo" class="form-field">
-            <label for="cantidad">Cantidad de unidades *</label>
-            <input
-              pInputText
-              type="number"
-              id="cantidad"
-              formControlName="cantidad"
-              placeholder="Ej: 5"
-              min="1"
-            />
+            <label for="cantidad">{{ esBulto ? 'Cantidad de bultos *' : 'Cantidad de unidades *' }}</label>
+            <input pInputText type="number" id="cantidad" formControlName="cantidad"
+              placeholder="Ej: 5" min="1" />
+            <small *ngIf="esMedidaPesoVol && productoForm.get('peso_por_bulto')?.value"
+              class="text-blue-500 text-xs mt-1 block">
+              Total: {{ (productoForm.get('cantidad')?.value || 0) * (productoForm.get('peso_por_bulto')?.value || 0) | number:'1.0-3' }}
+              {{ unidadActual | lowercase }} en inventario
+            </small>
           </div>
           <div class="form-field">
             <label for="stock_minimo">Stock mínimo para alertas *</label>
-            <input
-              pInputText
-              type="number"
-              id="stock_minimo"
-              formControlName="stock_minimo"
-              placeholder="Ej: 2"
-              min="1"
-            />
+            <input pInputText type="number" id="stock_minimo" formControlName="stock_minimo"
+              placeholder="Ej: 2" min="1" />
           </div>
         </div>
 
+        <!-- Fecha de vencimiento — solo PERECEDERO -->
+        <div *ngIf="esPerecedero" class="form-field"
+          style="background:#fff7ed;border-radius:10px;padding:12px;border:1px solid #fed7aa;">
+          <label for="fecha_vencimiento" class="flex items-center gap-2 flex-wrap mb-2">
+            <i class="pi pi-calendar text-orange-500 text-lg"></i>
+            <span class="font-bold text-orange-700">¿El producto tiene fecha de vencimiento?</span>
+          </label>
+          <p class="text-xs text-orange-500 mb-2 -mt-1">
+            Ingrese la fecha límite de uso o consumo del producto perecedero.
+          </p>
+          <input pInputText type="date" id="fecha_vencimiento"
+            formControlName="fecha_vencimiento"
+            [min]="minDate"
+            class="w-full border border-orange-300 rounded-lg p-2 bg-white" />
+          <small *ngIf="fechaInvalida" class="text-red-500 mt-1 block">
+            <i class="pi pi-exclamation-triangle mr-1"></i>La fecha debe ser igual o posterior a hoy.
+          </small>
+        </div>
+
+        <!-- Categoría + Bodega -->
         <div class="product-form-row">
           <div class="form-field">
-            <label for="es_psd">¿Es PSD?</label>
-            <input type="checkbox" formControlName="es_psd" (change)="onPsdChange($event)" class="w-4 h-4" />
+            <label for="id_categoria">Categoría *</label>
+            <div class="input-with-button">
+              <p-select id="id_categoria" formControlName="id_categoria"
+                [options]="categorias" optionLabel="nombre" optionValue="id_categoria"
+                placeholder="Seleccione una categoría" [showClear]="true"
+                appendTo="body" styleClass="w-full"></p-select>
+              <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
+                (click)="displayAddCategoria=true" pTooltip="Agregar categoría"></button>
+            </div>
           </div>
-          <div *ngIf="psdChecked" class="form-field">
-            <label for="fecha_vencimiento">Fecha de Vencimiento</label>
-            <input
-              pInputText
-              type="date"
-              id="fecha_vencimiento"
-              formControlName="fecha_vencimiento"
-              class="w-full"
-            />
+          <div class="form-field">
+            <label for="id_sitio">Bodega *</label>
+            <p-select id="id_sitio" formControlName="id_sitio"
+              [options]="bodegas" optionLabel="nombre" optionValue="id_sitio"
+              placeholder="Seleccione la bodega" [showClear]="true"
+              appendTo="body" styleClass="w-full">
+              <ng-template let-b pTemplate="item">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-home text-indigo-400 text-sm"></i>
+                  <span class="text-sm font-semibold">{{ b.nombre }}</span>
+                </div>
+              </ng-template>
+            </p-select>
+            <small *ngIf="bodegas.length === 0" class="text-amber-600 text-xs mt-1 block">
+              <i class="pi pi-exclamation-triangle mr-1"></i>
+              No hay bodegas. Créalas en <strong>Inventario › Bodegas</strong>.
+            </small>
           </div>
         </div>
 
-        <div class="form-field">
-          <label for="id_categoria">Categoría *</label>
-          <div class="input-with-button">
-            <p-select
-              id="id_categoria"
-              formControlName="id_categoria"
-              [options]="categorias"
-              optionLabel="nombre"
-              optionValue="id_categoria"
-              placeholder="Seleccione una categoría"
-              [showClear]="true"
-              appendTo="body"
-              styleClass="w-full"
-            ></p-select>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-plus"
-              class="btn-inline-add"
-              (click)="displayAddCategoria = true"
-              pTooltip="Agregar nueva categoría"
-            ></button>
-          </div>
-        </div>
       </form>
 
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
-          <button
-            pButton
-            label="Cancelar"
-            class="btn-cancelar"
-            (click)="displayDialog = false"
-          ></button>
-          <button
-            pButton
-            label="Guardar"
-            class="btn-guardar"
-            [disabled]="productoForm.invalid"
-            (click)="guardar()"
-          ></button>
+          <button pButton label="Cancelar" class="btn-cancelar" (click)="displayDialog=false"></button>
+          <button pButton label="Guardar" class="btn-guardar"
+            [disabled]="productoForm.invalid || fechaInvalida" (click)="guardar()"></button>
         </div>
       </ng-template>
     </p-dialog>
 
-    <!-- Diálogo para agregar nueva Categoría -->
+    <!-- Nueva Categoría -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="✨ Registrar Nueva Categoría"
-      [(visible)]="displayAddCategoria"
-      [modal]="true"
-      [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="true"
-      [resizable]="false"
-      styleClass="form-dialog shadow-2xl border border-slate-200"
-      appendTo="body"
-    >
+      header="✨ Registrar Nueva Categoría" [(visible)]="displayAddCategoria"
+      [modal]="true" [style]="{width:'90vw',maxWidth:'400px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
       <div class="form-grid mt-2">
         <div class="form-field">
-          <label for="nuevoNombreCat">Nombre de la Categoría *</label>
-          <input
-            pInputText
-            id="nuevoNombreCat"
-            [(ngModel)]="nuevoNombreCategoria"
-            placeholder="Ej: Herramientas"
-          />
+          <label>Nombre de la Categoría *</label>
+          <input pInputText [(ngModel)]="nuevoNombreCategoria" placeholder="Ej: Lácteos" />
         </div>
       </div>
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
-          <button
-            pButton
-            label="Cancelar"
-            class="btn-cancelar"
-            (click)="displayAddCategoria = false; nuevoNombreCategoria = ''"
-          ></button>
-          <button
-            pButton
-            label="Guardar"
-            class="btn-guardar"
-            [disabled]="!nuevoNombreCategoria.trim()"
-            (click)="guardarNuevaCategoria()"
-          ></button>
+          <button pButton label="Cancelar" class="btn-cancelar" (click)="displayAddCategoria=false;nuevoNombreCategoria=''"></button>
+          <button pButton label="Guardar" class="btn-guardar" [disabled]="!nuevoNombreCategoria.trim()" (click)="guardarNuevaCategoria()"></button>
         </div>
       </ng-template>
     </p-dialog>
 
-    <!-- Diálogo para agregar nuevo Tipo de Material -->
+    <!-- Nuevo Tipo de Material -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="✨ Registrar Tipo de Material"
-      [(visible)]="displayAddTipoMaterial"
-      [modal]="true"
-      [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="true"
-      [resizable]="false"
-      styleClass="form-dialog shadow-2xl border border-slate-200"
-      appendTo="body"
-    >
+      header="✨ Registrar Tipo de Material" [(visible)]="displayAddTipoMaterial"
+      [modal]="true" [style]="{width:'90vw',maxWidth:'400px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
       <div class="form-grid mt-2">
         <div class="form-field">
-          <label for="nuevoTipoMat">Nombre del Tipo *</label>
-          <input
-            pInputText
-            id="nuevoTipoMat"
-            [(ngModel)]="nuevoNombreTipoMaterial"
-            placeholder="Ej: CONSUMO, DEVOLUTIVO..."
-          />
+          <label>Nombre del Tipo *</label>
+          <input pInputText [(ngModel)]="nuevoNombreTipoMaterial" placeholder="Ej: CONSUMO..." />
         </div>
       </div>
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
-          <button
-            pButton
-            label="Cancelar"
-            class="btn-cancelar"
-            (click)="displayAddTipoMaterial = false; nuevoNombreTipoMaterial = ''"
-          ></button>
-          <button
-            pButton
-            label="Guardar"
-            class="btn-guardar"
-            [disabled]="!nuevoNombreTipoMaterial.trim()"
-            (click)="guardarNuevoTipoMaterial()"
-          ></button>
+          <button pButton label="Cancelar" class="btn-cancelar" (click)="displayAddTipoMaterial=false;nuevoNombreTipoMaterial=''"></button>
+          <button pButton label="Guardar" class="btn-guardar" [disabled]="!nuevoNombreTipoMaterial.trim()" (click)="guardarNuevoTipoMaterial()"></button>
         </div>
       </ng-template>
     </p-dialog>
 
-    <!-- Diálogo para agregar nueva Unidad de Medida -->
+    <!-- Nueva Unidad de Medida -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="✨ Registrar Unidad de Medida"
-      [(visible)]="displayAddUnidadMedida"
-      [modal]="true"
-      [style]="{ width: '90vw', maxWidth: '400px' }"
-      [draggable]="true"
-      [resizable]="false"
-      styleClass="form-dialog shadow-2xl border border-slate-200"
-      appendTo="body"
-    >
+      header="✨ Registrar Unidad de Medida" [(visible)]="displayAddUnidadMedida"
+      [modal]="true" [style]="{width:'90vw',maxWidth:'400px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
       <div class="form-grid mt-2">
         <div class="form-field">
-          <label for="nuevaUniMed">Nombre de la Unidad *</label>
-          <input
-            pInputText
-            id="nuevaUniMed"
-            [(ngModel)]="nuevoNombreUnidadMedida"
-            placeholder="Ej: UNIDAD, PAR, METRO..."
-          />
+          <label>Nombre de la Unidad *</label>
+          <input pInputText [(ngModel)]="nuevoNombreUnidadMedida" placeholder="Ej: CARTÓN, ATADO..." />
         </div>
       </div>
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
-          <button
-            pButton
-            label="Cancelar"
-            class="btn-cancelar"
-            (click)="displayAddUnidadMedida = false; nuevoNombreUnidadMedida = ''"
-          ></button>
-          <button
-            pButton
-            label="Guardar"
-            class="btn-guardar"
-            [disabled]="!nuevoNombreUnidadMedida.trim()"
-            (click)="guardarNuevaUnidadMedida()"
-          ></button>
+          <button pButton label="Cancelar" class="btn-cancelar" (click)="displayAddUnidadMedida=false;nuevoNombreUnidadMedida=''"></button>
+          <button pButton label="Guardar" class="btn-guardar" [disabled]="!nuevoNombreUnidadMedida.trim()" (click)="guardarNuevaUnidadMedida()"></button>
         </div>
       </ng-template>
     </p-dialog>
 
-    <!-- Diálogo para ver items del producto -->
+    <!-- Ver items -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
       [header]="productoSeleccionadoParaItems ? '📦 Items de: ' + productoSeleccionadoParaItems.nombre : '📦 Items del Producto'"
-      [(visible)]="displayItemsDialog"
-      [modal]="true"
-      [style]="{ width: '90vw', maxWidth: '600px' }"
-      [draggable]="true"
-      [resizable]="false"
-      styleClass="form-dialog shadow-2xl border border-slate-200"
-      appendTo="body"
-    >
+      [(visible)]="displayItemsDialog" [modal]="true"
+      [style]="{width:'90vw',maxWidth:'600px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
       <div *ngIf="cargandoItems" class="flex justify-center items-center p-8">
         <i class="pi pi-spin pi-spinner text-4xl text-emerald-500"></i>
       </div>
-
       <div *ngIf="!cargandoItems">
-        <p-table
-          [value]="itemsDelProducto"
-          styleClass="modern-table"
-          [rowHover]="true"
-          [paginator]="itemsDelProducto.length > 5"
-          [rows]="5"
-        >
+        <p-table [value]="itemsDelProducto" styleClass="modern-table" [rowHover]="true"
+          [paginator]="itemsDelProducto.length > 5" [rows]="5">
           <ng-template pTemplate="header">
             <tr>
-              <th style="width: 100px">ID Item</th>
+              <th style="width:100px">ID Item</th>
               <th>Código SKU</th>
-              <th class="text-center" style="width: 150px">Estado</th>
+              <th class="text-center" style="width:150px">Estado</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-item>
             <tr>
-              <td>
-                <span class="font-semibold text-slate-600">#{{ item.id_item }}</span>
-              </td>
-              <td>
-                <span class="sku-cell">{{ item.codigo_sku }}</span>
-              </td>
+              <td><span class="font-semibold text-slate-600">#{{ item.id_item }}</span></td>
+              <td><span class="sku-cell">{{ item.codigo_sku }}</span></td>
               <td class="text-center">
-                <p-tag
-                  [value]="item.estado"
-                  [severity]="getItemSeverity(item.estado)"
-                  styleClass="px-3 py-1 font-bold rounded-lg"
-                ></p-tag>
+                <p-tag [value]="item.estado" [severity]="getItemSeverity(item.estado)"
+                  styleClass="px-3 py-1 font-bold rounded-lg"></p-tag>
               </td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="3" class="text-center p-4">
-                <i class="pi pi-info-circle text-4xl text-slate-300 mb-2"></i>
-                <p class="text-slate-500">No se encontraron items físicos registrados para este producto.</p>
-              </td>
-            </tr>
+            <tr><td colspan="3" class="text-center p-4">
+              <i class="pi pi-info-circle text-4xl text-slate-300 mb-2"></i>
+              <p class="text-slate-500">No se encontraron items para este producto.</p>
+            </td></tr>
           </ng-template>
         </p-table>
       </div>
-
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
-          <button
-            pButton
-            label="Cerrar"
-            class="btn-cancelar"
-            (click)="displayItemsDialog = false"
-          ></button>
+          <button pButton label="Cerrar" class="btn-cancelar" (click)="displayItemsDialog=false"></button>
         </div>
       </ng-template>
     </p-dialog>
@@ -558,6 +520,7 @@ export class ProductosComponent implements OnInit {
   private fb = inject(FormBuilder);
   private productoService = inject(ProductoService);
   private categoriaService = inject(CategoriaService);
+  private sitioService = inject(SitioService);
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
@@ -570,11 +533,13 @@ export class ProductosComponent implements OnInit {
   productos: Producto[] = [];
   productosFiltrados: Producto[] = [];
   categorias: Categoria[] = [];
+  bodegas: any[] = [];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
   selectedProducts: Producto[] = [];
-  psdChecked = false;
+  esGastronomia = false;
+  codigoUnspscSeleccionado = false;
 
   displayAddCategoria = false;
   displayAddTipoMaterial = false;
@@ -589,35 +554,346 @@ export class ProductosComponent implements OnInit {
   productoSeleccionadoParaItems: any = null;
   cargandoItems = false;
 
-  tiposMaterial = [
+  tiposMaterial: SelectOption[] = [
     { label: 'CONSUMO', value: 'CONSUMO' },
     { label: 'DEVOLUTIVO', value: 'DEVOLUTIVO' },
-    { label: 'SOFTWARE', value: 'SOFTWARE' },
-    { label: 'EPP', value: 'EPP' }
+    { label: 'PERECEDERO', value: 'PERECEDERO' },
   ];
 
-  unidadesMedida = [
+  readonly unidadesPeso: SelectOption[] = [
+    { label: 'KILOGRAMO (kg)', value: 'KILOGRAMO' },
+    { label: 'GRAMO (g)', value: 'GRAMO' },
+    { label: 'LIBRA (lb)', value: 'LIBRA' },
+  ];
+
+  // Unidades base (fallback cuando no hay UNSPSC seleccionado)
+  private readonly unidadesMedidaBase: SelectOption[] = [
     { label: 'UNIDAD', value: 'UNIDAD' },
     { label: 'PAR', value: 'PAR' },
     { label: 'KIT', value: 'KIT' },
+    { label: 'JUEGO', value: 'JUEGO' },
     { label: 'METRO', value: 'METRO' },
     { label: 'LITRO', value: 'LITRO' },
-    { label: 'KILO', value: 'KILO' }
+    { label: 'MILILITRO', value: 'MILILITRO' },
+    { label: 'KILOGRAMO', value: 'KILOGRAMO' },
+    { label: 'GRAMO', value: 'GRAMO' },
+    { label: 'LIBRA', value: 'LIBRA' },
+    { label: 'BULTO', value: 'BULTO' },
+    { label: 'PAQUETE', value: 'PAQUETE' },
+    { label: 'CAJA', value: 'CAJA' },
+    { label: 'LICENCIA', value: 'LICENCIA' },
+  ];
+
+  // Unidades mostradas en el dropdown (se actualiza según UNSPSC)
+  unidadesDisponibles: SelectOption[] = [...this.unidadesMedidaBase];
+
+  // Mapeo de FAMILIA UNSPSC (4 primeros dígitos) → unidades relevantes
+  private readonly UNIDADES_POR_FAMILIA: Record<string, SelectOption[]> = {
+    // Cereales y granos (arroz, harinas)
+    '5010': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'LIBRA', value: 'LIBRA' }, { label: 'BULTO', value: 'BULTO' },
+      { label: 'PAQUETE', value: 'PAQUETE' }, { label: 'TONELADA', value: 'TONELADA' },
+    ],
+    // Aceites y grasas
+    '5011': [
+      { label: 'LITRO', value: 'LITRO' }, { label: 'MILILITRO', value: 'MILILITRO' },
+      { label: 'BOTELLA', value: 'BOTELLA' }, { label: 'GALÓN', value: 'GALÓN' },
+      { label: 'LATA', value: 'LATA' }, { label: 'KILOGRAMO', value: 'KILOGRAMO' },
+    ],
+    // Condimentos (azúcar, sal, vinagre)
+    '5012': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'LIBRA', value: 'LIBRA' }, { label: 'LITRO', value: 'LITRO' },
+      { label: 'BOTELLA', value: 'BOTELLA' }, { label: 'PAQUETE', value: 'PAQUETE' },
+      { label: 'BULTO', value: 'BULTO' },
+    ],
+    // Lácteos
+    '5013': [
+      { label: 'LITRO', value: 'LITRO' }, { label: 'MILILITRO', value: 'MILILITRO' },
+      { label: 'BOTELLA', value: 'BOTELLA' }, { label: 'BOLSA', value: 'BOLSA' },
+      { label: 'CAJA', value: 'CAJA' }, { label: 'KILOGRAMO', value: 'KILOGRAMO' },
+      { label: 'GRAMO', value: 'GRAMO' }, { label: 'UNIDAD', value: 'UNIDAD' },
+    ],
+    // Huevos
+    '5014': [
+      { label: 'UNIDAD', value: 'UNIDAD' }, { label: 'CARTÓN', value: 'CARTÓN' },
+      { label: 'PAQUETE', value: 'PAQUETE' }, { label: 'CAJA', value: 'CAJA' },
+    ],
+    // Carnes (pollo, res, cerdo)
+    '5015': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'LIBRA', value: 'LIBRA' }, { label: 'UNIDAD', value: 'UNIDAD' },
+      { label: 'PAQUETE', value: 'PAQUETE' },
+    ],
+    // Pescado
+    '5017': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'LIBRA', value: 'LIBRA' }, { label: 'UNIDAD', value: 'UNIDAD' },
+    ],
+    // Mariscos
+    '5018': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'LIBRA', value: 'LIBRA' },
+    ],
+    // Legumbres
+    '5019': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'LIBRA', value: 'LIBRA' }, { label: 'BULTO', value: 'BULTO' },
+      { label: 'PAQUETE', value: 'PAQUETE' },
+    ],
+    // Verduras y tubérculos
+    '5020': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'LIBRA', value: 'LIBRA' }, { label: 'UNIDAD', value: 'UNIDAD' },
+      { label: 'ATADO', value: 'ATADO' }, { label: 'PAQUETE', value: 'PAQUETE' },
+      { label: 'BULTO', value: 'BULTO' },
+    ],
+    // Frutas
+    '5021': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'LIBRA', value: 'LIBRA' }, { label: 'UNIDAD', value: 'UNIDAD' },
+      { label: 'CAJA', value: 'CAJA' }, { label: 'PAQUETE', value: 'PAQUETE' },
+    ],
+    // Especias y hierbas
+    '5022': [
+      { label: 'GRAMO', value: 'GRAMO' }, { label: 'KILOGRAMO', value: 'KILOGRAMO' },
+      { label: 'PAQUETE', value: 'PAQUETE' }, { label: 'FRASCO', value: 'FRASCO' },
+      { label: 'UNIDAD', value: 'UNIDAD' },
+    ],
+    // Café y té
+    '5028': [
+      { label: 'GRAMO', value: 'GRAMO' }, { label: 'KILOGRAMO', value: 'KILOGRAMO' },
+      { label: 'PAQUETE', value: 'PAQUETE' }, { label: 'CAJA', value: 'CAJA' },
+      { label: 'UNIDAD', value: 'UNIDAD' },
+    ],
+    // Agua y bebidas
+    '5029': [
+      { label: 'LITRO', value: 'LITRO' }, { label: 'MILILITRO', value: 'MILILITRO' },
+      { label: 'BOTELLA', value: 'BOTELLA' }, { label: 'GALÓN', value: 'GALÓN' },
+      { label: 'CAJA', value: 'CAJA' },
+    ],
+    // Pastas, pan, cereales procesados
+    '5030': [
+      { label: 'KILOGRAMO', value: 'KILOGRAMO' }, { label: 'GRAMO', value: 'GRAMO' },
+      { label: 'PAQUETE', value: 'PAQUETE' }, { label: 'UNIDAD', value: 'UNIDAD' },
+      { label: 'CAJA', value: 'CAJA' },
+    ],
+    // Utensilios de cocina
+    '5214': [
+      { label: 'UNIDAD', value: 'UNIDAD' }, { label: 'JUEGO', value: 'JUEGO' },
+      { label: 'PAR', value: 'PAR' }, { label: 'KIT', value: 'KIT' },
+      { label: 'SET', value: 'SET' },
+    ],
+    // Equipos industriales de cocina
+    '4810': [{ label: 'UNIDAD', value: 'UNIDAD' }],
+    // Refrigeración
+    '2611': [{ label: 'UNIDAD', value: 'UNIDAD' }],
+    // Productos de limpieza (detergentes, desinfectantes)
+    '4713': [
+      { label: 'LITRO', value: 'LITRO' }, { label: 'MILILITRO', value: 'MILILITRO' },
+      { label: 'GALÓN', value: 'GALÓN' }, { label: 'KILOGRAMO', value: 'KILOGRAMO' },
+      { label: 'GRAMO', value: 'GRAMO' }, { label: 'FRASCO', value: 'FRASCO' },
+      { label: 'PAQUETE', value: 'PAQUETE' }, { label: 'UNIDAD', value: 'UNIDAD' },
+    ],
+    // Herramientas de limpieza
+    '4714': [
+      { label: 'UNIDAD', value: 'UNIDAD' }, { label: 'PAQUETE', value: 'PAQUETE' },
+      { label: 'PAR', value: 'PAR' }, { label: 'JUEGO', value: 'JUEGO' },
+    ],
+    // Empaques (film, papel aluminio, bolsas)
+    '2411': [
+      { label: 'ROLLO', value: 'ROLLO' }, { label: 'METRO', value: 'METRO' },
+      { label: 'PAQUETE', value: 'PAQUETE' }, { label: 'UNIDAD', value: 'UNIDAD' },
+    ],
+    // Desechables
+    '2412': [
+      { label: 'UNIDAD', value: 'UNIDAD' }, { label: 'PAQUETE', value: 'PAQUETE' },
+      { label: 'CAJA', value: 'CAJA' },
+    ],
+    // Recipientes herméticos
+    '3120': [
+      { label: 'UNIDAD', value: 'UNIDAD' }, { label: 'PAQUETE', value: 'PAQUETE' },
+      { label: 'JUEGO', value: 'JUEGO' },
+    ],
+    // TIC — Hardware (computadores, impresoras, periféricos)
+    '4321': [
+      { label: 'UNIDAD', value: 'UNIDAD' }, { label: 'KIT', value: 'KIT' },
+    ],
+    // TIC — Software / redes / comunicaciones
+    '4322': [
+      { label: 'UNIDAD', value: 'UNIDAD' }, { label: 'LICENCIA', value: 'LICENCIA' },
+      { label: 'KIT', value: 'KIT' },
+    ],
+    // TIC — Cableado
+    '4323': [
+      { label: 'METRO', value: 'METRO' }, { label: 'ROLLO', value: 'ROLLO' },
+      { label: 'UNIDAD', value: 'UNIDAD' },
+    ],
+    // TIC — Almacenamiento (disco duro, memoria)
+    '4319': [{ label: 'UNIDAD', value: 'UNIDAD' }],
+    // TIC — Displays, proyectores, accesorios AV
+    '4320': [
+      { label: 'UNIDAD', value: 'UNIDAD' }, { label: 'KIT', value: 'KIT' },
+    ],
+  };
+
+  // Códigos UNSPSC — Colombia Compra Eficiente (SECOP II) — SENA Gastronomía + TIC
+  codigosUnspsc: SelectOption[] = [
+    // ── ALIMENTOS Y BEBIDAS — Segmento 50 ──────────────────────
+    { label: '50101501 - Arroz', value: '50101501' },
+    { label: '50101701 - Harina de trigo', value: '50101701' },
+    { label: '50101702 - Harina de maíz', value: '50101702' },
+    { label: '50111501 - Aceite vegetal comestible', value: '50111501' },
+    { label: '50111601 - Mantequilla', value: '50111601' },
+    { label: '50111602 - Margarina', value: '50111602' },
+    { label: '50121501 - Azúcar refinada', value: '50121501' },
+    { label: '50121901 - Sal de mesa', value: '50121901' },
+    { label: '50122001 - Vinagre', value: '50122001' },
+    { label: '50131501 - Leche entera pasteurizada', value: '50131501' },
+    { label: '50131502 - Leche descremada', value: '50131502' },
+    { label: '50131601 - Crema de leche', value: '50131601' },
+    { label: '50131701 - Queso fresco', value: '50131701' },
+    { label: '50141501 - Huevos de gallina', value: '50141501' },
+    { label: '50151501 - Pollo entero fresco', value: '50151501' },
+    { label: '50151502 - Carne de res fresca', value: '50151502' },
+    { label: '50151601 - Cerdo fresco', value: '50151601' },
+    { label: '50171501 - Pescado fresco', value: '50171501' },
+    { label: '50181501 - Camarón fresco', value: '50181501' },
+    { label: '50191501 - Legumbres secas (lentejas, frijoles, garbanzos)', value: '50191501' },
+    { label: '50201501 - Papas frescas', value: '50201501' },
+    { label: '50201502 - Cebollas frescas', value: '50201502' },
+    { label: '50201503 - Tomates frescos', value: '50201503' },
+    { label: '50201701 - Zanahorias frescas', value: '50201701' },
+    { label: '50211501 - Manzanas frescas', value: '50211501' },
+    { label: '50211502 - Plátanos frescos', value: '50211502' },
+    { label: '50221501 - Especias y condimentos', value: '50221501' },
+    { label: '50221502 - Hierbas aromáticas secas', value: '50221502' },
+    { label: '50281501 - Café molido', value: '50281501' },
+    { label: '50281701 - Té en bolsas', value: '50281701' },
+    { label: '50291501 - Agua embotellada', value: '50291501' },
+    { label: '50301701 - Pasta alimentaria', value: '50301701' },
+    { label: '50301801 - Pan industrial', value: '50301801' },
+    // ── UTENSILIOS DE COCINA — Segmento 52 ────────────────────
+    { label: '52141501 - Ollas de acero inoxidable', value: '52141501' },
+    { label: '52141502 - Sartenes de acero inoxidable', value: '52141502' },
+    { label: '52141601 - Tablas de cortar plásticas', value: '52141601' },
+    { label: '52141701 - Cuchillos de cocina profesional', value: '52141701' },
+    { label: '52141702 - Juego de cuchillos de chef', value: '52141702' },
+    { label: '52141801 - Cucharones y espumaderas', value: '52141801' },
+    { label: '52141901 - Bowls de acero inoxidable', value: '52141901' },
+    { label: '52142001 - Bandejas de hornear', value: '52142001' },
+    { label: '52142101 - Coladeras y coladores', value: '52142101' },
+    { label: '52142201 - Peladores de verduras', value: '52142201' },
+    { label: '52142301 - Batidores de alambre (globo)', value: '52142301' },
+    { label: '52142401 - Termómetros de cocina', value: '52142401' },
+    // ── EQUIPOS MAYORES — Segmentos 48 / 26 ───────────────────
+    { label: '48101701 - Licuadora industrial', value: '48101701' },
+    { label: '48101702 - Batidora de pedestal industrial', value: '48101702' },
+    { label: '48101801 - Horno de convección', value: '48101801' },
+    { label: '48102001 - Freidora industrial', value: '48102001' },
+    { label: '48102101 - Plancha de cocina industrial', value: '48102101' },
+    { label: '26111701 - Refrigerador comercial', value: '26111701' },
+    { label: '26111702 - Congelador comercial horizontal', value: '26111702' },
+    { label: '48102301 - Estufa industrial a gas', value: '48102301' },
+    // ── ASEO Y LIMPIEZA — Segmento 47 ─────────────────────────
+    { label: '47131501 - Detergente desengrasante para cocina', value: '47131501' },
+    { label: '47131502 - Desinfectante multiusos para superficies', value: '47131502' },
+    { label: '47131601 - Jabón antibacterial líquido', value: '47131601' },
+    { label: '47131701 - Blanqueador / hipoclorito de sodio', value: '47131701' },
+    { label: '47141501 - Esponjas y estropajos', value: '47141501' },
+    { label: '47141601 - Guantes de caucho para limpieza', value: '47141601' },
+    { label: '47141701 - Traperos y mochos', value: '47141701' },
+    { label: '47141702 - Escobas y cepillos', value: '47141702' },
+    // ── EMPAQUES ALIMENTARIOS — Segmentos 24 / 31 ─────────────
+    { label: '24111501 - Bolsas plásticas para alimentos', value: '24111501' },
+    { label: '24111601 - Film plástico / vinipel', value: '24111601' },
+    { label: '24111701 - Papel aluminio para cocina', value: '24111701' },
+    { label: '24111801 - Papel encerado para alimentos', value: '24111801' },
+    { label: '31201501 - Recipientes herméticos plásticos', value: '31201501' },
+    { label: '24121501 - Contenedores desechables de icopor', value: '24121501' },
+    { label: '24121601 - Vasos desechables de plástico', value: '24121601' },
+    { label: '24121701 - Cubiertos desechables', value: '24121701' },
+    // ── TIC / TECNOLOGÍA — Segmento 43 ────────────────────────
+    { label: '43211501 - Computador de escritorio (PC)', value: '43211501' },
+    { label: '43211503 - Computador portátil / laptop', value: '43211503' },
+    { label: '43211507 - Servidor de red', value: '43211507' },
+    { label: '43211604 - Teclado USB', value: '43211604' },
+    { label: '43211605 - Mouse / ratón óptico', value: '43211605' },
+    { label: '43211901 - Memoria USB / pendrive', value: '43211901' },
+    { label: '43211702 - Impresora de inyección de tinta', value: '43211702' },
+    { label: '43211701 - Impresora láser', value: '43211701' },
+    { label: '43212105 - Tableta electrónica (tablet)', value: '43212105' },
+    { label: '43201401 - Proyector multimedia / video beam', value: '43201401' },
+    { label: '43201405 - Pantalla interactiva / smartboard', value: '43201405' },
+    { label: '43201601 - Monitor de computador', value: '43201601' },
+    { label: '43202201 - Cámara web / webcam', value: '43202201' },
+    { label: '43201801 - Audífonos con micrófono (headset)', value: '43201801' },
+    { label: '43191501 - Disco duro externo', value: '43191501' },
+    { label: '43191602 - Tarjeta de memoria SD', value: '43191602' },
+    { label: '43221501 - Software de sistema operativo', value: '43221501' },
+    { label: '43221502 - Software de ofimática (Office)', value: '43221502' },
+    { label: '43221701 - Software antivirus / seguridad', value: '43221701' },
+    { label: '43222601 - Router / enrutador de red', value: '43222601' },
+    { label: '43222602 - Switch de red', value: '43222602' },
+    { label: '43222603 - Punto de acceso inalámbrico (WiFi)', value: '43222603' },
+    { label: '43222501 - UPS / sistema de alimentación ininterrumpida', value: '43222501' },
+    { label: '43231501 - Cable de red UTP', value: '43231501' },
   ];
 
   productoForm: FormGroup = this.fb.group({
     id_producto: [null],
     nombre: ['', Validators.required],
-    codigo_unspsc: [''],
+    descripcion: [''],
+    codigo_unspsc: [null],
     SKU: ['', Validators.required],
     tipo_material: ['CONSUMO', Validators.required],
     unidad_medida: ['UNIDAD', Validators.required],
     es_psd: [false],
     fecha_vencimiento: [''],
     id_categoria: [null, Validators.required],
+    id_sitio: [null, Validators.required],
     cantidad: [1, [Validators.required, Validators.min(1)]],
     stock_minimo: [1, [Validators.required, Validators.min(1)]],
+    unidad_peso_bulto: [null],
+    peso_por_bulto: [null],
   });
+
+  private readonly UNIDADES_PESO_VOL = new Set([
+    'KILOGRAMO', 'GRAMO', 'LIBRA', 'TONELADA',
+    'LITRO', 'MILILITRO', 'GALÓN', 'BOTELLA',
+  ]);
+
+  get unidadActual(): string {
+    return this.productoForm.get('unidad_medida')?.value || '';
+  }
+
+  get esMedidaPesoVol(): boolean {
+    return this.UNIDADES_PESO_VOL.has(this.unidadActual) && !this.esBulto;
+  }
+
+  get esPerecedero(): boolean {
+    return this.productoForm.get('tipo_material')?.value === 'PERECEDERO';
+  }
+
+  get esBulto(): boolean {
+    return this.productoForm.get('unidad_medida')?.value === 'BULTO';
+  }
+
+  get mostrarPesoPorBulto(): boolean {
+    return this.esBulto && !!this.productoForm.get('unidad_peso_bulto')?.value;
+  }
+
+  get minDate(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  get fechaInvalida(): boolean {
+    if (!this.esPerecedero) return false;
+    const fecha = this.productoForm.get('fecha_vencimiento')?.value;
+    if (!fecha) return false;
+    return fecha < this.minDate;
+  }
 
   get hasSelectedProducts(): boolean {
     return this.selectedProducts && this.selectedProducts.length > 0;
@@ -626,6 +902,24 @@ export class ProductosComponent implements OnInit {
   ngOnInit() {
     this.cargarDatos();
     this.cargarCategorias();
+    this.cargarBodegas();
+  }
+
+  cargarBodegas() {
+    this.sitioService.getSitios().subscribe({
+      next: (res: any) => {
+        const all: any[] = res?.data || res || [];
+        this.bodegas = all.filter(s => s.tipo === 'BODEGA');
+        setTimeout(() => this.cdr.detectChanges());
+      },
+      error: () => { this.bodegas = []; },
+    });
+  }
+
+  getBodegaNombre(id_sitio: number | null | undefined): string {
+    if (!id_sitio) return '—';
+    const b = this.bodegas.find(b => b.id_sitio === id_sitio);
+    return b ? b.nombre : '—';
   }
 
   cargarDatos() {
@@ -638,11 +932,7 @@ export class ProductosComponent implements OnInit {
             this.productos = prods.map((p: any) => {
               const productItems = items.filter((item: any) => item.id_producto === p.id_producto);
               const disponibles = productItems.filter((item: any) => item.estado === 'DISPONIBLE').length;
-              return {
-                ...p,
-                itemsDisponibles: disponibles,
-                totalItems: productItems.length
-              };
+              return { ...p, itemsDisponibles: disponibles, totalItems: productItems.length };
             });
             this.productosFiltrados = this.productos;
             setTimeout(() => this.cdr.detectChanges());
@@ -668,144 +958,189 @@ export class ProductosComponent implements OnInit {
         this.categorias = res?.data || res || [];
         setTimeout(() => this.cdr.detectChanges());
       },
-      error: () => {
-        this.categorias = [];
-        setTimeout(() => this.cdr.detectChanges());
-      },
+      error: () => { this.categorias = []; },
     });
   }
 
+  onUnspscChange(value: string | null) {
+    if (!value) {
+      this.unidadesDisponibles = [...this.unidadesMedidaBase];
+      this.esGastronomia = false;
+      this.codigoUnspscSeleccionado = false;
+      this.actualizarValidadoresSKU();
+      return;
+    }
+    const familia = value.substring(0, 4);
+    const unidades = this.UNIDADES_POR_FAMILIA[familia];
+    if (unidades) {
+      this.unidadesDisponibles = unidades;
+      this.codigoUnspscSeleccionado = true;
+      // Reset unidad_medida al primer valor disponible
+      this.productoForm.patchValue({ unidad_medida: unidades[0].value });
+    } else {
+      this.unidadesDisponibles = [...this.unidadesMedidaBase];
+      this.codigoUnspscSeleccionado = false;
+    }
+    // Gastronomía = segmento 50 (alimentos)
+    this.esGastronomia = value.startsWith('50');
+    this.actualizarValidadoresSKU();
+  }
 
+  private actualizarValidadoresSKU() {
+    const skuControl = this.productoForm.get('SKU');
+    if (this.esGastronomia) {
+      skuControl?.clearValidators();
+      skuControl?.setValue(null);
+    } else {
+      skuControl?.setValidators([Validators.required]);
+    }
+    skuControl?.updateValueAndValidity();
+  }
 
-  onPsdChange(event: any) {
-    this.psdChecked = event.target.checked;
-    if (!this.psdChecked) {
-      this.productoForm.patchValue({ fecha_vencimiento: '' });
+  onTipoMaterialChange(value: string) {
+    if (value !== 'PERECEDERO') {
+      this.productoForm.patchValue({ es_psd: false, fecha_vencimiento: '' });
+    } else {
+      this.productoForm.patchValue({ es_psd: true });
+    }
+  }
+
+  onUnidadMedidaChange(value: string) {
+    if (value !== 'BULTO') {
+      this.productoForm.patchValue({ unidad_peso_bulto: null, peso_por_bulto: null });
     }
   }
 
   filtrar() {
-    const filtroLower = this.filtro.toLowerCase();
-    this.productosFiltrados = this.productos.filter(
-      (p) =>
-        p.nombre?.toLowerCase().includes(filtroLower) ||
-        p.codigo_unspsc?.toLowerCase().includes(filtroLower) ||
-        p.SKU?.toLowerCase().includes(filtroLower) ||
-        p.categoria?.nombre?.toLowerCase().includes(filtroLower) ||
-        p.tipo_material?.toLowerCase().includes(filtroLower),
+    const f = this.filtro.toLowerCase();
+    this.productosFiltrados = this.productos.filter(p =>
+      p.nombre?.toLowerCase().includes(f) ||
+      p.codigo_unspsc?.toLowerCase().includes(f) ||
+      p.SKU?.toLowerCase().includes(f) || // Placa SENA
+      p.categoria?.nombre?.toLowerCase().includes(f) ||
+      p.tipo_material?.toLowerCase().includes(f)
     );
   }
 
   onImageError(event: Event) {
-    const img = event.target as HTMLImageElement;
-    img.style.display = 'none';
+    (event.target as HTMLImageElement).style.display = 'none';
   }
 
   openNew() {
     this.esNuevo = true;
-    this.psdChecked = false;
+    this.esGastronomia = false;
+    this.codigoUnspscSeleccionado = false;
+    this.unidadesDisponibles = [...this.unidadesMedidaBase];
     this.productoForm.get('cantidad')?.enable();
+    this.productoForm.get('SKU')?.setValidators([Validators.required]);
+    this.productoForm.get('SKU')?.updateValueAndValidity();
     this.productoForm.reset({
-      id_producto: null,
-      nombre: '',
-      codigo_unspsc: '',
-      SKU: '',
-      tipo_material: 'CONSUMO',
-      unidad_medida: 'UNIDAD',
-      es_psd: false,
-      fecha_vencimiento: '',
-      id_categoria: null,
-      cantidad: 1,
-      stock_minimo: 1,
+      id_producto: null, nombre: '', descripcion: '', codigo_unspsc: null,
+      SKU: '', tipo_material: 'CONSUMO', unidad_medida: 'UNIDAD',
+      es_psd: false, fecha_vencimiento: '', id_categoria: null, id_sitio: null,
+      cantidad: 1, stock_minimo: 1, unidad_peso_bulto: null, peso_por_bulto: null,
     });
     this.displayDialog = true;
   }
 
   editar(producto: Producto) {
     this.esNuevo = false;
-    this.psdChecked = producto.es_psd === true;
     this.productoForm.get('cantidad')?.disable();
     const id_categoria = producto.id_categoria ?? producto.categoria?.id_categoria ?? null;
+
+    // Actualizar unidades y gastronomía según UNSPSC existente
+    if (producto.codigo_unspsc) {
+      const familia = producto.codigo_unspsc.substring(0, 4);
+      this.unidadesDisponibles = this.UNIDADES_POR_FAMILIA[familia] || [...this.unidadesMedidaBase];
+      this.esGastronomia = producto.codigo_unspsc.startsWith('50');
+      this.codigoUnspscSeleccionado = true;
+    } else {
+      this.unidadesDisponibles = [...this.unidadesMedidaBase];
+      this.esGastronomia = false;
+      this.codigoUnspscSeleccionado = false;
+    }
+    this.actualizarValidadoresSKU();
+
     this.productoForm.patchValue({
       id_producto: producto.id_producto,
       nombre: producto.nombre,
-      codigo_unspsc: producto.codigo_unspsc,
-      SKU: producto.SKU,
+      descripcion: producto.descripcion || '',
+      codigo_unspsc: producto.codigo_unspsc || null,
+      SKU: producto.SKU || '',
       tipo_material: producto.tipo_material,
       unidad_medida: producto.unidad_medida,
       es_psd: producto.es_psd,
-      fecha_vencimiento: producto.fecha_vencimiento,
-      id_categoria: id_categoria,
+      fecha_vencimiento: producto.fecha_vencimiento || '',
+      id_categoria,
+      id_sitio: producto.id_sitio || null,
       stock_minimo: producto.stock_minimo || 1,
+      unidad_peso_bulto: (producto as any).unidad_peso_bulto || null,
+      peso_por_bulto: (producto as any).peso_por_bulto || null,
     });
     this.displayDialog = true;
   }
 
   guardar() {
-    if (this.productoForm.invalid) {
-      this.notification.add({ module: 'Productos',
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'Por favor complete los campos requeridos',
-      });
+    if (this.productoForm.invalid || this.fechaInvalida) {
+      this.notification.add({ module: 'Productos', severity: 'warn', summary: 'Advertencia', detail: 'Complete los campos requeridos correctamente' });
       return;
     }
 
     const formValue = this.productoForm.getRawValue();
+    const esPerecedero = formValue.tipo_material === 'PERECEDERO';
+    const esBultoVal = formValue.unidad_medida === 'BULTO';
+
     const productoData: any = {
       nombre: formValue.nombre,
-      codigo_unspsc: formValue.codigo_unspsc || undefined,
-      SKU: formValue.SKU,
       tipo_material: formValue.tipo_material,
       unidad_medida: formValue.unidad_medida,
-      es_psd: formValue.es_psd === true,
-      fecha_vencimiento: formValue.fecha_vencimiento || undefined,
-      id_categoria: formValue.id_categoria,
+      es_psd: esPerecedero,
+      id_categoria: Number(formValue.id_categoria),
+      id_sitio: Number(formValue.id_sitio),
       stock_minimo: Number(formValue.stock_minimo),
     };
 
-    if (this.esNuevo) {
-      productoData.cantidad = Number(formValue.cantidad);
-    }
+    // Opcionales — solo se incluyen si tienen valor real
+    if (formValue.descripcion) productoData.descripcion = formValue.descripcion;
+    if (formValue.codigo_unspsc) productoData.codigo_unspsc = String(formValue.codigo_unspsc);
+    if (formValue.SKU) productoData.SKU = formValue.SKU;
+    if (esPerecedero && formValue.fecha_vencimiento) productoData.fecha_vencimiento = formValue.fecha_vencimiento;
+    if (esBultoVal && formValue.unidad_peso_bulto) productoData.unidad_peso_bulto = formValue.unidad_peso_bulto;
+    if (esBultoVal && formValue.peso_por_bulto) productoData.peso_por_bulto = Number(formValue.peso_por_bulto);
+    if (this.esNuevo) productoData.cantidad = Number(formValue.cantidad);
 
-    //console.log('Datos enviados al backend:', JSON.stringify(productoData));
+    console.log('[Guardar] Payload enviado:', productoData);
 
     if (this.esNuevo) {
       this.productoService.crearProducto(productoData).subscribe({
         next: () => {
-          this.notification.add({ module: 'Productos',
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Producto creado correctamente',
-          });
+          this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Producto creado correctamente' });
           this.displayDialog = false;
           this.cargarDatos();
         },
         error: (err) => {
-          this.notification.add({ module: 'Productos',
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo crear el producto: ' + (err?.message || 'Error desconocido'),
-          });
+          const backendMsg = err?.error?.message;
+          const detail = Array.isArray(backendMsg)
+            ? backendMsg.join(' | ')
+            : (backendMsg || err?.message || 'Error desconocido');
+          console.error('[Guardar] Error backend:', err?.error);
+          this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error al crear', detail });
         },
       });
     } else {
       this.productoService.actualizarProducto(formValue.id_producto, productoData).subscribe({
         next: () => {
-          this.notification.add({ module: 'Productos',
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Producto actualizado correctamente',
-          });
+          this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Producto actualizado correctamente' });
           this.displayDialog = false;
           this.cargarDatos();
         },
         error: (err) => {
-          this.notification.add({ module: 'Productos',
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo actualizar el producto',
-          });
+          const backendMsg = err?.error?.message;
+          const detail = Array.isArray(backendMsg)
+            ? backendMsg.join(' | ')
+            : (backendMsg || err?.message || 'Error desconocido');
+          console.error('[Guardar] Error backend:', err?.error);
+          this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error al actualizar', detail });
         },
       });
     }
@@ -814,109 +1149,64 @@ export class ProductosComponent implements OnInit {
   guardarNuevaCategoria() {
     const nombre = this.nuevoNombreCategoria.trim();
     if (!nombre) return;
-
     this.categoriaService.crearCategoria({ nombreCat: nombre }).subscribe({
       next: (res: any) => {
         const newCat = res?.data || res;
-        this.notification.add({ module: 'Productos',
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Categoría agregada correctamente',
-        });
-        
-        // Reload categories and select the new one
+        this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Categoría agregada' });
         this.categoriaService.getCategorias().subscribe({
           next: (catRes: any) => {
             this.categorias = catRes?.data || catRes || [];
-            const found = this.categorias.find(
-              (c) => c.nombre.toLowerCase() === nombre.toLowerCase() || c.id_categoria === newCat?.id_categoria
-            );
-            if (found) {
-              this.productoForm.patchValue({ id_categoria: found.id_categoria });
-            } else if (newCat?.id_categoria) {
-              this.productoForm.patchValue({ id_categoria: newCat.id_categoria });
-            }
+            const found = this.categorias.find(c => c.nombre.toLowerCase() === nombre.toLowerCase() || c.id_categoria === newCat?.id_categoria);
+            if (found) this.productoForm.patchValue({ id_categoria: found.id_categoria });
+            else if (newCat?.id_categoria) this.productoForm.patchValue({ id_categoria: newCat.id_categoria });
             this.displayAddCategoria = false;
             this.nuevoNombreCategoria = '';
             setTimeout(() => this.cdr.detectChanges());
           },
-          error: () => {
-            this.displayAddCategoria = false;
-            this.nuevoNombreCategoria = '';
-          }
+          error: () => { this.displayAddCategoria = false; this.nuevoNombreCategoria = ''; }
         });
       },
-      error: (err) => {
-        this.notification.add({ module: 'Productos',
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo crear la categoría',
-        });
-      }
+      error: () => { this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudo crear la categoría' }); }
     });
   }
 
   guardarNuevoTipoMaterial() {
     const val = this.nuevoNombreTipoMaterial.trim().toUpperCase();
     if (!val) return;
-
-    const exists = this.tiposMaterial.some(t => t.value === val);
-    if (!exists) {
+    if (!this.tiposMaterial.some(t => t.value === val)) {
       this.tiposMaterial = [...this.tiposMaterial, { label: val, value: val }];
     }
-    
     this.productoForm.patchValue({ tipo_material: val });
     this.displayAddTipoMaterial = false;
     this.nuevoNombreTipoMaterial = '';
-    this.notification.add({ module: 'Productos',
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Tipo de material agregado',
-    });
+    this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Tipo agregado' });
   }
 
   guardarNuevaUnidadMedida() {
     const val = this.nuevoNombreUnidadMedida.trim().toUpperCase();
     if (!val) return;
-
-    const exists = this.unidadesMedida.some(u => u.value === val);
-    if (!exists) {
-      this.unidadesMedida = [...this.unidadesMedida, { label: val, value: val }];
+    if (!this.unidadesDisponibles.some(u => u.value === val)) {
+      this.unidadesDisponibles = [...this.unidadesDisponibles, { label: val, value: val }];
     }
-
     this.productoForm.patchValue({ unidad_medida: val });
     this.displayAddUnidadMedida = false;
     this.nuevoNombreUnidadMedida = '';
-    this.notification.add({ module: 'Productos',
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Unidad de medida agregada',
-    });
+    this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Unidad agregada' });
   }
 
   eliminar(producto: Producto) {
     this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar el producto "' + producto.nombre + '"?',
+      message: '¿Está seguro de eliminar "' + producto.nombre + '"?',
       header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.productoService.eliminarProducto(producto.id_producto).subscribe({
           next: () => {
-            this.notification.add({ module: 'Productos',
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Producto eliminado correctamente',
-            });
+            this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Producto eliminado' });
             this.cargarDatos();
           },
-          error: () => {
-            this.notification.add({ module: 'Productos',
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo eliminar el producto',
-            });
-          },
+          error: () => { this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudo eliminar' }); }
         });
       },
     });
@@ -927,19 +1217,14 @@ export class ProductosComponent implements OnInit {
     this.displayItemsDialog = true;
     this.cargandoItems = true;
     this.itemsDelProducto = [];
-
     this.productoService.getItemsByProducto(producto.id_producto).subscribe({
       next: (res: any) => {
         this.itemsDelProducto = res?.data || res || [];
         this.cargandoItems = false;
         setTimeout(() => this.cdr.detectChanges());
       },
-      error: (err) => {
-        this.notification.add({ module: 'Productos',
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar los items del producto',
-        });
+      error: () => {
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items' });
         this.cargandoItems = false;
         setTimeout(() => this.cdr.detectChanges());
       }
@@ -948,47 +1233,54 @@ export class ProductosComponent implements OnInit {
 
   getItemSeverity(estado: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
     switch (estado) {
-      case 'DISPONIBLE':
-        return 'success';
-      case 'PRESTADO':
-        return 'warn';
-      case 'DAÑADO':
-        return 'danger';
-      case 'PERDIDO':
-        return 'secondary';
-      default:
-        return 'info';
+      case 'DISPONIBLE': return 'success';
+      case 'PRESTADO': return 'warn';
+      case 'DAÑADO': return 'danger';
+      case 'PERDIDO': return 'secondary';
+      default: return 'info';
     }
+  }
+
+  getTipoMaterialSeverity(tipo: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    switch (tipo) {
+      case 'CONSUMO': return 'info';
+      case 'DEVOLUTIVO': return 'success';
+      case 'PERECEDERO': return 'warn';
+      default: return 'secondary';
+    }
+  }
+
+  getUnspscLabel(codigo: string): string {
+    const found = this.codigosUnspsc.find(c => c.value === codigo);
+    return found ? found.label : codigo;
+  }
+
+  getFechaClass(fecha: string): string {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const vence = new Date(fecha + 'T00:00:00');
+    const diasRestantes = Math.ceil((vence.getTime() - hoy.getTime()) / 86400000);
+    if (diasRestantes < 0) return 'bg-red-100 text-red-700 border border-red-300';
+    if (diasRestantes <= 7) return 'bg-orange-100 text-orange-700 border border-orange-300';
+    if (diasRestantes <= 30) return 'bg-yellow-100 text-yellow-700 border border-yellow-300';
+    return 'bg-green-100 text-green-700 border border-green-300';
   }
 
   deleteSelected() {
     this.confirmationService.confirm({
-      message:
-        '¿Está seguro de eliminar los ' +
-        this.selectedProducts.length +
-        ' productos seleccionados?',
+      message: '¿Eliminar los ' + this.selectedProducts.length + ' productos seleccionados?',
       header: 'Confirmar Eliminación Múltiple',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        const ids = this.selectedProducts.map((p) => p.id_producto);
+        const ids = this.selectedProducts.map(p => p.id_producto);
         this.productoService.eliminarMultiples(ids).subscribe({
           next: () => {
-            this.notification.add({ module: 'Productos',
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Productos eliminados correctamente',
-            });
+            this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Productos eliminados' });
             this.selectedProducts = [];
             this.cargarDatos();
           },
-          error: () => {
-            this.notification.add({ module: 'Productos',
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudieron eliminar los productos',
-            });
-          },
+          error: () => { this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudieron eliminar' }); }
         });
       },
     });

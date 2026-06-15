@@ -19,6 +19,7 @@ import { ProductoService } from '../../infrastructure/services/producto.service'
 import { CategoriaService } from '../../infrastructure/services/categoria.service';
 import { SitioService } from '../../infrastructure/services/sitio.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { NovedadService } from '../../infrastructure/services/novedad.service';
 
 interface Producto {
   id_producto: number;
@@ -92,7 +93,7 @@ type SelectOption = { label: string; value: string };
               <th style="min-width:130px" class="text-center">Info Bulto</th>
               <th style="min-width:110px" class="text-center">Vencimiento</th>
               <th style="min-width:60px" class="text-center">Stock<br/>Mín.</th>
-              <th style="min-width:60px" class="text-center">Items</th>
+              <th style="min-width:80px" class="text-center">Disponibles</th>
               <th style="min-width:110px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
@@ -176,9 +177,13 @@ type SelectOption = { label: string; value: string };
               <!-- Stock Mínimo -->
               <td class="text-center"><span class="text-sm">{{ producto.stock_minimo || 0 }}</span></td>
 
-              <!-- Total Items -->
+              <!-- Disponibles / Total Items -->
               <td class="text-center">
-                <span class="font-bold text-slate-700">{{ producto.totalItems || 0 }}</span>
+                <span class="font-bold" [ngClass]="{
+                  'text-green-600': (producto.itemsDisponibles || 0) > 0,
+                  'text-red-500': (producto.itemsDisponibles || 0) === 0
+                }">{{ producto.itemsDisponibles || 0 }}</span>
+                <span class="text-xs text-slate-400"> / {{ producto.totalItems || 0 }}</span>
               </td>
 
               <!-- Acciones -->
@@ -223,7 +228,7 @@ type SelectOption = { label: string; value: string };
 
         <!-- Descripción -->
         <div class="form-field">
-          <label for="descripcion">Descripción</label>
+          <label for="descripcion">Descripción técnica del elemento o servicio</label>
           <textarea
             pTextarea
             id="descripcion"
@@ -485,9 +490,10 @@ type SelectOption = { label: string; value: string };
           [paginator]="itemsDelProducto.length > 5" [rows]="5">
           <ng-template pTemplate="header">
             <tr>
-              <th style="width:100px">ID Item</th>
+              <th style="width:90px">ID Item</th>
               <th>Código SKU</th>
-              <th class="text-center" style="width:150px">Estado</th>
+              <th class="text-center" style="width:130px">Estado</th>
+              <th class="text-center" style="width:130px">Acciones</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-item>
@@ -497,6 +503,15 @@ type SelectOption = { label: string; value: string };
               <td class="text-center">
                 <p-tag [value]="item.estado" [severity]="getItemSeverity(item.estado)"
                   styleClass="px-3 py-1 font-bold rounded-lg"></p-tag>
+              </td>
+              <td class="text-center">
+                <button pButton icon="pi pi-exclamation-circle"
+                  class="p-button-text"
+                  style="color:#f59e0b"
+                  pTooltip="Registrar novedad"
+                  tooltipPosition="left"
+                  (click)="abrirDialogoNovedad(item)">
+                </button>
               </td>
             </tr>
           </ng-template>
@@ -514,6 +529,61 @@ type SelectOption = { label: string; value: string };
         </div>
       </ng-template>
     </p-dialog>
+
+    <!-- Dialog Registrar Novedad (desde item) -->
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+      header="⚠️ Registrar Novedad"
+      [(visible)]="displayNovedadDialog" [modal]="true"
+      [style]="{width:'480px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200"
+      appendTo="body">
+      <div class="form-container mt-4" *ngIf="displayNovedadDialog && itemParaNovedad">
+
+        <!-- Info del item (solo lectura) -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:1.25rem">
+          <div style="display:flex;align-items:center;gap:10px">
+            <i class="pi pi-box" style="color:#64748b;font-size:18px"></i>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#1e293b">
+                {{ productoSeleccionadoParaItems?.nombre ?? 'Producto' }}
+              </div>
+              <div style="font-size:11px;color:#94a3b8;font-family:monospace;margin-top:2px">
+                SKU: {{ itemParaNovedad.codigo_sku }} &nbsp;·&nbsp; Item #{{ itemParaNovedad.id_item }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>Tipo de novedad <span style="color:red">*</span></label>
+          <p-select
+            [options]="tiposNovedadOpciones"
+            [(ngModel)]="nuevaNovedad.tipo"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar tipo..."
+            appendTo="body"
+            style="width:100%">
+          </p-select>
+        </div>
+
+        <div class="form-field">
+          <label>Descripción <span style="color:red">*</span></label>
+          <textarea pTextarea [(ngModel)]="nuevaNovedad.descripcion" rows="4"
+            placeholder="Describe detalladamente la novedad encontrada..."
+            style="width:100%;resize:vertical;border:2px solid #1e293b;border-radius:8px;padding:8px 10px;font-size:0.875rem;font-family:inherit">
+          </textarea>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button pButton label="Cancelar" class="btn-cancelar" (click)="displayNovedadDialog=false"></button>
+        <button pButton label="Registrar" icon="pi pi-exclamation-circle" class="btn-guardar"
+          [disabled]="!nuevaNovedad.tipo || !nuevaNovedad.descripcion?.trim()"
+          (click)="guardarNovedad()">
+        </button>
+      </div>
+    </p-dialog>
   `
 })
 export class ProductosComponent implements OnInit {
@@ -525,6 +595,7 @@ export class ProductosComponent implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
+  private novedadService = inject(NovedadService);
 
   esAdmin(): boolean {
     return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
@@ -553,6 +624,17 @@ export class ProductosComponent implements OnInit {
   itemsDelProducto: any[] = [];
   productoSeleccionadoParaItems: any = null;
   cargandoItems = false;
+
+  displayNovedadDialog = false;
+  itemParaNovedad: any = null;
+  nuevaNovedad: { tipo: string; descripcion: string } = { tipo: '', descripcion: '' };
+  readonly tiposNovedadOpciones = [
+    { label: 'Daño', value: 'DAÑO' },
+    { label: 'Pérdida', value: 'PERDIDA' },
+    { label: 'Mantenimiento', value: 'MANTENIMIENTO' },
+    { label: 'Discrepancia', value: 'DISCREPANCIA' },
+    { label: 'Otro', value: 'OTRO' },
+  ];
 
   tiposMaterial: SelectOption[] = [
     { label: 'CONSUMO', value: 'CONSUMO' },
@@ -793,8 +875,8 @@ export class ProductosComponent implements OnInit {
     { label: '48101801 - Horno de convección', value: '48101801' },
     { label: '48102001 - Freidora industrial', value: '48102001' },
     { label: '48102101 - Plancha de cocina industrial', value: '48102101' },
-    { label: '26111701 - Refrigerador comercial', value: '26111701' },
-    { label: '26111702 - Congelador comercial horizontal', value: '26111702' },
+    { label: '26111701 - Baterías recargables', value: '26111701' },
+    { label: '26111702 - Pilas alcalinas', value: '26111702' },
     { label: '48102301 - Estufa industrial a gas', value: '48102301' },
     // ── ASEO Y LIMPIEZA — Segmento 47 ─────────────────────────
     { label: '47131501 - Detergente desengrasante para cocina', value: '47131501' },
@@ -822,7 +904,7 @@ export class ProductosComponent implements OnInit {
     { label: '43211605 - Mouse / ratón óptico', value: '43211605' },
     { label: '43211901 - Memoria USB / pendrive', value: '43211901' },
     { label: '43211702 - Impresora de inyección de tinta', value: '43211702' },
-    { label: '43211701 - Impresora láser', value: '43211701' },
+    { label: '43211701 - Equipo de lectura de código de barras', value: '43211701' },
     { label: '43212105 - Tableta electrónica (tablet)', value: '43212105' },
     { label: '43201401 - Proyector multimedia / video beam', value: '43201401' },
     { label: '43201405 - Pantalla interactiva / smartboard', value: '43201405' },
@@ -839,6 +921,44 @@ export class ProductosComponent implements OnInit {
     { label: '43222603 - Punto de acceso inalámbrico (WiFi)', value: '43222603' },
     { label: '43222501 - UPS / sistema de alimentación ininterrumpida', value: '43222501' },
     { label: '43231501 - Cable de red UTP', value: '43231501' },
+    // ── ELECTRÓNICA, HERRAMIENTAS Y EDUCACIÓN ─────────────────
+    { label: '11121502 - Resina', value: '11121502' },
+    { label: '23261507 - Máquina impresora tridimensional', value: '23261507' },
+    { label: '23271712 - Kit de soldadura o soldadura débil', value: '23271712' },
+    { label: '23271803 - Desoldador de trenza', value: '23271803' },
+    { label: '23271806 - Cautín', value: '23271806' },
+    { label: '26111704 - Cargadores de baterías', value: '26111704' },
+    { label: '26111706 - Pilas electrónicas', value: '26111706' },
+    { label: '26121609 - Cable de redes', value: '26121609' },
+    { label: '27111728 - Juego de destornilladores', value: '27111728' },
+    { label: '32101622 - Memoria flash', value: '32101622' },
+    { label: '32101628 - Microcontroladores', value: '32101628' },
+    { label: '32101652 - Circuito integrado lógico estándar', value: '32101652' },
+    { label: '32111503 - Diodos emisores de luz (LED)', value: '32111503' },
+    { label: '39112503 - Luces móviles', value: '39112503' },
+    { label: '39121011 - Fuentes ininterrumpibles de potencia', value: '39121011' },
+    { label: '39121440 - Cable de extensión eléctrica', value: '39121440' },
+    { label: '39121621 - Accesorios y aparatos de protección contra rayos', value: '39121621' },
+    { label: '39122303 - Relé multicontacto', value: '39122303' },
+    { label: '41113630 - Multímetros', value: '41113630' },
+    { label: '41113665 - Probador de resistencia de contacto', value: '41113665' },
+    { label: '43201414 - Protector de disco duro', value: '43201414' },
+    { label: '43201531 - Tarjetas de captura de video', value: '43201531' },
+    { label: '43212104 - Impresoras de inyección de tinta', value: '43212104' },
+    { label: '43221706 - Antenas de radio', value: '43221706' },
+    { label: '43222609 - Enrutadores (routers) de red', value: '43222609' },
+    { label: '43223303 - Cable de conexión de comunicación de datos', value: '43223303' },
+    { label: '44103103 - Tóner para impresoras o fax', value: '44103103' },
+    { label: '44111914 - Tabla de soporte para escribir', value: '44111914' },
+    { label: '44121634 - Rollos adhesivos', value: '44121634' },
+    { label: '47131813 - Limpiador de pantallas', value: '47131813' },
+    { label: '52161551 - Micrófono inalámbrico y sistema de amplificación de instrumentos', value: '52161551' },
+    { label: '60101318 - Tarjetas didácticas electrónicas', value: '60101318' },
+    { label: '60104912 - Alambres o cables eléctricos', value: '60104912' },
+    { label: '60106104 - Materiales didácticos de electricidad o electrónica', value: '60106104' },
+    { label: '60106402 - Suministros para la enseñanza de electrónica', value: '60106402' },
+    { label: '86141701 - Laboratorios de idiomas', value: '86141701' },
+    { label: '86141702 - Tecnología audiovisual', value: '86141702' },
   ];
 
   productoForm: FormGroup = this.fb.group({
@@ -1239,6 +1359,32 @@ export class ProductosComponent implements OnInit {
       case 'PERDIDO': return 'secondary';
       default: return 'info';
     }
+  }
+
+  abrirDialogoNovedad(item: any) {
+    this.itemParaNovedad = item;
+    this.nuevaNovedad = { tipo: '', descripcion: '' };
+    this.displayNovedadDialog = true;
+  }
+
+  guardarNovedad() {
+    const userId = Number(this.authService.getUserId()) || 1;
+    const payload = {
+      tipo: this.nuevaNovedad.tipo,
+      descripcion: this.nuevaNovedad.descripcion.trim(),
+      id_item: this.itemParaNovedad.id_item,
+      id_usuario: userId,
+      estado: 'PENDIENTE',
+    };
+    this.novedadService.crearNovedad(payload).subscribe({
+      next: () => {
+        this.notification.add({ module: 'Productos', severity: 'success', summary: 'Novedad registrada', detail: `Novedad registrada para el item ${this.itemParaNovedad.codigo_sku}` });
+        this.displayNovedadDialog = false;
+      },
+      error: () => {
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudo registrar la novedad' });
+      },
+    });
   }
 
   getTipoMaterialSeverity(tipo: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {

@@ -21,4 +21,8 @@ export class InventarioService {
   eliminarInventario(id: number): Observable<any> {
     return this.api.delete<any>(`/inventario/${id}`);
   }
+
+  getStockByProducto(id_producto: number): Observable<{ data: { disponibles: number; total: number } }> {
+    return this.api.get<any>(`/inventario/producto/${id_producto}/stock`);
+  }
 }

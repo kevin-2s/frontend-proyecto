@@ -51,6 +51,18 @@ export const routes: Routes = [
           {
             path: 'bodega',
             loadComponent: () => import('./presentation/bodega/bodega.component').then(m => m.BodegaComponent)
+          },
+          {
+            path: 'solicitudes',
+            loadComponent: () => import('./presentation/solicitudes/solicitudes.component').then(m => m.SolicitudesComponent)
+          },
+          {
+            path: 'asignar',
+            loadComponent: () => import('./presentation/asignar/asignar.component').then(m => m.AsignarComponent)
+          },
+          {
+            path: 'novedades',
+            loadComponent: () => import('./presentation/novedades/novedades.component').then(m => m.NovedadesComponent)
           }
         ]
       },
@@ -78,10 +90,6 @@ export const routes: Routes = [
         path: 'sitios',
         loadComponent: () => import('./presentation/sitios/sitios.component').then(m => m.SitiosComponent),
         canActivate: [roleGuard(['Administrador', 'Instructor'])]
-      },
-      {
-        path: 'solicitudes',
-        loadComponent: () => import('./presentation/solicitudes/solicitudes.component').then(m => m.SolicitudesComponent)
       },
       {
         path: 'centros',

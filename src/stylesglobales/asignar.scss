@@ -1,0 +1,233 @@
+@use './modern-table.scss' as *;
+
+/* ── ID badge ───────────────────────────────────────── */
+.id-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: #475569;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  letter-spacing: 0.02em;
+}
+
+/* ── Primary add button (alias) ─────────────────────── */
+.btn-agregar {
+  @extend .btn-add;
+}
+
+/* ── Extra status colors ────────────────────────────── */
+.status-proceso { background: #ede9fe; color: #7c3aed; }
+.status-info    { background: #e0f2fe; color: #0369a1; }
+
+/* ── Form container inside dialog ──────────────────── */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 0.5rem 2.5rem 1rem;
+}
+
+/* ── Nombre cell ────────────────────────────────────── */
+.nombre-cell {
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fecha-cell {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* ── Detail rows (dialog view) ──────────────────────── */
+.detail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.25rem 2.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin: 0 2.5rem;
+  border: 1px solid #e2e8f0;
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+
+    .detail-label {
+      font-weight: 700;
+      color: #64748b;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      min-width: 130px;
+    }
+
+    .detail-value {
+      font-weight: 600;
+      color: #0f172a;
+      text-align: right;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+/* ── Stock card ─────────────────────────────────────── */
+.stock-card {
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  padding: 1rem 1.25rem;
+  margin-top: 0.5rem;
+  transition: border-color 0.25s, background 0.25s;
+
+  &.stock-ok      { border-color: #bbf7d0; background: #f0fdf4; }
+  &.stock-low     { border-color: #fde68a; background: #fffbeb; }
+  &.stock-empty   { border-color: #fecaca; background: #fef2f2; }
+  &.stock-loading { border-color: #e2e8f0; background: #f8fafc; }
+
+  .stock-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+
+    .stock-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+    }
+
+    .stock-number {
+      font-size: 1.75rem;
+      font-weight: 900;
+      line-height: 1;
+
+      .stock-total {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #94a3b8;
+        margin-left: 0.25rem;
+      }
+    }
+  }
+
+  .stock-bar-track {
+    height: 6px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+
+    .stock-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &.fill-ok    { background: #22c55e; }
+      &.fill-low   { background: #f59e0b; }
+      &.fill-empty { background: #ef4444; }
+    }
+  }
+
+  .stock-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+
+    &.alert-error   { background: #fee2e2; color: #dc2626; }
+    &.alert-warning { background: #fef9c3; color: #b45309; }
+  }
+
+  .stock-loading-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+  }
+}
+
+/* ── Step labels ────────────────────────────────────── */
+.step-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+  display: block;
+
+  .required { color: #ef4444; margin-left: 0.15rem; }
+}
+
+/* ── Cantidad row ───────────────────────────────────── */
+.cantidad-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  p-inputnumber { flex: 1; }
+
+  .cantidad-max {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    white-space: nowrap;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 600;
+
+    strong {
+      font-size: 1rem;
+      color: #374151;
+      font-weight: 800;
+    }
+  }
+}
+
+.cantidad-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: 0.35rem;
+}
+
+/* ── Steps wrapper ───────────────────────────────────── */
+.asignar-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem 2.5rem 1rem;
+}
+
+.asignar-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

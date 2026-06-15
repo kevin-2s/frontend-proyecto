@@ -1,6 +1,6 @@
-import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -38,7 +38,7 @@ interface Asignacion {
   selector: 'app-asignar',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, ReactiveFormsModule,
+    CommonModule, FormsModule,
     TableModule, ButtonModule, InputTextModule, InputNumberModule, DialogModule,
     TagModule, ToastModule, ConfirmDialogModule, TooltipModule,
     SelectModule, TextareaModule,
@@ -233,7 +233,8 @@ interface Asignacion {
           <span class="step-label">1 · Producto a asignar <span class="required">*</span></span>
           <p-select
             [options]="productosOpciones"
-            [formControl]="productoCtrl"
+            [ngModel]="selectedProductoId"
+            (ngModelChange)="onProductoChange($event)"
             optionLabel="label"
             optionValue="value"
             placeholder="Seleccionar producto..."
@@ -244,7 +245,7 @@ interface Asignacion {
           </p-select>
 
           <!-- Tarjeta de stock -->
-          <div *ngIf="productoCtrl.value" class="stock-card"
+          <div *ngIf="selectedProductoId" class="stock-card"
             [ngClass]="{
               'stock-loading': stock.cargando,
               'stock-ok':      !stock.cargando && stock.disponibles > 3,
@@ -292,7 +293,7 @@ interface Asignacion {
         </div>
 
         <!-- PASO 2: Cantidad (solo si hay stock) -->
-        <div class="asignar-step" *ngIf="productoCtrl.value && !stock.cargando && stock.disponibles > 0">
+        <div class="asignar-step" *ngIf="selectedProductoId && !stock.cargando && stock.disponibles > 0">
           <span class="step-label">2 · Cantidad a asignar <span class="required">*</span></span>
           <div class="cantidad-row">
             <p-inputnumber
@@ -360,7 +361,6 @@ interface Asignacion {
   `
 })
 export class AsignarComponent implements OnInit {
-  private cdr = inject(ChangeDetectorRef);
   private asignacionService = inject(AsignacionService);
   private productoService = inject(ProductoService);
   private fichaService = inject(FichaService);
@@ -381,7 +381,7 @@ export class AsignarComponent implements OnInit {
   fichasOpciones: { label: string; value: number }[] = [];
 
   stock = { disponibles: 0, total: 0, cargando: false };
-  productoCtrl = new FormControl<number | null>(null);
+  selectedProductoId: number | null = null;
 
   nueva: { id_producto: number | null; id_ficha: number | null; cantidad: number; observacion: string } =
     { id_producto: null, id_ficha: null, cantidad: 1, observacion: '' };
@@ -395,7 +395,6 @@ export class AsignarComponent implements OnInit {
     this.cargar();
     this.cargarProductos();
     this.cargarFichas();
-    this.productoCtrl.valueChanges.subscribe(id => this.onProductoChange(id ?? 0));
   }
 
   cargar() {
@@ -437,14 +436,14 @@ export class AsignarComponent implements OnInit {
     });
   }
 
-  onProductoChange(id: number) {
+  onProductoChange(id: number | null) {
+    this.selectedProductoId = id;
     this.nueva.cantidad = 1;
     if (!id) {
       this.stock = { disponibles: 0, total: 0, cargando: false };
       return;
     }
     this.stock = { disponibles: 0, total: 0, cargando: true };
-    this.cdr.detectChanges();
 
     this.inventarioService.getStockByProducto(id).subscribe({
       next: (res: any) => {
@@ -462,7 +461,7 @@ export class AsignarComponent implements OnInit {
 
   puedeGuardar(): boolean {
     return !!(
-      this.productoCtrl.value &&
+      this.selectedProductoId &&
       this.nueva.id_ficha &&
       this.nueva.cantidad >= 1 &&
       this.nueva.cantidad <= this.stock.disponibles &&
@@ -496,14 +495,14 @@ export class AsignarComponent implements OnInit {
   abrirDialogoCrear() {
     this.nueva = { id_producto: null, id_ficha: null, cantidad: 1, observacion: '' };
     this.stock = { disponibles: 0, total: 0, cargando: false };
-    this.productoCtrl.setValue(null, { emitEvent: false });
+    this.selectedProductoId = null;
     this.displayDialogCrear = true;
   }
 
   guardar() {
     const userId = Number(this.authService.getUserId()) || 1;
     const payload: any = {
-      id_producto: this.productoCtrl.value,
+      id_producto: this.selectedProductoId,
       id_ficha: this.nueva.id_ficha,
       cantidad: this.nueva.cantidad,
       id_usuario_asigna: userId,

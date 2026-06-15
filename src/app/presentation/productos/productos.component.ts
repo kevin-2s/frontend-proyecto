@@ -579,7 +579,7 @@ type SelectOption = { label: string; value: string };
       <div class="dialog-footer">
         <button pButton label="Cancelar" class="btn-cancelar" (click)="displayNovedadDialog=false"></button>
         <button pButton label="Registrar" icon="pi pi-exclamation-circle" class="btn-guardar"
-          [disabled]="!nuevaNovedad.tipo || !nuevaNovedad.descripcion?.trim()"
+          [disabled]="!nuevaNovedad.tipo || !nuevaNovedad.descripcion.trim()"
           (click)="guardarNovedad()">
         </button>
       </div>

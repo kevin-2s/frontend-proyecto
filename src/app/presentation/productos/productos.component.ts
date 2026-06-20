@@ -70,8 +70,11 @@ type SelectOption = { label: string; value: string };
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
             <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrar()"
-              placeholder="Buscar producto, Placa SENA..." class="search-input" />
+              placeholder="Buscar producto, SKU..." class="search-input" />
           </div>
+          <button pButton label="Buscar Placa SENA" icon="pi pi-id-card" class="btn-add"
+            style="background-color:#0ea5e9!important;border-color:#0ea5e9!important"
+            (click)="abrirBuscarPlaca()"></button>
           <button *ngIf="esAdmin()" pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
@@ -83,8 +86,9 @@ type SelectOption = { label: string; value: string };
           <ng-template pTemplate="header">
             <tr>
               <th style="width:3rem"><p-tableHeaderCheckbox></p-tableHeaderCheckbox></th>
-              <th style="min-width:90px">Placa SENA</th>
+              <th style="min-width:90px">SKU</th>
               <th style="min-width:140px">Nombre</th>
+              <th style="min-width:160px">Descripción</th>
               <th style="min-width:110px">Bodega</th>
               <th style="min-width:110px">Categoría</th>
               <th style="min-width:120px">Código UNSPSC</th>
@@ -101,16 +105,16 @@ type SelectOption = { label: string; value: string };
             <tr>
               <td><p-tableCheckbox [value]="producto"></p-tableCheckbox></td>
 
-              <!-- Placa SENA -->
+              <!-- SKU -->
               <td><span class="sku-cell">{{ producto.SKU || '—' }}</span></td>
 
-              <!-- Nombre + descripción como tooltip -->
+              <!-- Nombre -->
+              <td><span class="product-name">{{ producto.nombre }}</span></td>
+
+              <!-- Descripción -->
               <td>
-                <span class="product-name" [pTooltip]="producto.descripcion || ''"
-                  [tooltipDisabled]="!producto.descripcion" tooltipPosition="top">
-                  {{ producto.nombre }}
-                </span>
-                <i *ngIf="producto.descripcion" class="pi pi-info-circle ml-1 text-xs text-slate-400"></i>
+                <span *ngIf="producto.descripcion" class="text-xs text-slate-500">{{ producto.descripcion }}</span>
+                <span *ngIf="!producto.descripcion" class="text-slate-300">—</span>
               </td>
 
               <!-- Bodega -->
@@ -129,10 +133,10 @@ type SelectOption = { label: string; value: string };
 
               <!-- UNSPSC -->
               <td>
-                <span *ngIf="producto.codigo_unspsc" class="text-xs text-slate-500 font-mono"
-                  [pTooltip]="getUnspscLabel(producto.codigo_unspsc)" tooltipPosition="top">
-                  {{ producto.codigo_unspsc }}
-                </span>
+                <div *ngIf="producto.codigo_unspsc">
+                  <span class="text-xs text-slate-500 font-mono block">{{ producto.codigo_unspsc }}</span>
+                  <span class="text-xs text-slate-400 block">{{ getUnspscName(producto.codigo_unspsc) }}</span>
+                </div>
                 <span *ngIf="!producto.codigo_unspsc" class="text-slate-300">—</span>
               </td>
 
@@ -201,7 +205,7 @@ type SelectOption = { label: string; value: string };
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
-            <tr><td colspan="13" class="text-center p-4">
+            <tr><td colspan="14" class="text-center p-4">
               <i class="pi pi-box text-4xl text-slate-300 mb-2"></i>
               <p>No se encontraron productos</p>
             </td></tr>
@@ -260,12 +264,12 @@ type SelectOption = { label: string; value: string };
               (onChange)="onUnspscChange($event.value)"
             ></p-select>
             <small *ngIf="esGastronomia" class="text-emerald-600 font-semibold mt-1 block">
-              <i class="pi pi-seedling mr-1"></i>Producto de gastronomía — Placa SENA no requerida
+              <i class="pi pi-seedling mr-1"></i>Producto de gastronomía — SKU no requerido
             </small>
           </div>
           <div *ngIf="!esGastronomia" class="form-field" style="flex:1">
-            <label for="SKU">Placa SENA *</label>
-            <input pInputText id="SKU" formControlName="SKU" placeholder="Ej: ALI-001" />
+            <label for="SKU">SKU *</label>
+            <input pInputText id="SKU" formControlName="SKU" placeholder="Ej: ARR-001" />
           </div>
         </div>
 
@@ -486,12 +490,18 @@ type SelectOption = { label: string; value: string };
         <i class="pi pi-spin pi-spinner text-4xl text-emerald-500"></i>
       </div>
       <div *ngIf="!cargandoItems">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+          <button pButton label="+ Agregar Item" icon="pi pi-plus" class="btn-guardar"
+            (click)="abrirAgregarItem()"></button>
+        </div>
+
         <p-table [value]="itemsDelProducto" styleClass="modern-table" [rowHover]="true"
           [paginator]="itemsDelProducto.length > 5" [rows]="5">
           <ng-template pTemplate="header">
             <tr>
               <th style="width:90px">ID Item</th>
               <th>Código SKU</th>
+              <th>Placa SENA</th>
               <th class="text-center" style="width:130px">Estado</th>
               <th class="text-center" style="width:130px">Acciones</th>
             </tr>
@@ -499,24 +509,40 @@ type SelectOption = { label: string; value: string };
           <ng-template pTemplate="body" let-item>
             <tr>
               <td><span class="font-semibold text-slate-600">#{{ item.id_item }}</span></td>
-              <td><span class="sku-cell">{{ item.codigo_sku }}</span></td>
+              <td>
+                <span *ngIf="item.codigo_sku" class="sku-cell">{{ item.codigo_sku }}</span>
+                <span *ngIf="!item.codigo_sku" class="text-slate-300">—</span>
+              </td>
+              <td>
+                <span *ngIf="item.placa_sena" class="sku-cell">{{ item.placa_sena }}</span>
+                <span *ngIf="!item.placa_sena" class="text-slate-300">—</span>
+              </td>
               <td class="text-center">
                 <p-tag [value]="item.estado" [severity]="getItemSeverity(item.estado)"
                   styleClass="px-3 py-1 font-bold rounded-lg"></p-tag>
               </td>
               <td class="text-center">
-                <button pButton icon="pi pi-exclamation-circle"
-                  class="p-button-text"
-                  style="color:#f59e0b"
-                  pTooltip="Registrar novedad"
-                  tooltipPosition="left"
-                  (click)="abrirDialogoNovedad(item)">
-                </button>
+                <div class="action-buttons justify-center">
+                  <button pButton icon="pi pi-pencil"
+                    class="p-button-text"
+                    style="color:#3b82f6"
+                    pTooltip="Editar Placa SENA"
+                    tooltipPosition="left"
+                    (click)="abrirEditarItem(item)">
+                  </button>
+                  <button pButton icon="pi pi-exclamation-circle"
+                    class="p-button-text"
+                    style="color:#f59e0b"
+                    pTooltip="Registrar novedad"
+                    tooltipPosition="left"
+                    (click)="abrirDialogoNovedad(item)">
+                  </button>
+                </div>
               </td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
-            <tr><td colspan="3" class="text-center p-4">
+            <tr><td colspan="5" class="text-center p-4">
               <i class="pi pi-info-circle text-4xl text-slate-300 mb-2"></i>
               <p class="text-slate-500">No se encontraron items para este producto.</p>
             </td></tr>
@@ -526,6 +552,105 @@ type SelectOption = { label: string; value: string };
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
           <button pButton label="Cerrar" class="btn-cancelar" (click)="displayItemsDialog=false"></button>
+        </div>
+      </ng-template>
+    </p-dialog>
+
+    <!-- Agregar Item al lote -->
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+      header="➕ Agregar Ítem al Lote"
+      [(visible)]="displayAgregarItemDialog" [modal]="true"
+      [style]="{width:'90vw',maxWidth:'420px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
+      <div class="form-container mt-2" *ngIf="productoSeleccionadoParaItems">
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:1rem">
+          Producto: {{ productoSeleccionadoParaItems.nombre }} &nbsp;·&nbsp; SKU: {{ productoSeleccionadoParaItems.SKU || '—' }}
+          <span style="display:block;margin-top:2px">El nuevo ítem heredará automáticamente el SKU del producto.</span>
+        </div>
+        <div class="form-field">
+          <label>Placa SENA (opcional)</label>
+          <input pInputText type="text" [(ngModel)]="nuevaPlacaItem" placeholder="Ej: SENA-12345"
+            (keyup.enter)="agregarItemAlLote()" />
+        </div>
+      </div>
+      <ng-template pTemplate="footer">
+        <div class="dialog-footer">
+          <button pButton label="Cancelar" class="btn-cancelar" (click)="displayAgregarItemDialog=false"></button>
+          <button pButton label="Agregar" class="btn-guardar" [loading]="agregandoItem" (click)="agregarItemAlLote()"></button>
+        </div>
+      </ng-template>
+    </p-dialog>
+
+    <!-- Editar Item (SKU / Placa SENA) -->
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+      header="✏️ Editar Ítem"
+      [(visible)]="displayEditarItemDialog" [modal]="true"
+      [style]="{width:'90vw',maxWidth:'420px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
+      <div class="form-container mt-2" *ngIf="itemEnEdicion">
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:1rem">
+          Item #{{ itemEnEdicion.id_item }} &nbsp;·&nbsp; SKU: {{ itemEnEdicion.codigo_sku || '—' }}
+          <span style="display:block;margin-top:2px">El código SKU es el del producto y no se puede editar por ítem.</span>
+        </div>
+        <div class="form-field">
+          <label>Placa SENA</label>
+          <input pInputText type="text" [(ngModel)]="editPlacaSena" placeholder="Ej: SENA-12345" />
+        </div>
+      </div>
+      <ng-template pTemplate="footer">
+        <div class="dialog-footer">
+          <button pButton label="Cancelar" class="btn-cancelar" (click)="displayEditarItemDialog=false"></button>
+          <button pButton label="Guardar" class="btn-guardar" [loading]="guardandoItem" (click)="guardarEdicionItem()"></button>
+        </div>
+      </ng-template>
+    </p-dialog>
+
+    <!-- Buscar por Placa SENA -->
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+      header="🔎 Buscar Ítem por Placa SENA"
+      [(visible)]="displayBuscarPlacaDialog" [modal]="true"
+      [style]="{width:'90vw',maxWidth:'480px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
+      <div class="form-container mt-2">
+        <div class="form-field">
+          <label>Placa SENA</label>
+          <div style="display:flex;gap:8px">
+            <input pInputText type="text" [(ngModel)]="placaBuscada" placeholder="Ej: SENA-12345"
+              style="flex:1" (keyup.enter)="buscarPorPlaca()" />
+            <button pButton icon="pi pi-search" [loading]="buscandoPlaca" (click)="buscarPorPlaca()"></button>
+          </div>
+        </div>
+
+        <div *ngIf="errorBusquedaPlaca" style="margin-top:1rem;padding:12px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:#dc2626;font-size:13px">
+          <i class="pi pi-exclamation-circle mr-1"></i>{{ errorBusquedaPlaca }}
+        </div>
+
+        <div *ngIf="resultadoBusquedaPlaca" style="margin-top:1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:15px;font-weight:800;color:#1e293b">
+              {{ resultadoBusquedaPlaca.item.producto?.nombre ?? 'Producto #' + resultadoBusquedaPlaca.item.id_producto }}
+            </span>
+            <p-tag [value]="resultadoBusquedaPlaca.item.estado" [severity]="getItemSeverity(resultadoBusquedaPlaca.item.estado)"
+              styleClass="px-3 py-1 font-bold rounded-lg"></p-tag>
+          </div>
+          <div class="detail-row"><span class="detail-label">Placa SENA:</span><span class="detail-value font-bold">{{ resultadoBusquedaPlaca.item.placa_sena }}</span></div>
+          <div class="detail-row"><span class="detail-label">Código SKU del item:</span><span class="detail-value" style="font-family:monospace">{{ resultadoBusquedaPlaca.item.codigo_sku }}</span></div>
+          <div class="detail-row"><span class="detail-label">SKU del producto:</span><span class="detail-value">{{ resultadoBusquedaPlaca.item.producto?.SKU ?? '—' }}</span></div>
+          <div class="detail-row"><span class="detail-label">Ubicación (bodega):</span><span class="detail-value">{{ getBodegaNombre(resultadoBusquedaPlaca.item.producto?.id_sitio) }}</span></div>
+          <div class="detail-row">
+            <span class="detail-label">¿Quién lo tiene?</span>
+            <span class="detail-value font-bold">
+              {{ resultadoBusquedaPlaca.prestamo_activo?.usuario_solicitante?.nombre ?? 'Sin préstamo activo' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <ng-template pTemplate="footer">
+        <div class="dialog-footer">
+          <button pButton label="Cerrar" class="btn-cancelar" (click)="displayBuscarPlacaDialog=false"></button>
         </div>
       </ng-template>
     </p-dialog>
@@ -624,6 +749,21 @@ export class ProductosComponent implements OnInit {
   itemsDelProducto: any[] = [];
   productoSeleccionadoParaItems: any = null;
   cargandoItems = false;
+
+  displayAgregarItemDialog = false;
+  nuevaPlacaItem = '';
+  agregandoItem = false;
+
+  displayEditarItemDialog = false;
+  itemEnEdicion: any = null;
+  editPlacaSena = '';
+  guardandoItem = false;
+
+  displayBuscarPlacaDialog = false;
+  placaBuscada = '';
+  buscandoPlaca = false;
+  errorBusquedaPlaca: string | null = null;
+  resultadoBusquedaPlaca: { item: any; prestamo_activo: any } | null = null;
 
   displayNovedadDialog = false;
   itemParaNovedad: any = null;
@@ -1136,7 +1276,7 @@ export class ProductosComponent implements OnInit {
     this.productosFiltrados = this.productos.filter(p =>
       p.nombre?.toLowerCase().includes(f) ||
       p.codigo_unspsc?.toLowerCase().includes(f) ||
-      p.SKU?.toLowerCase().includes(f) || // Placa SENA
+      p.SKU?.toLowerCase().includes(f) ||
       p.categoria?.nombre?.toLowerCase().includes(f) ||
       p.tipo_material?.toLowerCase().includes(f)
     );
@@ -1233,8 +1373,14 @@ export class ProductosComponent implements OnInit {
 
     if (this.esNuevo) {
       this.productoService.crearProducto(productoData).subscribe({
-        next: () => {
+        next: (res: any) => {
+          const itemsGenerados = res?.data?.items_generados ?? res?.items_generados ?? [];
           this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Producto creado correctamente' });
+          this.notification.info(
+            `📦 Material nuevo registrado: "${productoData.nombre}" — ${itemsGenerados.length} unidad(es) agregada(s) al inventario`,
+            'Productos',
+            { life: 4000 },
+          );
           this.displayDialog = false;
           this.cargarDatos();
         },
@@ -1351,6 +1497,90 @@ export class ProductosComponent implements OnInit {
     });
   }
 
+  abrirAgregarItem() {
+    this.nuevaPlacaItem = '';
+    this.displayAgregarItemDialog = true;
+  }
+
+  agregarItemAlLote() {
+    if (!this.productoSeleccionadoParaItems) return;
+    this.agregandoItem = true;
+    const placa = this.nuevaPlacaItem.trim() || undefined;
+    this.productoService.agregarItemAProducto(this.productoSeleccionadoParaItems.id_producto, placa).subscribe({
+      next: () => {
+        this.notification.info(
+          `📦 Material nuevo registrado en "${this.productoSeleccionadoParaItems.nombre}"`,
+          'Productos',
+          { life: 4000 },
+        );
+        this.nuevaPlacaItem = '';
+        this.agregandoItem = false;
+        this.displayAgregarItemDialog = false;
+        this.verItems(this.productoSeleccionadoParaItems);
+        this.cargarDatos();
+      },
+      error: (err) => {
+        this.agregandoItem = false;
+        const backendMsg = err?.error?.message;
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: backendMsg || 'No se pudo agregar el item' });
+      },
+    });
+  }
+
+  abrirEditarItem(item: any) {
+    this.itemEnEdicion = item;
+    this.editPlacaSena = item.placa_sena || '';
+    this.displayEditarItemDialog = true;
+  }
+
+  guardarEdicionItem() {
+    if (!this.itemEnEdicion) return;
+    this.guardandoItem = true;
+    const data: { placa_sena: string | null } = {
+      placa_sena: this.editPlacaSena.trim() || null,
+    };
+    this.productoService.actualizarItem(this.itemEnEdicion.id_item, data).subscribe({
+      next: () => {
+        this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Item actualizado correctamente' });
+        this.guardandoItem = false;
+        this.displayEditarItemDialog = false;
+        this.verItems(this.productoSeleccionadoParaItems);
+      },
+      error: (err) => {
+        this.guardandoItem = false;
+        const backendMsg = err?.error?.message;
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: backendMsg || 'No se pudo actualizar el item' });
+      },
+    });
+  }
+
+  abrirBuscarPlaca() {
+    this.placaBuscada = '';
+    this.resultadoBusquedaPlaca = null;
+    this.errorBusquedaPlaca = null;
+    this.displayBuscarPlacaDialog = true;
+  }
+
+  buscarPorPlaca() {
+    const placa = this.placaBuscada.trim();
+    if (!placa) return;
+    this.buscandoPlaca = true;
+    this.resultadoBusquedaPlaca = null;
+    this.errorBusquedaPlaca = null;
+    this.productoService.buscarItemPorPlaca(placa).subscribe({
+      next: (res: any) => {
+        this.resultadoBusquedaPlaca = res?.data || res;
+        this.buscandoPlaca = false;
+        setTimeout(() => this.cdr.detectChanges());
+      },
+      error: (err) => {
+        this.buscandoPlaca = false;
+        this.errorBusquedaPlaca = err?.error?.message || `No se encontró ningún ítem con la placa SENA: ${placa}`;
+        setTimeout(() => this.cdr.detectChanges());
+      },
+    });
+  }
+
   getItemSeverity(estado: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
     switch (estado) {
       case 'DISPONIBLE': return 'success';
@@ -1399,6 +1629,13 @@ export class ProductosComponent implements OnInit {
   getUnspscLabel(codigo: string): string {
     const found = this.codigosUnspsc.find(c => c.value === codigo);
     return found ? found.label : codigo;
+  }
+
+  getUnspscName(codigo: string): string {
+    const found = this.codigosUnspsc.find(c => c.value === codigo);
+    if (!found) return '';
+    const separatorIndex = found.label.indexOf(' - ');
+    return separatorIndex >= 0 ? found.label.slice(separatorIndex + 3) : found.label;
   }
 
   getFechaClass(fecha: string): string {

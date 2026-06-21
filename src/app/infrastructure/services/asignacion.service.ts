@@ -24,6 +24,10 @@ export class AsignacionService {
     return this.api.patch<any>(`/asignaciones/${id}/anular`, {});
   }
 
+  agregarItemAAsignacion(id_asignacion: number, id_item: number): Observable<any> {
+    return this.api.post<any>(`/asignaciones/${id_asignacion}/items`, { id_item });
+  }
+
   eliminar(id: number): Observable<any> {
     return this.api.delete<any>(`/asignaciones/${id}`);
   }

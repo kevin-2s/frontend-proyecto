@@ -21,6 +21,7 @@ import { SitioService } from '../../infrastructure/services/sitio.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { NovedadService } from '../../infrastructure/services/novedad.service';
 import { AsignacionService } from '../../infrastructure/services/asignacion.service';
+import { OnlyLettersDirective } from '../directives/only-letters.directive';
 
 interface Producto {
   id_producto: number;
@@ -56,7 +57,8 @@ type SelectOption = { label: string; value: string };
     CommonModule, ReactiveFormsModule, FormsModule,
     TableModule, ButtonModule, InputTextModule, DialogModule,
     TagModule, ToastModule, ConfirmDialogModule, SelectModule,
-    TextareaModule, FileUploadModule, TooltipModule
+    TextareaModule, FileUploadModule, TooltipModule,
+    OnlyLettersDirective
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [ConfirmationService],
@@ -428,7 +430,7 @@ type SelectOption = { label: string; value: string };
       <div class="form-grid mt-2">
         <div class="form-field">
           <label>Nombre de la Categoría *</label>
-          <input pInputText [(ngModel)]="nuevoNombreCategoria" placeholder="Ej: Lácteos" />
+          <input pInputText [(ngModel)]="nuevoNombreCategoria" onlyLetters placeholder="Ej: Lácteos" />
         </div>
       </div>
       <ng-template pTemplate="footer">
@@ -448,7 +450,7 @@ type SelectOption = { label: string; value: string };
       <div class="form-grid mt-2">
         <div class="form-field">
           <label>Nombre del Tipo *</label>
-          <input pInputText [(ngModel)]="nuevoNombreTipoMaterial" placeholder="Ej: CONSUMO..." />
+          <input pInputText [(ngModel)]="nuevoNombreTipoMaterial" onlyLetters placeholder="Ej: CONSUMO..." />
         </div>
       </div>
       <ng-template pTemplate="footer">
@@ -468,7 +470,7 @@ type SelectOption = { label: string; value: string };
       <div class="form-grid mt-2">
         <div class="form-field">
           <label>Nombre de la Unidad *</label>
-          <input pInputText [(ngModel)]="nuevoNombreUnidadMedida" placeholder="Ej: CARTÓN, ATADO..." />
+          <input pInputText [(ngModel)]="nuevoNombreUnidadMedida" onlyLetters placeholder="Ej: CARTÓN, ATADO..." />
         </div>
       </div>
       <ng-template pTemplate="footer">

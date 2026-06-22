@@ -72,6 +72,11 @@ export const routes: Routes = [
         canActivate: [roleGuard(['Administrador'])]
       },
       {
+        path: 'sedes',
+        loadComponent: () => import('./presentation/sedes/sedes.component').then(m => m.SedesComponent),
+        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+      },
+      {
         path: 'areas',
         loadComponent: () => import('./presentation/areas/areas.component').then(m => m.AreasComponent),
         canActivate: [roleGuard(['Administrador', 'Instructor'])]
@@ -91,23 +96,6 @@ export const routes: Routes = [
         loadComponent: () => import('./presentation/sitios/sitios.component').then(m => m.SitiosComponent),
         canActivate: [roleGuard(['Administrador', 'Instructor'])]
       },
-      {
-        path: 'centros',
-        loadComponent: () => import('./presentation/centros/centros.component').then(m => m.CentrosComponent)
-      },
-      {
-        path: 'sedes',
-        loadComponent: () => import('./presentation/sedes/sedes.component').then(m => m.SedesComponent)
-      },
-      {
-        path: 'areas',
-        loadComponent: () => import('./presentation/areas/areas.component').then(m => m.AreasComponent)
-      },
-      {
-        path: 'programas',
-        loadComponent: () => import('./presentation/programas/programas.component').then(m => m.ProgramasComponent)
-      },
-
       {
         path: 'movimientos',
         loadComponent: () => import('./presentation/movimientos/movimientos.component').then(m => m.MovimientosComponent)

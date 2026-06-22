@@ -5,11 +5,13 @@ import { AuthService } from '../../infrastructure/services/auth.service';
 import { NotificacionService, Notificacion } from '../../infrastructure/services/notificacion.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../../environments/environment';
+import { WhatsappChatComponent } from './whatsapp-chat.component';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, FormsModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, FormsModule, WhatsappChatComponent],
   template: `
     <div class="flex h-screen bg-[#F1F5F9] overflow-hidden relative">
       <!-- Backdrop para móvil (Solo visible cuando el sidebar está abierto en pantallas pequeñas) -->
@@ -260,6 +262,25 @@ import { FormsModule } from '@angular/forms';
           <router-outlet></router-outlet>
         </div>
       </main>
+
+      <!-- 🤖 Sistema Chat Widget (Robot icon — bottom-24) -->
+      <app-whatsapp-chat></app-whatsapp-chat>
+
+      <!-- 💬 WhatsApp External Button (bottom-6) -->
+      <div class="fixed bottom-6 right-6 z-[999] flex items-center gap-3 group">
+        <!-- Tooltip -->
+        <div class="bg-white text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-[0_6px_25px_rgba(37,211,102,0.15)] border border-green-50 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 pointer-events-none transition-all duration-300 origin-right whitespace-nowrap">
+          Chatea por WhatsApp
+        </div>
+        <!-- Button -->
+        <a [href]="whatsappUrl"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1EB954] text-white flex items-center justify-center shadow-[0_6px_24px_rgba(37,211,102,0.5)] hover:shadow-[0_8px_32px_rgba(37,211,102,0.65)] transition-all duration-300 hover:scale-110 active:scale-95 relative overflow-hidden focus:outline-none">
+          <span class="absolute inset-0 rounded-full bg-white/20 scale-0 group-hover:scale-150 transition-transform duration-700 ease-out pointer-events-none"></span>
+          <i class="pi pi-whatsapp text-3xl relative z-10"></i>
+        </a>
+      </div>
     </div>
   `
 })
@@ -267,6 +288,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notifService = inject(NotificacionService);
+
+  whatsappUrl = environment.whatsappUrl;
 
   isSidebarVisible = signal(true);
   sidebarCollapsed = signal(false);

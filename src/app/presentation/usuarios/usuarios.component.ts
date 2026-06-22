@@ -19,6 +19,8 @@ import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService } from '../../infrastructure/services/rol.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { Rol } from '../../domain/models/rol.model';
+import { OnlyLettersDirective } from '../directives/only-letters.directive';
+import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
 
 interface Usuario {
   id_usuario?: number;
@@ -50,7 +52,9 @@ interface Usuario {
     TagModule,
     PasswordModule,
     TooltipModule,
-    SelectModule
+    SelectModule,
+    OnlyLettersDirective,
+    OnlyNumbersDirective
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [MessageService, ConfirmationService],
@@ -108,7 +112,7 @@ interface Usuario {
       </ng-template>
       <div class="flex flex-col gap-4">
         <div class="form-field">
-          <input pInputText id="nuevo-rol-nombre" [(ngModel)]="nuevoRolNombre" placeholder="Nombre del rol" class="w-full" />
+          <input pInputText id="nuevo-rol-nombre" [(ngModel)]="nuevoRolNombre" onlyLetters placeholder="Nombre del rol" class="w-full" />
           <label for="nuevo-rol-nombre">Nombre del rol</label>
         </div>
         <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
@@ -176,11 +180,11 @@ interface Usuario {
             <!-- Primera Fila: Nombres y Apellidos -->
             <div class="flex flex-col sm:flex-row gap-5">
               <div class="floating-label-group flex-1" [class.floating]="usuario.nombre && usuario.nombre.trim() !== ''">
-                <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" onlyLetters placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
                 <label for="u-nombre">Nombres <span class="text-red-500">*</span></label>
               </div>
               <div class="floating-label-group flex-1" [class.floating]="usuario.apellidos && usuario.apellidos.trim() !== ''">
-                <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" onlyLetters placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
                 <label for="u-apellidos">Apellidos <span class="text-red-500">*</span></label>
               </div>
             </div>
@@ -206,7 +210,7 @@ interface Usuario {
             <div class="flex flex-col sm:flex-row gap-5">
               <!-- Teléfono -->
               <div class="floating-label-group flex-1" [class.floating]="usuario.telefono && usuario.telefono.trim() !== ''">
-                <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+                <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" onlyNumbers placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
                 <label for="u-telefono">Teléfono</label>
               </div>
               
@@ -225,6 +229,7 @@ interface Usuario {
                     pInputText 
                     id="u-documento" 
                     [(ngModel)]="usuario.numero_documento" 
+                    onlyNumbers
                     placeholder=" " 
                     class="document-input-field" 
                   />
@@ -570,6 +575,52 @@ export class UsuariosComponent implements OnInit {
 
     if (this.esNuevo && !this.usuario.password) {
       this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'La contraseña es requerida para nuevos usuarios' });
+      return;
+    }
+
+    // Validar nombre o cédula duplicada
+    const nombreCompletoNuevo = ((this.usuario.nombre || '').trim() + ' ' + (this.usuario.apellidos || '').trim()).replace(/\s+/g, ' ').toLowerCase();
+    const numeroDocNuevo = (this.usuario.numero_documento || '').trim();
+
+    const existeDuplicado = this.usuarios.some(u => {
+      if (!this.esNuevo && Number(u.id_usuario) === Number(this.usuario.id_usuario)) {
+        return false;
+      }
+
+      // Comparar Nombres
+      const nombreCompletoExistente = ((u.nombre || '').trim() + ' ' + (u.apellidos || '').trim()).replace(/\s+/g, ' ').toLowerCase();
+      if (nombreCompletoExistente === nombreCompletoNuevo) {
+        this.messageService.add({ severity: 'error', summary: 'Error de Validación', detail: 'Ya existe un usuario registrado con este nombre y apellidos.' });
+        return true;
+      }
+
+      // Comparar Cédula/Documento (sólo la parte numérica)
+      let numeroDocExistente = '';
+      if (u.documento) {
+        const docClean = u.documento.trim();
+        const tipos = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.', 'CC', 'TI', 'CE', 'PEP', 'PPT', 'PAS'];
+        let foundType = false;
+        for (const t of tipos) {
+          if (docClean.toUpperCase().startsWith(t.toUpperCase())) {
+            numeroDocExistente = docClean.substring(t.length).trim();
+            foundType = true;
+            break;
+          }
+        }
+        if (!foundType) {
+          numeroDocExistente = docClean;
+        }
+      }
+
+      if (numeroDocExistente !== '' && numeroDocExistente === numeroDocNuevo) {
+        this.messageService.add({ severity: 'error', summary: 'Error de Validación', detail: 'Ya existe un usuario registrado con este número de documento.' });
+        return true;
+      }
+
+      return false;
+    });
+
+    if (existeDuplicado) {
       return;
     }
 

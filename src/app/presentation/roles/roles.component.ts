@@ -16,6 +16,8 @@ import { RolService } from '../../infrastructure/services/rol.service';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { Rol } from '../../domain/models/rol.model';
+import { OnlyLettersDirective } from '../directives/only-letters.directive';
+import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
 
 @Component({
   selector: 'app-roles',
@@ -31,7 +33,9 @@ import { Rol } from '../../domain/models/rol.model';
     TagModule,
     ToggleSwitchModule,
     SelectModule,
-    PasswordModule
+    PasswordModule,
+    OnlyLettersDirective,
+    OnlyNumbersDirective
   ],
   providers: [MessageService],
   styles: [`
@@ -162,6 +166,7 @@ import { Rol } from '../../domain/models/rol.model';
                   pInputText
                   id="rol-nombre"
                   [(ngModel)]="rol.nombre"
+                  onlyLetters
                   placeholder="Ej: INSTRUCTOR, GESTOR"
                 />
                 <label for="rol-nombre">Nombre del Rol *</label>
@@ -201,11 +206,11 @@ import { Rol } from '../../domain/models/rol.model';
               <!-- Primera Fila: Nombres y Apellidos -->
               <div class="flex flex-col sm:flex-row gap-5">
                 <div class="floating-label-group flex-1" [class.floating]="usuarioForm.nombre && usuarioForm.nombre.trim() !== ''">
-                  <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+                  <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" onlyLetters placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
                   <label for="nombre">Nombres <span class="text-red-500">*</span></label>
                 </div>
                 <div class="floating-label-group flex-1" [class.floating]="usuarioForm.apellidos && usuarioForm.apellidos.trim() !== ''">
-                  <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+                  <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" onlyLetters placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
                   <label for="apellidos">Apellidos <span class="text-red-500">*</span></label>
                 </div>
               </div>
@@ -231,7 +236,7 @@ import { Rol } from '../../domain/models/rol.model';
               <div class="flex flex-col sm:flex-row gap-5">
                 <!-- Teléfono -->
                 <div class="floating-label-group flex-1" [class.floating]="usuarioForm.telefono && usuarioForm.telefono.trim() !== ''">
-                  <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+                  <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" onlyNumbers placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
                   <label for="telefono">Teléfono</label>
                 </div>
                 
@@ -250,6 +255,7 @@ import { Rol } from '../../domain/models/rol.model';
                       pInputText 
                       id="documento" 
                       [(ngModel)]="usuarioForm.numero_documento" 
+                      onlyNumbers
                       placeholder=" " 
                       class="document-input-field" 
                     />
@@ -435,56 +441,120 @@ import { Rol } from '../../domain/models/rol.model';
             <button
               type="button"
               class="px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer transition-all outline-none flex items-center gap-2"
-              (click)="usuarioSeleccionado = null; permisosAgrupados = {}"
+              (click)="usuarioSeleccionado = null; permisosAgrupados = {}; otrosSubmodules = []"
             >
               <i class="pi pi-times"></i>
               Cerrar
             </button>
           </div>
 
-          <!-- Card Body: Permisos agrupados -->
+          <!-- Card Body: Permisos agrupados por módulo del sistema -->
           <div class="p-6">
             <div *ngIf="loadingPermisos" class="flex flex-col items-center justify-center py-16">
               <i class="pi pi-spin pi-spinner text-3xl text-[#39A900]"></i>
               <span class="text-xs text-slate-400 mt-2 font-semibold">Cargando mapa de accesos...</span>
             </div>
 
-            <div *ngIf="!loadingPermisos" class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-              <div class="max-h-[500px] overflow-y-auto pr-3 custom-scrollbar grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
-                <div *ngFor="let key of getKeys(permisosAgrupados)">
-                <div class="perm-group-header">
-                  <span class="perm-group-dot"></span>
-                  <span class="text-xs font-black text-slate-700 uppercase tracking-widest">{{ key }}</span>
-                  <span class="ml-auto text-[10px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
-                    {{ permisosAgrupados[key].length }} permisos
-                  </span>
-                </div>
+            <div *ngIf="!loadingPermisos" class="max-h-[600px] overflow-y-auto pr-3 custom-scrollbar flex flex-col gap-8">
+              
+              <!-- Recorrer módulos del frontend -->
+              <ng-container *ngFor="let m of frontendModules">
+                <div *ngIf="hasPermissionsForModule(m)" class="bg-slate-50/40 border border-slate-100 rounded-2xl p-5 shadow-sm">
+                  <!-- Título del módulo principal con su ícono y diseño premium -->
+                  <h5 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-5 flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                    <i [class]="'pi ' + m.icon + ' text-[#39A900] text-sm'"></i>
+                    {{ m.title }}
+                  </h5>
+                  
+                  <!-- Cuadrícula para submódulos asignados a este módulo principal -->
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
+                    <ng-container *ngFor="let sub of m.submodules">
+                      <div *ngIf="permisosAgrupados[sub.key] && permisosAgrupados[sub.key].length > 0">
+                        <div class="perm-group-header">
+                          <span class="perm-group-dot"></span>
+                          <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest">{{ sub.label }}</span>
+                          <span class="ml-auto text-[10px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+                            {{ permisosAgrupados[sub.key].length }} permisos
+                          </span>
+                        </div>
 
-                  <div class="flex flex-col">
-                    <div *ngFor="let p of permisosAgrupados[key]"
-                         class="flex items-center py-3 border-b border-slate-100 last:border-0 transition-opacity"
-                         [class.opacity-60]="!p.tiene_permiso">
-                      <div class="flex flex-col min-w-0 w-1/2 pr-4">
-                        <span class="font-bold text-slate-800 text-sm leading-tight truncate">{{ p.descripcion || formatPermisoName(p.nombre) }}</span>
-                        <span class="text-[10.5px] text-slate-400 truncate font-mono">{{ p.nombre }}</span>
+                        <div class="flex flex-col">
+                          <div *ngFor="let p of permisosAgrupados[sub.key]"
+                               class="flex items-center py-3 border-b border-slate-100 last:border-0 transition-opacity"
+                               [class.opacity-60]="!p.tiene_permiso">
+                            <div class="flex flex-col min-w-0 w-1/2 pr-4">
+                              <span class="font-bold text-slate-800 text-sm leading-tight truncate" [title]="getFriendlyPermissionDescription(p.nombre, p.descripcion)">
+                                {{ getFriendlyPermissionDescription(p.nombre, p.descripcion) }}
+                              </span>
+                              <span class="text-[10.5px] text-slate-400 truncate font-mono" [title]="p.nombre">{{ p.nombre }}</span>
+                            </div>
+                            <div class="flex items-center gap-3 flex-shrink-0">
+                              <button
+                                type="button"
+                                class="perm-pill-btn"
+                                [class.on]="p.tiene_permiso"
+                                [class.off]="!p.tiene_permiso"
+                                (click)="togglePermiso(p, !p.tiene_permiso)"
+                                [attr.aria-label]="p.tiene_permiso ? 'Desactivar permiso' : 'Activar permiso'"
+                              >
+                                <i [class]="p.tiene_permiso ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                                {{ p.tiene_permiso ? 'Activo' : 'Inactivo' }}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div class="flex items-center gap-3 flex-shrink-0">
-                        <button
-                          type="button"
-                          class="perm-pill-btn"
-                          [class.on]="p.tiene_permiso"
-                          [class.off]="!p.tiene_permiso"
-                          (click)="togglePermiso(p, !p.tiene_permiso)"
-                          [attr.aria-label]="p.tiene_permiso ? 'Desactivar permiso' : 'Activar permiso'"
-                        >
-                          <i [class]="p.tiene_permiso ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
-                          {{ p.tiene_permiso ? 'Activo' : 'Inactivo' }}
-                        </button>
+                    </ng-container>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- Sección "Otros" para submódulos del backend que no están en el mapeo explícito del frontend -->
+              <div *ngIf="otrosSubmodules.length > 0" class="bg-slate-50/40 border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h5 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-5 flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                  <i class="pi pi-question-circle text-[#39A900] text-sm"></i>
+                  Otros Módulos
+                </h5>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
+                  <div *ngFor="let key of otrosSubmodules">
+                    <div class="perm-group-header">
+                      <span class="perm-group-dot"></span>
+                      <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest">{{ formatPermisoName(key) }}</span>
+                      <span class="ml-auto text-[10px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+                        {{ permisosAgrupados[key].length }} permisos
+                      </span>
+                    </div>
+
+                    <div class="flex flex-col">
+                      <div *ngFor="let p of permisosAgrupados[key]"
+                           class="flex items-center py-3 border-b border-slate-100 last:border-0 transition-opacity"
+                           [class.opacity-60]="!p.tiene_permiso">
+                        <div class="flex flex-col min-w-0 w-1/2 pr-4">
+                          <span class="font-bold text-slate-800 text-sm leading-tight truncate" [title]="getFriendlyPermissionDescription(p.nombre, p.descripcion)">
+                            {{ getFriendlyPermissionDescription(p.nombre, p.descripcion) }}
+                          </span>
+                          <span class="text-[10.5px] text-slate-400 truncate font-mono" [title]="p.nombre">{{ p.nombre }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                          <button
+                            type="button"
+                            class="perm-pill-btn"
+                            [class.on]="p.tiene_permiso"
+                            [class.off]="!p.tiene_permiso"
+                            (click)="togglePermiso(p, !p.tiene_permiso)"
+                            [attr.aria-label]="p.tiene_permiso ? 'Desactivar permiso' : 'Activar permiso'"
+                          >
+                            <i [class]="p.tiene_permiso ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                            {{ p.tiene_permiso ? 'Activo' : 'Inactivo' }}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -533,6 +603,127 @@ export class RolesComponent implements OnInit {
   loadingPermisos = false;
   displayRolDialog = false;
   showRolForm = false;
+
+  frontendModules = [
+    {
+      title: 'Dashboard',
+      icon: 'pi-home',
+      submodules: [
+        { key: 'dashboard', label: 'Dashboard' }
+      ]
+    },
+    {
+      title: 'Estructura',
+      icon: 'pi-briefcase',
+      submodules: [
+        { key: 'centros', label: 'Centros de Formación' },
+        { key: 'sedes', label: 'Sedes' },
+        { key: 'areas', label: 'Áreas' },
+        { key: 'fichas', label: 'Fichas y Programas' }
+      ]
+    },
+    {
+      title: 'Administración',
+      icon: 'pi-users',
+      submodules: [
+        { key: 'usuarios', label: 'Usuarios' },
+        { key: 'roles', label: 'Roles' }
+      ]
+    },
+    {
+      title: 'Inventario',
+      icon: 'pi-box',
+      submodules: [
+        { key: 'inventario', label: 'Inventario General' },
+        { key: 'productos', label: 'Productos' },
+        { key: 'items', label: 'Items / Lotes' },
+        { key: 'solicitudes', label: 'Solicitudes de Materiales' }
+      ]
+    },
+    {
+      title: 'Movimientos',
+      icon: 'pi-arrows-h',
+      submodules: [
+        { key: 'movimientos', label: 'Movimientos de Entrada/Salida' },
+        { key: 'devoluciones', label: 'Préstamos y Devoluciones' }
+      ]
+    },
+    {
+      title: 'Reportes y Auditoría',
+      icon: 'pi-chart-bar',
+      submodules: [
+        { key: 'chequeos', label: 'Listas de Chequeo' },
+        { key: 'actas', label: 'Actas de Entrega' }
+      ]
+    },
+    {
+      title: 'Utilidades',
+      icon: 'pi-cog',
+      submodules: [
+        { key: 'notificaciones', label: 'Notificaciones del Sistema' }
+      ]
+    }
+  ];
+
+  otrosSubmodules: string[] = [];
+
+  friendlyPerms: Record<string, string> = {
+    // Dashboard
+    'ver_dashboard': 'Visualizar panel de control (Dashboard)',
+    
+    // Estructura
+    'ver_centros': 'Visualizar centros de formación',
+    'ver_sedes': 'Visualizar sedes registradas',
+    'ver_areas': 'Visualizar áreas de formación',
+    'ver_fichas': 'Visualizar fichas y programas de formación',
+    
+    // Usuarios / Roles
+    'ver_usuarios': 'Visualizar listado de usuarios registrados',
+    'crear_usuarios': 'Registrar nuevos usuarios en el sistema',
+    'editar_usuarios': 'Modificar perfiles e información de usuarios',
+    'ver_roles': 'Visualizar y gestionar roles del sistema',
+    
+    // Inventario General
+    'ver_inventario': 'Visualizar stock global y bodegas',
+    'crear_inventario': 'Registrar ingreso de materiales',
+    'editar_inventario': 'Modificar registros del inventario general',
+    
+    // Productos
+    'ver_productos': 'Visualizar catálogo de productos',
+    'crear_productos': 'Registrar nuevos productos en catálogo',
+    'editar_productos': 'Modificar información de productos',
+    'eliminar_productos': 'Dar de baja productos del catálogo',
+    
+    // Items
+    'ver_items': 'Visualizar ítems individuales y lotes',
+    'crear_items': 'Añadir nuevos ítems de stock',
+    'editar_items': 'Modificar información de ítems',
+    
+    // Solicitudes
+    'ver_solicitudes': 'Consultar solicitudes de materiales',
+    'crear_solicitudes': 'Crear nuevas solicitudes de materiales',
+    'aprobar_solicitudes': 'Aprobar solicitudes pendientes',
+    'rechazar_solicitudes': 'Rechazar solicitudes recibidas',
+    'entregar_solicitudes': 'Registrar entrega física de materiales',
+    
+    // Movimientos
+    'ver_movimientos': 'Visualizar historial de movimientos',
+    'crear_movimientos': 'Registrar nuevo movimiento de materiales',
+    'ver_reportes': 'Generar y consultar reportes estadísticos',
+    
+    // Devoluciones
+    'ver_devoluciones': 'Consultar devoluciones y préstamos',
+    'crear_devoluciones': 'Registrar nuevos retornos de materiales',
+    
+    // Chequeos / Actas
+    'ver_chequeos': 'Visualizar listas de chequeo realizadas',
+    'crear_chequeos': 'Crear y registrar nuevas listas de chequeo',
+    'ver_actas': 'Consultar actas de entrega/recibo',
+    'crear_actas': 'Generar y firmar nuevas actas de entrega',
+    
+    // Notificaciones
+    'ver_notificaciones': 'Recibir y gestionar alertas del sistema'
+  };
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
@@ -714,6 +905,53 @@ export class RolesComponent implements OnInit {
       return;
     }
 
+    // Validar nombre o cédula duplicada
+    const nombreCompletoNuevo = ((this.usuarioForm.nombre || '').trim() + ' ' + (this.usuarioForm.apellidos || '').trim()).replace(/\s+/g, ' ').toLowerCase();
+    const numeroDocNuevo = (this.usuarioForm.numero_documento || '').trim();
+
+    const existeDuplicado = this.usuarios.some(u => {
+      const currentId = this.usuarioForm.id_usuario || this.usuarioForm.id;
+      if (!this.esNuevoUsuario && currentId && Number(u.id_usuario || u.id) === Number(currentId)) {
+        return false;
+      }
+
+      // Comparar Nombres
+      const nombreCompletoExistente = ((u.nombre || '').trim() + ' ' + (u.apellidos || '').trim()).replace(/\s+/g, ' ').toLowerCase();
+      if (nombreCompletoExistente === nombreCompletoNuevo || (u.nombre || '').trim().toLowerCase() === nombreCompletoNuevo) {
+        this.messageService.add({ severity: 'error', summary: 'Error de Validación', detail: 'Ya existe un usuario registrado con este nombre y apellidos.' });
+        return true;
+      }
+
+      // Comparar Cédula/Documento
+      let numeroDocExistente = '';
+      if (u.documento) {
+        const docClean = u.documento.trim();
+        const tipos = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.', 'CC', 'TI', 'CE', 'PEP', 'PPT', 'PAS'];
+        let foundType = false;
+        for (const t of tipos) {
+          if (docClean.toUpperCase().startsWith(t.toUpperCase())) {
+            numeroDocExistente = docClean.substring(t.length).trim();
+            foundType = true;
+            break;
+          }
+        }
+        if (!foundType) {
+          numeroDocExistente = docClean;
+        }
+      }
+
+      if (numeroDocExistente !== '' && numeroDocExistente === numeroDocNuevo) {
+        this.messageService.add({ severity: 'error', summary: 'Error de Validación', detail: 'Ya existe un usuario registrado con este número de documento.' });
+        return true;
+      }
+
+      return false;
+    });
+
+    if (existeDuplicado) {
+      return;
+    }
+
     this.savingUser = true;
 
     const docCompleto = this.usuarioForm.numero_documento ? `${this.usuarioForm.tipo_documento} ${this.usuarioForm.numero_documento.trim()}` : '';
@@ -794,6 +1032,7 @@ export class RolesComponent implements OnInit {
     this.usuarioService.getPermisos(idUsuario).subscribe({
       next: (res: any) => {
         this.permisosAgrupados = res.data || res || {};
+        this.actualizarModulosActivos();
         this.loadingPermisos = false;
         this.cdr.detectChanges();
       },
@@ -802,6 +1041,25 @@ export class RolesComponent implements OnInit {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los permisos del usuario' });
       }
     });
+  }
+
+  actualizarModulosActivos() {
+    const mappedKeys = new Set<string>();
+    this.frontendModules.forEach(m => {
+      m.submodules.forEach(sub => mappedKeys.add(sub.key));
+    });
+    this.otrosSubmodules = Object.keys(this.permisosAgrupados).filter(
+      key => !mappedKeys.has(key) && this.permisosAgrupados[key] && this.permisosAgrupados[key].length > 0
+    );
+  }
+
+  hasPermissionsForModule(module: any): boolean {
+    if (!this.permisosAgrupados) return false;
+    return module.submodules.some((sub: any) => this.permisosAgrupados[sub.key] && this.permisosAgrupados[sub.key].length > 0);
+  }
+
+  getFriendlyPermissionDescription(name: string, backendDesc: string): string {
+    return this.friendlyPerms[name] || backendDesc || this.formatPermisoName(name);
   }
 
   togglePermiso(p: any, active: boolean) {

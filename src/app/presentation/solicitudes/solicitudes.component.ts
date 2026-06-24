@@ -67,7 +67,6 @@ interface Solicitud {
         </div>
       </div>
 
-      <!-- Stats -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;">
         <div style="background:white;border-radius:16px;padding:1.25rem;border:1px solid #f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,.05)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
@@ -192,9 +191,8 @@ interface Solicitud {
       </div>
     </div>
 
-    <!-- Dialog Ver Detalles -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="📋 Detalles de la Solicitud"
+      header="Detalles de la Solicitud"
       [(visible)]="displayDialog" [modal]="true" [style]="{ width: '560px' }"
       [draggable]="true" [resizable]="false"
       styleClass="form-dialog shadow-2xl border border-slate-200">
@@ -249,7 +247,7 @@ interface Solicitud {
 
     <!-- Dialog Nueva Solicitud -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="➕ Nueva Solicitud de Préstamo"
+      header="Nueva Solicitud de Préstamo"
       [(visible)]="displayDialogCrear" [modal]="true" [style]="{ width: '520px' }"
       [draggable]="true" [resizable]="false"
       styleClass="form-dialog shadow-2xl border border-slate-200">

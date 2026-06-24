@@ -108,7 +108,7 @@ interface Centro {
     </div>
 
     <p-dialog [dismissableMask]="true"
-      header="✨ Registrar Nuevo Centro"
+      header="Registrar Nuevo Centro"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"

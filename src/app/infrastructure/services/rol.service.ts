@@ -19,4 +19,16 @@ export class RolService {
   create(data: { nombre: string }): Observable<Rol> { 
     return this.api.post<Rol>(this.endpoint, data); 
   }
+
+  getPermisos(idRol: number): Observable<any> {
+    return this.api.get<any>(`${this.endpoint}/${idRol}/permisos`);
+  }
+
+  asignarPermisos(idRol: number, idPermisos: number[]): Observable<any> {
+    return this.api.post<any>(`${this.endpoint}/${idRol}/permisos`, { id_permisos: idPermisos });
+  }
+
+  getTodosLosPermisos(): Observable<any> {
+    return this.api.get<any>('/permisos');
+  }
 }

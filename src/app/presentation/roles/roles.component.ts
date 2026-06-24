@@ -438,14 +438,25 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              class="px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer transition-all outline-none flex items-center gap-2"
-              (click)="usuarioSeleccionado = null; permisosAgrupados = {}; otrosSubmodules = []"
-            >
-              <i class="pi pi-times"></i>
-              Cerrar
-            </button>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 border-none rounded-xl cursor-pointer transition-all outline-none flex items-center gap-2"
+                (click)="restablecerPermisosUsuario()"
+                [disabled]="loadingPermisos"
+              >
+                <i class="pi pi-refresh" [class.pi-spin]="loadingPermisos"></i>
+                Restablecer al Rol
+              </button>
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer transition-all outline-none flex items-center gap-2"
+                (click)="usuarioSeleccionado = null; permisosAgrupados = {}; otrosSubmodules = []"
+              >
+                <i class="pi pi-times"></i>
+                Cerrar
+              </button>
+            </div>
           </div>
 
           <!-- Card Body: Permisos agrupados por módulo del sistema -->
@@ -1074,6 +1085,36 @@ export class RolesComponent implements OnInit {
       error: () => {
         p.tiene_permiso = !active;
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el permiso' });
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  restablecerPermisosUsuario() {
+    if (!this.usuarioSeleccionado) return;
+
+    const nombreUsuario = this.usuarioSeleccionado.nombre || this.usuarioSeleccionado.nombreCompleto || 'usuario';
+    const nombreRol = this.getRolNombre(this.usuarioSeleccionado.id_rol);
+    const confirmar = confirm(`¿Está seguro de que desea restablecer los permisos de ${nombreUsuario} a los asignados por defecto para el rol "${nombreRol}"? Se eliminarán todas las excepciones personalizadas.`);
+    if (!confirmar) return;
+
+    this.loadingPermisos = true;
+    this.usuarioService.restablecerPermisos(this.usuarioSeleccionado.id_usuario).subscribe({
+      next: () => {
+        this.messageService.add({ 
+          severity: 'success', 
+          summary: 'Éxito', 
+          detail: `Permisos restablecidos al rol ${nombreRol} correctamente` 
+        });
+        this.cargarPermisos(this.usuarioSeleccionado.id_usuario);
+      },
+      error: (err) => {
+        this.loadingPermisos = false;
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: err.error?.message || 'No se pudieron restablecer los permisos' 
+        });
         this.cdr.detectChanges();
       }
     });

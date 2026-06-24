@@ -173,7 +173,7 @@ interface Item {
     <p-dialog
       maskStyleClass="transparent-mask"
       [dismissableMask]="true"
-      header="➕ Registrar Movimiento"
+      header="Registrar Movimiento"
       [(visible)]="displayDialogCrear"
       [modal]="true"
       [style]="{ width: '540px' }"

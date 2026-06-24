@@ -153,7 +153,7 @@ interface Ficha {
 
     <!-- Dialog para crear nueva ficha -->
     <p-dialog [dismissableMask]="true"
-      header="✨ Registrar Nueva Ficha de Formación"
+      header="Registrar Nueva Ficha de Formación"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"

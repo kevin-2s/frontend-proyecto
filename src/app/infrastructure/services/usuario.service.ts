@@ -35,4 +35,8 @@ export class UsuarioService {
   asignarPermiso(idUsuario: number, idPermiso: number, activo: boolean): Observable<any> {
     return this.api.post<any>(`${this.endpoint}/${idUsuario}/permisos`, { id_permiso: idPermiso, activo });
   }
+
+  restablecerPermisos(idUsuario: number): Observable<any> {
+    return this.api.delete<any>(`${this.endpoint}/${idUsuario}/permisos`);
+  }
 }

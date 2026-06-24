@@ -116,7 +116,7 @@ interface Bodega {
 
     <!-- Diálogo Crear / Editar -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      [header]="esNueva ? '✨ Nueva Bodega' : '📝 Editar Bodega'"
+      [header]="esNueva ? 'Nueva Bodega' : 'Editar Bodega'"
       [(visible)]="displayDialog" [modal]="true"
       [style]="{ width: '90vw', maxWidth: '520px' }"
       [draggable]="true" [resizable]="false"

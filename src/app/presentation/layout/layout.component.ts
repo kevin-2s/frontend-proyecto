@@ -22,15 +22,24 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
 
       <!-- Sidebar Responsivo -->
       <aside 
-         class="bg-white flex flex-col border-r border-gray-100 transition-all duration-300 overflow-hidden flex-shrink-0 
-            fixed lg:static h-full z-[50] rounded-r-[40px]"
+         class="flex flex-col border border-white/40 transition-all duration-300 flex-shrink-0 
+            fixed lg:static z-[50]"
+         [class.overflow-hidden]="!sidebarCollapsed()"
+         [class.overflow-visible]="sidebarCollapsed()"
          [class.w-[260px]]="isSidebarVisible() && !sidebarCollapsed()"
          [class.w-16]="isSidebarVisible() && sidebarCollapsed()"
          [class.w-0]="!isSidebarVisible() && !sidebarCollapsed()"
-         [class.shadow-[0_0_40px_rgba(0,48,77,0.4)]]="isSidebarVisible()">
+         [class.m-4]="isSidebarVisible() && !sidebarCollapsed()"
+         [class.my-4]="isSidebarVisible() && sidebarCollapsed()"
+         [class.ml-4]="isSidebarVisible() && sidebarCollapsed()"
+         [class.mr-2]="isSidebarVisible() && sidebarCollapsed()"
+         [class.rounded-[28px]]="!sidebarCollapsed()"
+         [class.rounded-[999px]]="sidebarCollapsed()"
+         [class.h-[calc(100vh-2rem)]]="isSidebarVisible()"
+         style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.65), rgba(240, 244, 248, 0.45)); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 8px 32px rgba(15, 23, 42, 0.04);">
         
         <!-- Logo -->
-        <div class="flex flex-col items-center justify-center border-b border-gray-100 flex-shrink-0 transition-all duration-300"
+        <div class="flex flex-col items-center justify-center border-b border-slate-300/20 flex-shrink-0 transition-all duration-300"
              [class.py-6]="!sidebarCollapsed()"
              [class.h-20]="sidebarCollapsed()"
              [class.px-6]="!sidebarCollapsed()"
@@ -47,30 +56,37 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
         </div>
 
         <!-- Navigation -->
-        <nav class="flex-1 overflow-y-auto py-3 px-4">
+        <nav [class.overflow-y-auto]="!sidebarCollapsed()"
+             [class.overflow-visible]="sidebarCollapsed()"
+             class="flex-1 py-3 px-4 custom-scrollbar">
           <ul class="space-y-1">
             <!-- Dashboard Link -->
             <li>
               <a [routerLink]="dashboardItem.path"
                  routerLinkActive="active"
                  #rlaDash="routerLinkActive"
-                 [class.bg-[#111827]]="rlaDash.isActive"
+                 [class.bg-[#39A900]]="rlaDash.isActive"
                  [class.text-white]="rlaDash.isActive"
                  [class.bg-transparent]="!rlaDash.isActive"
-                 [class.text-slate-500]="!rlaDash.isActive"
-                 [class.hover:bg-slate-50]="!rlaDash.isActive"
-                 [attr.title]="dashboardItem.title"
+                 [class.text-slate-700]="!rlaDash.isActive"
+                 [class.hover:bg-white/60]="!rlaDash.isActive"
                  [class.justify-center]="sidebarCollapsed()"
                  [class.px-4]="!sidebarCollapsed()"
                  [class.px-2]="sidebarCollapsed()"
-                 class="flex items-center py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold">
-                <i [class]="'pi ' + dashboardItem.icon + ' text-base'"
-                   [class.mr-3]="!sidebarCollapsed()"
-                   [class.mr-0]="sidebarCollapsed()"
-                   [class.text-lg]="sidebarCollapsed()"
-                   [class.text-white]="rlaDash.isActive"
-                   [class.text-slate-400]="!rlaDash.isActive"></i>
+                 class="relative group flex items-center py-2 px-3 rounded-full text-[13.5px] transition-all cursor-pointer font-semibold">
+                <div [class]="rlaDash.isActive ? 'w-8 h-8 rounded-full bg-white/25 flex items-center justify-center shadow-sm ' + (sidebarCollapsed() ? 'mr-0' : 'mr-2.5') : 'flex items-center justify-center ' + (sidebarCollapsed() ? 'mr-0' : 'mr-3')">
+                  <i [class]="'pi ' + dashboardItem.icon + ' text-[15px]'"
+                     [class.text-white]="rlaDash.isActive"
+                     [class.text-slate-500]="!rlaDash.isActive"></i>
+                </div>
                 <span *ngIf="!sidebarCollapsed()">{{ dashboardItem.title }}</span>
+
+                <!-- Tooltip when collapsed -->
+                <div *ngIf="sidebarCollapsed()"
+                     class="absolute top-1/2 -translate-y-1/2 left-full ml-3 px-3.5 py-2 bg-slate-900/95 text-white text-[12.5px] font-bold rounded-xl shadow-xl opacity-0 scale-95 -translate-x-2 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 transition-all duration-150 pointer-events-none whitespace-nowrap z-[100]">
+                  <div class="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-slate-900/95"></div>
+                  {{ dashboardItem.title }}
+                </div>
               </a>
             </li>
 
@@ -80,7 +96,7 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
                 <!-- Section Header -->
                 <li *ngIf="!sidebarCollapsed()" class="mt-4 mb-2">
                   <div (click)="section.expanded = !section.expanded" 
-                       class="flex items-center justify-between px-4 py-1 text-[11px] font-bold text-slate-400 tracking-wider cursor-pointer hover:text-slate-600 select-none">
+                       class="flex items-center justify-between px-4 py-1 text-[11px] font-bold text-slate-500 tracking-wider cursor-pointer hover:text-slate-800 select-none">
                     <span>{{ section.title }}</span>
                     <i class="pi pi-chevron-down text-[8px] transition-transform duration-200"
                        [class.rotate-180]="!section.expanded"></i>
@@ -90,27 +106,32 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
                 <!-- Section Items -->
                 <ng-container *ngIf="section.expanded || sidebarCollapsed()">
                   <ng-container *ngFor="let item of section.items">
-                    <li *ngIf="hasAccess(item.path)">
+                    <li *ngIf="hasAccess(item)">
                       <a [routerLink]="item.path"
                          routerLinkActive="active"
                          #rla="routerLinkActive"
-                         [class.bg-[#111827]]="rla.isActive"
+                         [class.bg-[#39A900]]="rla.isActive"
                          [class.text-white]="rla.isActive"
                          [class.bg-transparent]="!rla.isActive"
-                         [class.text-slate-500]="!rla.isActive"
-                         [class.hover:bg-slate-50]="!rla.isActive"
-                         [attr.title]="item.title"
+                         [class.text-slate-700]="!rla.isActive"
+                         [class.hover:bg-white/60]="!rla.isActive"
                          [class.justify-center]="sidebarCollapsed()"
                          [class.px-4]="!sidebarCollapsed()"
                          [class.px-2]="sidebarCollapsed()"
-                         class="flex items-center py-3 rounded-xl text-[13.5px] transition-all cursor-pointer font-semibold">
-                        <i [class]="'pi ' + item.icon + ' text-base'"
-                           [class.mr-3]="!sidebarCollapsed()"
-                           [class.mr-0]="sidebarCollapsed()"
-                           [class.text-lg]="sidebarCollapsed()"
-                           [class.text-white]="rla.isActive"
-                           [class.text-slate-400]="!rla.isActive"></i>
+                         class="relative group flex items-center py-2 px-3 rounded-full text-[13.5px] transition-all cursor-pointer font-semibold">
+                        <div [class]="rla.isActive ? 'w-8 h-8 rounded-full bg-white/25 flex items-center justify-center shadow-sm ' + (sidebarCollapsed() ? 'mr-0' : 'mr-2.5') : 'flex items-center justify-center ' + (sidebarCollapsed() ? 'mr-0' : 'mr-3')">
+                          <i [class]="'pi ' + item.icon + ' text-[15px]'"
+                             [class.text-white]="rla.isActive"
+                             [class.text-slate-500]="!rla.isActive"></i>
+                        </div>
                         <span *ngIf="!sidebarCollapsed()">{{ item.title }}</span>
+
+                        <!-- Tooltip when collapsed -->
+                        <div *ngIf="sidebarCollapsed()"
+                             class="absolute top-1/2 -translate-y-1/2 left-full ml-3 px-3.5 py-2 bg-slate-900/95 text-white text-[12.5px] font-bold rounded-xl shadow-xl opacity-0 scale-95 -translate-x-2 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 transition-all duration-150 pointer-events-none whitespace-nowrap z-[100]">
+                          <div class="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-slate-900/95"></div>
+                          {{ item.title }}
+                        </div>
                       </a>
                     </li>
                   </ng-container>
@@ -121,7 +142,7 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
         </nav>
 
         <!-- User Footer -->
-        <div class="p-4 border-t border-gray-100 flex-shrink-0 relative">
+        <div class="p-4 border-t border-slate-300/20 flex-shrink-0 relative">
           <!-- Dropdown Menu (Opens Upward or to the Right depending on collapse state) -->
           <div *ngIf="isProfileMenuOpen()" 
                [class.w-48]="sidebarCollapsed()"
@@ -174,17 +195,17 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
           <!-- Clickable Profile Block -->
           <div (click)="toggleProfileMenu()" 
                [attr.title]="getUserRoleName()"
-               class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+               class="flex items-center justify-between p-2 rounded-xl hover:bg-white/60 cursor-pointer transition-colors">
             <div class="flex items-center gap-3 min-w-0" [class.justify-center]="sidebarCollapsed()">
-              <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs">
+              <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-slate-700 font-bold text-xs border border-slate-300/20">
                 {{ getUserInitials() }}
               </div>
               <div *ngIf="!sidebarCollapsed()" class="flex flex-col min-w-0">
-                <span class="text-[12px] font-bold text-gray-900 truncate">{{ getUserRoleName() }}</span>
-                <span class="text-[10px] text-gray-400 truncate">Sesión activa</span>
+                <span class="text-[12px] font-bold text-slate-800 truncate">{{ getUserRoleName() }}</span>
+                <span class="text-[10px] text-slate-500 truncate">Sesión activa</span>
               </div>
             </div>
-            <i *ngIf="!sidebarCollapsed()" class="pi pi-chevron-up text-slate-400 text-xs transition-transform duration-200" [class.rotate-180]="isProfileMenuOpen()"></i>
+            <i *ngIf="!sidebarCollapsed()" class="pi pi-chevron-up text-slate-600 text-xs transition-transform duration-200" [class.rotate-180]="isProfileMenuOpen()"></i>
           </div>
         </div>
       </aside>
@@ -307,54 +328,54 @@ export class LayoutComponent implements OnInit, OnDestroy {
       title: 'ESTRUCTURA',
       expanded: true,
       items: [
-        { title: 'Centros', path: 'centros', icon: 'pi-briefcase' },
-        { title: 'Sedes', path: 'sedes', icon: 'pi-map-marker' },
-        { title: 'Áreas', path: 'areas', icon: 'pi-clone' },
-        { title: 'Programas', path: 'programas', icon: 'pi-bookmark' },
-        { title: 'Fichas', path: 'fichas', icon: 'pi-id-card' }
+        { title: 'Centros', path: 'centros', icon: 'pi-briefcase', requiredPermission: 'ver_centros' },
+        { title: 'Sedes', path: 'sedes', icon: 'pi-map-marker', requiredPermission: 'ver_sedes' },
+        { title: 'Áreas', path: 'areas', icon: 'pi-clone', requiredPermission: 'ver_areas' },
+        { title: 'Programas', path: 'programas', icon: 'pi-bookmark', requiredPermission: 'ver_fichas' },
+        { title: 'Fichas', path: 'fichas', icon: 'pi-id-card', requiredPermission: 'ver_fichas' }
       ]
     },
     {
       title: 'ADMINISTRACIÓN',
       expanded: true,
       items: [
-        { title: 'Usuarios', path: 'usuarios', icon: 'pi-users' },
-        { title: 'Roles', path: 'roles', icon: 'pi-shield' }
+        { title: 'Usuarios', path: 'usuarios', icon: 'pi-users', requiredPermission: 'ver_usuarios' },
+        { title: 'Roles', path: 'roles', icon: 'pi-shield', requiredPermission: 'ver_roles' }
       ]
     },
     {
       title: 'INVENTARIO',
       expanded: true,
       items: [
-        { title: 'Productos', path: 'inventario/productos', icon: 'pi-box' },
-        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' },
-        { title: 'Bodegas', path: 'inventario/bodega', icon: 'pi-home' },
-        { title: 'Solicitudes', path: 'inventario/solicitudes', icon: 'pi-inbox' },
-        { title: 'Asignar', path: 'inventario/asignar', icon: 'pi-user-plus' },
-        { title: 'Novedades', path: 'inventario/novedades', icon: 'pi-exclamation-circle' }
+        { title: 'Productos', path: 'inventario/productos', icon: 'pi-box', requiredPermission: 'ver_productos' },
+        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag', requiredPermission: 'ver_productos' },
+        { title: 'Bodegas', path: 'inventario/bodega', icon: 'pi-home', requiredPermission: 'ver_inventario' },
+        { title: 'Solicitudes', path: 'inventario/solicitudes', icon: 'pi-inbox', requiredPermission: 'ver_solicitudes' },
+        { title: 'Asignar', path: 'inventario/asignar', icon: 'pi-user-plus', requiredPermission: 'ver_solicitudes' },
+        { title: 'Novedades', path: 'inventario/novedades', icon: 'pi-exclamation-circle', requiredPermission: 'ver_inventario' }
       ]
     },
     {
       title: 'MOVIMIENTOS',
       expanded: true,
       items: [
-        { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h' },
-        { title: 'Préstamos', path: 'prestamos', icon: 'pi-send' },
-        { title: 'Kardex', path: 'kardex', icon: 'pi-history' }
+        { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h', requiredPermission: 'ver_movimientos' },
+        { title: 'Préstamos', path: 'prestamos', icon: 'pi-send', requiredPermission: 'ver_devoluciones' },
+        { title: 'Kardex', path: 'kardex', icon: 'pi-history', requiredPermission: 'ver_movimientos' }
       ]
     },
     {
       title: 'REPORTES',
       expanded: true,
       items: [
-        { title: 'Reportes', path: 'reportes', icon: 'pi-chart-bar' }
+        { title: 'Reportes', path: 'reportes', icon: 'pi-chart-bar', requiredPermission: 'ver_reportes' }
       ]
     },
     {
       title: 'UTILIDADES',
       expanded: true,
       items: [
-        { title: 'Escáner QR', path: 'qr', icon: 'pi-qrcode' }
+        { title: 'Escáner QR', path: 'qr', icon: 'pi-qrcode', requiredPermission: 'ver_dashboard' }
       ]
     }
   ];
@@ -477,35 +498,17 @@ export class LayoutComponent implements OnInit, OnDestroy {
     this.authService.logout();
   }
 
-  hasAccess(path: string): boolean {
-    const role = this.authService.getUserRole()?.toUpperCase() || '';
-    if (role === 'ADMINISTRADOR') {
-      return true;
+  hasAccess(item: any): boolean {
+    // Si el item tiene un permiso requerido, usamos la verificación granular
+    if (item?.requiredPermission) {
+      return this.authService.hasPermission(item.requiredPermission);
     }
-    
-    if (role === 'INSTRUCTOR') {
-      const instructorPaths = [
-        'sedes', 'sitios', 'areas', 'programas', 'fichas',
-        'inventario/productos', 'inventario/categoria', 'inventario/bodega', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades',
-        'movimientos', 'home',
-        'kardex', 'reportes', 'qr'
-      ];
-      return instructorPaths.includes(path);
-    }
-    
-    if (role === 'APRENDIZ') {
-      const aprendizPaths = [
-        'inventario/productos', 'inventario/categoria', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades',
-        'home', 'qr'
-      ];
-      return aprendizPaths.includes(path);
-    }
-    
-    return false;
+    // Fallback: los administradores siempre ven todo
+    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
   }
 
   hasSectionAccess(section: any): boolean {
-    return section.items.some((item: any) => this.hasAccess(item.path));
+    return section.items.some((item: any) => this.hasAccess(item));
   }
 
   getUserInitials(): string {

@@ -8,37 +8,40 @@ import { PrestamosService, Prestamo, CreatePrestamoDto } from '../../services/pr
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 min-h-screen bg-[#f0fdf4]">
+    <div class="module-container">
       <!-- Header -->
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">Préstamos y Devoluciones</h1>
-          <p class="text-gray-500 text-sm mt-1">Gestión de equipos prestados y registro de devoluciones</p>
+      <div class="module-header">
+        <div class="flex items-center gap-3">
+          <i class="pi pi-send text-[#39A900] text-3xl"></i>
+          <div>
+            <h3 class="page-title m-0">Préstamos y Devoluciones</h3>
+            <p class="text-gray-400 text-[11px] m-0">Gestión de equipos prestados y registro de devoluciones</p>
+          </div>
         </div>
-        <button (click)="abrirModal()"
-          class="flex items-center gap-2 bg-[#39A900] text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-[#2e8a00] transition-colors shadow-md">
-          <i class="pi pi-plus"></i> Nuevo Préstamo
-        </button>
-      </div>
-
-      <!-- Tabs -->
-      <div class="flex gap-2 mb-5">
-        <button (click)="vistaActual.set('todos')"
-          [class.bg-[#111827]]="vistaActual() === 'todos'"
-          [class.text-white]="vistaActual() === 'todos'"
-          [class.bg-white]="vistaActual() !== 'todos'"
-          [class.text-gray-600]="vistaActual() !== 'todos'"
-          class="px-5 py-2 rounded-xl text-sm font-semibold transition-all border border-gray-200">
-          Todos
-        </button>
-        <button (click)="vistaActual.set('activos')"
-          [class.bg-[#111827]]="vistaActual() === 'activos'"
-          [class.text-white]="vistaActual() === 'activos'"
-          [class.bg-white]="vistaActual() !== 'activos'"
-          [class.text-gray-600]="vistaActual() !== 'activos'"
-          class="px-5 py-2 rounded-xl text-sm font-semibold transition-all border border-gray-200">
-          Activos
-        </button>
+        <div class="header-actions">
+          <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
+            <button (click)="vistaActual.set('todos')"
+              [class.bg-[#39A900]]="vistaActual() === 'todos'"
+              [class.text-white]="vistaActual() === 'todos'"
+              [class.bg-transparent]="vistaActual() !== 'todos'"
+              [class.text-slate-600]="vistaActual() !== 'todos'"
+              class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all border-none outline-none cursor-pointer">
+              Todos
+            </button>
+            <button (click)="vistaActual.set('activos')"
+              [class.bg-[#39A900]]="vistaActual() === 'activos'"
+              [class.text-white]="vistaActual() === 'activos'"
+              [class.bg-transparent]="vistaActual() !== 'activos'"
+              [class.text-slate-600]="vistaActual() !== 'activos'"
+              class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all border-none outline-none cursor-pointer">
+              Activos
+            </button>
+          </div>
+          <button (click)="abrirModal()"
+            class="flex items-center gap-2 bg-[#39A900] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-md border-none outline-none h-[40px] cursor-pointer text-sm">
+            <i class="pi pi-plus"></i> Nuevo Préstamo
+          </button>
+        </div>
       </div>
 
       <!-- Tabla -->

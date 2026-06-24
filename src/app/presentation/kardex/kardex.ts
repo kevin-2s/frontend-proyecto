@@ -22,31 +22,34 @@ interface KardexEntry {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 min-h-screen bg-[#f0fdf4]">
+    <div class="module-container">
       <!-- Header -->
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Kardex / Auditoría</h1>
-        <p class="text-gray-500 text-sm mt-1">Historial de movimientos y trazabilidad del inventario</p>
-      </div>
+      <div class="module-header">
+        <div class="flex items-center gap-3">
+          <i class="pi pi-history text-[#39A900] text-3xl"></i>
+          <div>
+            <h3 class="page-title m-0">Kardex / Auditoría</h3>
+            <p class="text-gray-400 text-[11px] m-0">Historial de movimientos y trazabilidad del inventario</p>
+          </div>
+        </div>
 
-      <!-- Filtros -->
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-5 flex gap-4 items-center flex-wrap">
-        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
-          <i class="pi pi-search text-gray-400"></i>
-          <input type="text" [(ngModel)]="busqueda" placeholder="Buscar por item o tipo..."
-            class="w-full text-sm focus:outline-none text-gray-700 bg-transparent placeholder-gray-400">
+        <div class="header-actions">
+          <div class="search-wrapper">
+            <i class="pi pi-search"></i>
+            <input type="text" [(ngModel)]="busqueda" placeholder="Buscar por item o tipo..." class="search-input" />
+          </div>
+          <div>
+            <select [(ngModel)]="filtroTipo"
+              class="px-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none text-slate-700 bg-white cursor-pointer h-[40px]">
+              <option value="">Todos los tipos</option>
+              <option value="ENTRADA">ENTRADA</option>
+              <option value="SALIDA">SALIDA</option>
+            </select>
+          </div>
+          <button (click)="filtrarPorItem()" class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition h-[40px] cursor-pointer font-bold outline-none">
+            <i class="pi pi-filter"></i> Filtrar por Item
+          </button>
         </div>
-        <div>
-          <select [(ngModel)]="filtroTipo"
-            class="px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none text-gray-700 bg-white cursor-pointer">
-            <option value="">Todos los tipos</option>
-            <option value="ENTRADA">ENTRADA</option>
-            <option value="SALIDA">SALIDA</option>
-          </select>
-        </div>
-        <button (click)="filtrarPorItem()" class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
-          <i class="pi pi-filter"></i> Filtrar por Item
-        </button>
       </div>
 
       <!-- Tarjetas de resumen -->

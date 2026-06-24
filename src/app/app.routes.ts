@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { noAuthGuard } from './core/guards/no-auth.guard';
-import { roleGuard } from './core/guards/role.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
   {
@@ -26,12 +26,12 @@ export const routes: Routes = [
       {
         path: 'usuarios',
         loadComponent: () => import('./presentation/usuarios/usuarios.component').then(m => m.UsuariosComponent),
-        canActivate: [roleGuard(['Administrador'])]
+        canActivate: [permissionGuard('ver_usuarios')]
       },
       {
         path: 'roles',
         loadComponent: () => import('./presentation/roles/roles.component').then(m => m.RolesComponent),
-        canActivate: [roleGuard(['Administrador'])]
+        canActivate: [permissionGuard('ver_roles')]
       },
       {
         path: 'inventario',
@@ -69,32 +69,32 @@ export const routes: Routes = [
       {
         path: 'centros',
         loadComponent: () => import('./presentation/centros/centros.component').then(m => m.CentrosComponent),
-        canActivate: [roleGuard(['Administrador'])]
+        canActivate: [permissionGuard('ver_centros')]
       },
       {
         path: 'sedes',
         loadComponent: () => import('./presentation/sedes/sedes.component').then(m => m.SedesComponent),
-        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+        canActivate: [permissionGuard('ver_sedes')]
       },
       {
         path: 'areas',
         loadComponent: () => import('./presentation/areas/areas.component').then(m => m.AreasComponent),
-        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+        canActivate: [permissionGuard('ver_areas')]
       },
       {
         path: 'programas',
         loadComponent: () => import('./presentation/programas/programas.component').then(m => m.ProgramasComponent),
-        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+        canActivate: [permissionGuard('ver_fichas')]
       },
       {
         path: 'fichas',
         loadComponent: () => import('./presentation/fichas/fichas.component').then(m => m.FichasComponent),
-        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+        canActivate: [permissionGuard('ver_fichas')]
       },
       {
         path: 'sitios',
         loadComponent: () => import('./presentation/sitios/sitios.component').then(m => m.SitiosComponent),
-        canActivate: [roleGuard(['Administrador', 'Instructor'])]
+        canActivate: [permissionGuard('ver_sedes')]
       },
       {
         path: 'movimientos',

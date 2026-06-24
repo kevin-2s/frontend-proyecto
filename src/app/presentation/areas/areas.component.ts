@@ -137,7 +137,7 @@ interface Area {
     </div>
 
     <p-dialog [dismissableMask]="true"
-      [header]="esNuevo ? '✨ Registrar Nueva Área' : '📝 Editar Área'"
+      [header]="esNuevo ? 'Registrar Nueva Área' : '📝 Editar Área'"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"

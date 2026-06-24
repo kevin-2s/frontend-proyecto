@@ -1,7 +1,12 @@
 /* Estilos para LayoutComponent con Flexbox Responsivo */
 
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
+  height: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
@@ -12,7 +17,6 @@
 }
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
   background: #d1d5db;
-  border-radius: 10px;
 }
 
 @keyframes fadeInUp {

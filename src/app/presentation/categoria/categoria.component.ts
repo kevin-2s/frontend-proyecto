@@ -110,7 +110,7 @@ interface Categoria {
     </div>
 
     <p-dialog [dismissableMask]="true"
-      [header]="esNuevo ? '✨ Nueva Categoría' : '📝 Editar Categoría'"
+      [header]="esNuevo ? 'Nueva Categoría' : 'Editar Categoría'"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '450px' }"

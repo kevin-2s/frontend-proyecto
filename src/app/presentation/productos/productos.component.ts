@@ -216,9 +216,9 @@ type SelectOption = { label: string; value: string };
       </div>
     </div>
 
-    <!-- ===== DIÁLOGO CREAR / EDITAR ===== -->
+    
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      [header]="esNuevo ? '✨ Registrar Producto' : '📝 Editar Producto'"
+      [header]="esNuevo ? 'Registrar Producto' : 'Editar Producto'"
       [(visible)]="displayDialog" [modal]="true"
       [style]="{ width: '94vw', maxWidth: '660px' }"
       [draggable]="true" [resizable]="false"

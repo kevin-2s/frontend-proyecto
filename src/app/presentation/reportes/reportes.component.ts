@@ -8,11 +8,16 @@ import { environment } from '../../../environments/environment';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="p-6 min-h-screen bg-[#f0fdf4]">
+    <div class="module-container">
       <!-- Header -->
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Reportes</h1>
-        <p class="text-gray-500 text-sm mt-1">Genera y descarga reportes del sistema en PDF o Excel</p>
+      <div class="module-header">
+        <div class="flex items-center gap-3">
+          <i class="pi pi-chart-bar text-[#39A900] text-3xl"></i>
+          <div>
+            <h3 class="page-title m-0">Reportes</h3>
+            <p class="text-gray-400 text-[11px] m-0">Genera y descarga reportes del sistema en PDF o Excel</p>
+          </div>
+        </div>
       </div>
 
       <!-- Cards de reportes -->

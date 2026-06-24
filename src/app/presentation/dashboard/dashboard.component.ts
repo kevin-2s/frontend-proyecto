@@ -24,7 +24,6 @@ import { map, catchError } from 'rxjs/operators';
           </div>
         </div>
 
-        <!-- Mini KPIs en el hero -->
         <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-top:1.75rem; position:relative; z-index:1;">
           <div *ngFor="let kpi of heroKpis" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:14px; padding:0.9rem 1rem;">
             <p style="color:rgba(255,255,255,0.55); font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 0.25rem;">{{ kpi.label }}</p>
@@ -38,8 +37,6 @@ import { map, catchError } from 'rxjs/operators';
           </div>
         </div>
       </div>
-
-      <!-- ══════════ STAT CARDS ══════════ -->
       <div class="db-stats-grid" style="margin-bottom:2rem;">
 
         <div class="db-stat-card" *ngFor="let card of statCards">
@@ -63,11 +60,9 @@ import { map, catchError } from 'rxjs/operators';
 
       </div>
 
-      <!-- ══════════ GRÁFICAS ══════════ -->
-      <p class="db-section-title">📊 Análisis de Inventario y Trazabilidad de Materiales</p>
+      <p class="db-section-title">Análisis de Inventario y Trazabilidad de Materiales</p>
       <div class="db-charts-grid">
 
-        <!-- Gráfica 1: Clasificación de Materiales -->
         <div class="db-chart-card">
           <p style="font-size:0.78rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 1.25rem;">
             Clasificación de Materiales (Consumo vs Devolutivo)
@@ -85,7 +80,6 @@ import { map, catchError } from 'rxjs/operators';
           </ng-template>
         </div>
 
-        <!-- Gráfica 2: Consumo por Ficha -->
         <div class="db-chart-card">
           <p style="font-size:0.78rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 1.25rem;">
             Consumo de Materiales por Ficha de Formación
@@ -103,7 +97,6 @@ import { map, catchError } from 'rxjs/operators';
           </ng-template>
         </div>
 
-        <!-- Gráfica 3: Estado de Movimientos -->
         <div class="db-chart-card">
           <p style="font-size:0.78rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 1.25rem;">
             Trazabilidad de Movimientos (Entradas vs Salidas)
@@ -121,7 +114,6 @@ import { map, catchError } from 'rxjs/operators';
           </ng-template>
         </div>
 
-        <!-- Gráfica 4: Alerta Stock Crítico -->
         <div class="db-chart-card">
           <p style="font-size:0.78rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.07em; margin:0 0 1.25rem;">
             Alerta de Stock Crítico (Materiales Bajo Mínimo)
@@ -141,9 +133,8 @@ import { map, catchError } from 'rxjs/operators';
 
       </div>
 
-      <!-- ══════════ TIMELINE / TABLA DE TRAZABILIDAD RECIENTE ══════════ -->
       <p class="db-section-title" style="margin-top:2rem;">
-        <i class="pi pi-history"></i> Historial de Trazabilidad de Materiales
+       Historial de Trazabilidad de Materiales
       </p>
       <div class="db-recent-movements-card" style="margin-bottom:2rem;">
         <ng-container *ngIf="loading(); else recentTable">
@@ -206,7 +197,6 @@ import { map, catchError } from 'rxjs/operators';
         </ng-template>
       </div>
 
-      <!-- ══════════ RESUMEN DE TRAZABILIDAD Y STOCK ══════════ -->
       <p class="db-section-title" style="margin-top:0.5rem;">Resumen de Control de Materiales</p>
       <div class="db-bottom-grid">
 
@@ -269,7 +259,7 @@ export class DashboardComponent implements OnInit {
   loading = signal<boolean>(true);
   ultimaActualizacion = '—';
 
-  // Contadores
+  
   totalUsuarios = signal<number>(0);
   totalProductos = signal<number>(0);
   totalSolicitudes = signal<number>(0);
@@ -285,7 +275,7 @@ export class DashboardComponent implements OnInit {
   totalDevolutivo = signal<number>(0);
   totalItems = signal<number>(0);
 
-  // Charts
+  
   chartStockData = signal<any>(null);
   chartStockOptions = signal<any>(null);
   chartVencimientoData = signal<any>(null);
@@ -316,7 +306,6 @@ export class DashboardComponent implements OnInit {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   }
 
-  // ─── Hero Mini KPIs ──────────────────────────────────────────────────────
   heroKpis = [
     { label: 'Materiales', value: this.totalProductos, sub: 'En catálogo' },
     { label: 'Trazabilidad', value: this.totalMovimientos, sub: 'Movimientos registrados' },
@@ -324,7 +313,6 @@ export class DashboardComponent implements OnInit {
     { label: 'Asignaciones', value: this.totalAsignaciones, sub: 'Entregados a fichas' },
   ];
 
-  // ─── Stat Cards ──────────────────────────────────────────────────────────
   statCards = [
     {
       label: 'Movimientos de Trazabilidad', value: this.totalMovimientos, limit: 150,
@@ -352,7 +340,7 @@ export class DashboardComponent implements OnInit {
     },
   ];
 
-  // ─── Resumen de Inventario ────────────────────────────────────────────────
+
   resumenInventario = [
     { label: 'Materiales de Consumo', desc: 'Insumos y materiales gastables', icon: 'pi-box', bg: '#f0fdf4', color: '#16a34a', value: this.totalConsumo },
     { label: 'Materiales Devolutivos', desc: 'Herramientas y equipos duraderos', icon: 'pi-cog', bg: '#eff6ff', color: '#2563eb', value: this.totalDevolutivo },
@@ -360,7 +348,7 @@ export class DashboardComponent implements OnInit {
     { label: 'Categorías de Material', desc: 'Clasificación de productos', icon: 'pi-tag', bg: '#fff7ed', color: '#ea580c', value: this.totalCategorias },
   ];
 
-  // ─── Flujo de Trazabilidad ──────────────────────────────────────────────
+
   flujoTrazabilidad = [
     { label: 'Movimientos de Trazabilidad', desc: 'Entradas, salidas y préstamos', icon: 'pi-history', bg: '#f0fdf4', color: '#16a34a', value: this.totalMovimientos },
     { label: 'Asignaciones de Fichas', desc: 'Material asignado a grupos', icon: 'pi-id-card', bg: '#eff6ff', color: '#2563eb', value: this.totalAsignaciones },
@@ -400,7 +388,6 @@ export class DashboardComponent implements OnInit {
     }).subscribe({
       next: ({ usuarios, productos, solicitudes, inventario, items, sitios, fichas, categorias, movimientos, asignaciones }) => {
 
-        // ── Contadores Reales ─────────────────────────────────────────────
         this.totalUsuarios.set(usuarios.length);
         this.totalProductos.set(productos.length);
         this.totalSolicitudes.set(solicitudes.length);
@@ -417,12 +404,12 @@ export class DashboardComponent implements OnInit {
         }).length;
         this.solicitudesPendientes.set(pendientes);
 
-        // El total de inventario corresponde a los registros en la tabla de inventario
+      
         this.totalInventario.set(inventario.length);
 
         this.ultimaActualizacion = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 
-        // ── Gráfica 1: Clasificación de Materiales (Consumo vs Devolutivo) ────────────────
+
         if (productos.length > 0) {
           let consumo = 0;
           let devolutivo = 0;
@@ -457,7 +444,7 @@ export class DashboardComponent implements OnInit {
           this.chartStockData.set(null);
         }
 
-        // ── Gráfica 2: Consumo de Materiales por Ficha de Formación ─────────────────────
+
         const asignacionesFicha: any = {};
         asignaciones.forEach((asg: any) => {
           const fId = asg.id_ficha ?? asg.ficha?.id;
@@ -499,7 +486,6 @@ export class DashboardComponent implements OnInit {
           this.chartSitiosData.set(null);
         }
 
-        // ── Gráfica 3: Trazabilidad de Movimientos (Entradas vs Salidas) ────────────────
         const movMap: any = {};
         movimientos.forEach((m: any) => {
           const name = (m.tipoMovimiento?.nombre || m.tipo || 'ENTRADA').toUpperCase();
@@ -537,7 +523,7 @@ export class DashboardComponent implements OnInit {
           this.chartSolicitudesData.set(null);
         }
 
-        // ── Gráfica 4: Alerta de Stock Crítico (Materiales Bajo Mínimo) ───────────────────
+
         const bajoStockList: any[] = [];
         productos.forEach((p: any) => {
           const itemsDeProd = items.filter((it: any) => (it.id_producto ?? it.producto?.id_producto) === p.id_producto);
@@ -586,7 +572,7 @@ export class DashboardComponent implements OnInit {
           this.chartVencimientoData.set(null);
         }
 
-        // ── Tabla de Trazabilidad Reciente ──────────────────────────────────────────────
+
         const sortedMovs = [...movimientos].sort((a: any, b: any) => {
           return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
         });
@@ -616,9 +602,3 @@ export class DashboardComponent implements OnInit {
     });
   }
 }
-
-
-
-
-
-

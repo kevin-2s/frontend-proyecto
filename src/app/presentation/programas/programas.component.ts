@@ -135,7 +135,7 @@ interface Programa {
     </div>
 
     <p-dialog [dismissableMask]="true"
-      [header]="esNuevo ? '✨ Registrar Nuevo Programa' : '📝 Editar Programa'"
+      [header]="esNuevo ? 'Registrar Nuevo Programa' : '📝 Editar Programa'"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"

@@ -185,7 +185,7 @@ const TIPOS_NOVEDAD = [
 
     <!-- Dialog Ver Detalles -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="📋 Detalle de Novedad"
+      header="Detalle de Novedad"
       [(visible)]="displayDialog" [modal]="true" [style]="{ width: '520px' }"
       [draggable]="true" [resizable]="false"
       styleClass="form-dialog shadow-2xl border border-slate-200">
@@ -234,7 +234,7 @@ const TIPOS_NOVEDAD = [
 
     <!-- Dialog Nueva Novedad -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="➕ Registrar Novedad"
+      header="Registrar Novedad"
       [(visible)]="displayDialogCrear" [modal]="true" [style]="{ width: '520px' }"
       [draggable]="true" [resizable]="false"
       styleClass="form-dialog shadow-2xl border border-slate-200">

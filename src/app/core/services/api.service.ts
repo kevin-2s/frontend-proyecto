@@ -12,7 +12,7 @@ export class ApiService {
   private readonly baseUrl = environment.apiUrl;
   // Emite un evento cuando se realiza una mutación (post/put/patch/delete)
   readonly changes = new Subject<void>();
-
+  
   get<T>(endpoint: string, params?: HttpParams): Observable<T> {
     return this.http.get<T>(`${this.baseUrl}${endpoint}`, { params });
   }

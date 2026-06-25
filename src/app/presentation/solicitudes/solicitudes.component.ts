@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -19,6 +20,7 @@ import { ProductoService } from '../../infrastructure/services/producto.service'
 import { SitioService } from '../../infrastructure/services/sitio.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { InventarioService } from '../../infrastructure/services/inventario.service';
+import { ApiService } from '../../core/services/api.service';
 
 interface Solicitud {
   id_solicitud?: number;
@@ -46,6 +48,7 @@ interface Solicitud {
     SelectModule, TextareaModule,
   ],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   template: `
     <p-toast position="bottom-right"></p-toast>
@@ -138,9 +141,10 @@ interface Solicitud {
                 </div>
               </td>
               <td>
-                <span style="font-size:13px;color:#374151">
+                <span style="font-size:13px;color:#374151;display:block">
                   {{ getBodegaNombre(sol) }}
                 </span>
+                <span *ngIf="getBodegaTipoLabel(sol)" style="font-size:11px;color:#94a3b8">{{ getBodegaTipoLabel(sol) }}</span>
               </td>
               <td class="text-center">
                 <span style="font-weight:700;color:#1e293b;font-size:15px">{{ sol.cantidad ?? 1 }}</span>
@@ -215,7 +219,7 @@ interface Solicitud {
         </div>
         <div class="detail-row">
           <span class="detail-label">Bodega:</span>
-          <span class="detail-value">{{ getBodegaNombre(solicitudView) }}</span>
+          <span class="detail-value">{{ getBodegaNombre(solicitudView) }}<span *ngIf="getBodegaTipoLabel(solicitudView)" class="text-slate-400"> ({{ getBodegaTipoLabel(solicitudView) }})</span></span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Cantidad:</span>
@@ -371,7 +375,7 @@ interface Solicitud {
     </p-dialog>
   `
 })
-export class SolicitudesComponent implements OnInit {
+export class SolicitudesComponent implements OnInit, OnDestroy {
   private solicitudService = inject(SolicitudService);
   private productoService = inject(ProductoService);
   private sitioService = inject(SitioService);
@@ -379,6 +383,9 @@ export class SolicitudesComponent implements OnInit {
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private authService = inject(AuthService);
+  private apiService = inject(ApiService);
+  private cdr = inject(ChangeDetectorRef);
+  private changesSub!: Subscription;
 
   solicitudes: Solicitud[] = [];
   solicitudesFiltradas: Solicitud[] = [];
@@ -408,6 +415,11 @@ export class SolicitudesComponent implements OnInit {
     this.cargarSolicitudes();
     this.cargarBodegas();
     this.cargarProductos();
+    this.changesSub = this.apiService.changes.subscribe(() => this.cargarSolicitudes());
+  }
+
+  ngOnDestroy() {
+    this.changesSub.unsubscribe();
   }
 
   cargarSolicitudes() {
@@ -416,31 +428,44 @@ export class SolicitudesComponent implements OnInit {
         const d = res?.data ?? res ?? [];
         this.solicitudes = d;
         this.solicitudesFiltradas = d;
+        this.cdr.markForCheck();
       },
-      error: () => { this.solicitudes = []; this.solicitudesFiltradas = []; },
+      error: () => { this.solicitudes = []; this.solicitudesFiltradas = []; this.cdr.markForCheck(); },
     });
   }
+
+  private readonly TIPOS_LUGAR_VALIDOS = ['BODEGA', 'AMBIENTE', 'LABORATORIO', 'OTRO'];
+  private readonly TIPOS_LUGAR_LABELS: Record<string, string> = {
+    BODEGA: 'Bodega', AMBIENTE: 'Ambiente', LABORATORIO: 'Laboratorio', OTRO: 'Otro',
+  };
 
   cargarBodegas() {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
         const sitios = res?.data ?? res ?? [];
-        this.bodegas = sitios.filter((s: any) => s.tipo === 'BODEGA' && s.estado !== false);
+        this.bodegas = sitios.filter((s: any) => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo) && s.estado !== false);
         this.bodegasOpciones = this.bodegas.map((b: any) => ({
-          label: b.nombre + (b.responsable ? ` — ${b.responsable.nombre}` : ''),
+          label: `${b.nombre} (${this.getTipoLabelDeSitio(b)})` + (b.responsable ? ` — ${b.responsable.nombre}` : ''),
           value: b.id_sitio,
         }));
+        this.cdr.markForCheck();
       },
-      error: () => { this.bodegas = []; this.bodegasOpciones = []; },
+      error: () => { this.bodegas = []; this.bodegasOpciones = []; this.cdr.markForCheck(); },
     });
+  }
+
+  private getTipoLabelDeSitio(b: any): string {
+    const tipo = b.tipo === 'OTRO' ? (b.tipo_personalizado || 'Otro') : (this.TIPOS_LUGAR_LABELS[b.tipo] || b.tipo || '');
+    return b.codigo_lugar ? `${tipo} · ${b.codigo_lugar}` : tipo;
   }
 
   cargarProductos() {
     this.productoService.getProductos().subscribe({
       next: (res: any) => {
         this.todosLosProductos = res?.data ?? res ?? [];
+        this.cdr.markForCheck();
       },
-      error: () => { this.todosLosProductos = []; },
+      error: () => { this.todosLosProductos = []; this.cdr.markForCheck(); },
     });
   }
 
@@ -476,8 +501,9 @@ export class SolicitudesComponent implements OnInit {
       next: (res: any) => {
         const d = res?.data ?? res;
         this.stockSol = { disponibles: d.disponibles ?? 0, total: d.total ?? 0, cargando: false };
+        this.cdr.markForCheck();
       },
-      error: () => { this.stockSol = { disponibles: 0, total: 0, cargando: false }; },
+      error: () => { this.stockSol = { disponibles: 0, total: 0, cargando: false }; this.cdr.markForCheck(); },
     });
   }
 
@@ -485,6 +511,12 @@ export class SolicitudesComponent implements OnInit {
     if (!sol.producto?.id_sitio) return '—';
     const bodega = this.bodegas.find(b => b.id_sitio === sol.producto.id_sitio);
     return bodega?.nombre ?? `Bodega #${sol.producto.id_sitio}`;
+  }
+
+  getBodegaTipoLabel(sol: Solicitud): string {
+    if (!sol.producto?.id_sitio) return '';
+    const bodega = this.bodegas.find(b => b.id_sitio === sol.producto.id_sitio);
+    return bodega ? this.getTipoLabelDeSitio(bodega) : '';
   }
 
   filtrar() {

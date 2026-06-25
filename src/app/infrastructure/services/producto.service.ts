@@ -42,7 +42,7 @@ export class ProductoService {
     return this.api.post<any>(`/productos/${id_producto}/items`, placa_sena ? { placa_sena } : {});
   }
 
-  actualizarItem(id_item: number, data: { placa_sena?: string | null }): Observable<any> {
+  actualizarItem(id_item: number, data: { placa_sena?: string | null; id_sitio?: number | null }): Observable<any> {
     return this.api.patch<any>(`/items/${id_item}`, data);
   }
 

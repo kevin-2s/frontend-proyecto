@@ -248,100 +248,164 @@ interface Traslado {
 
     <!-- Dialog Nuevo Traslado -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="🚚 Nuevo Traslado"
+      header="🚚 Solicitar Traslado por Placa SENA"
       [(visible)]="displayDialogCrear" [modal]="true" [style]="{ width: '90vw', maxWidth: '520px' }"
       [draggable]="true" [resizable]="false"
       styleClass="form-dialog shadow-2xl border border-slate-200">
       <div class="form-container mt-4" *ngIf="displayDialogCrear">
 
-        <!-- Paso 1: Producto -->
+        <!-- Paso 1: Buscar por Placa SENA -->
         <div class="form-field">
-          <label>Producto <span style="color:red">*</span></label>
-          <p-select
-            [options]="productosOpciones"
-            [ngModel]="nuevoTraslado.id_producto"
-            (ngModelChange)="onProductoChangeCrear($event)"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Seleccionar producto..."
-            [filter]="true"
-            filterPlaceholder="Buscar producto..."
-            appendTo="body"
-            [showClear]="true"
-            style="width:100%">
-          </p-select>
-        </div>
-
-        <!-- Paso 2: Ítem específico (disponible) -->
-        <div class="form-field">
-          <label>Ítem a trasladar <span style="color:red">*</span></label>
-          <p-select
-            [options]="itemsOpciones"
-            [ngModel]="nuevoTraslado.id_item"
-            (ngModelChange)="onItemChangeCrear($event)"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="{{ nuevoTraslado.id_producto ? 'Seleccionar ítem...' : 'Seleccione un producto primero' }}"
-            [filter]="true"
-            appendTo="body"
-            [disabled]="!nuevoTraslado.id_producto"
-            style="width:100%">
-          </p-select>
-          <small *ngIf="cargandoItemsProducto" style="color:#94a3b8;font-size:12px;margin-top:4px;display:block">
-            <i class="pi pi-spin pi-spinner mr-1"></i>Cargando ítems disponibles...
-          </small>
-          <small *ngIf="nuevoTraslado.id_producto && !cargandoItemsProducto && itemsOpciones.length === 0"
-            style="color:#ef4444;font-size:12px;margin-top:4px;display:block">
-            Este producto no tiene ítems disponibles para trasladar.
+          <label>Placa SENA del ítem <span style="color:red">*</span></label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input pInputText
+              [(ngModel)]="placaSenaTraslado"
+              placeholder="Ej: PS-2024-001"
+              style="flex:1;text-transform:uppercase"
+              (keyup.enter)="buscarPorPlaca()"
+              [disabled]="buscandoPlaca" />
+            <button pButton icon="pi pi-search" label="Buscar"
+              class="btn-guardar" style="white-space:nowrap;min-width:90px"
+              [loading]="buscandoPlaca"
+              [disabled]="!placaSenaTraslado.trim()"
+              (click)="buscarPorPlaca()">
+            </button>
+          </div>
+          <small *ngIf="errorBusquedaPlaca" style="color:#ef4444;font-size:12px;margin-top:6px;display:block">
+            <i class="pi pi-times-circle mr-1"></i>{{ errorBusquedaPlaca }}
           </small>
         </div>
 
-        <!-- Ubicación actual -->
-        <div *ngIf="nuevoTraslado.id_item" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-bottom:1rem">
-          <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase">Ubicación actual</div>
-          <div style="font-size:14px;font-weight:700;color:#1e293b;margin-top:2px">{{ ubicacionActualCrear || 'Sin ubicación asignada' }}</div>
-        </div>
-
-        <!-- Paso 3: Destino -->
-        <div class="form-field">
-          <label>Trasladar a <span style="color:red">*</span></label>
-          <p-select
-            [options]="destinosOpcionesCrear"
-            [ngModel]="nuevoTraslado.id_sitio_destino"
-            (ngModelChange)="nuevoTraslado.id_sitio_destino = $event"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="{{ nuevoTraslado.id_item ? 'Seleccionar destino...' : 'Seleccione un ítem primero' }}"
-            [filter]="true"
-            appendTo="body"
-            [disabled]="!nuevoTraslado.id_item"
-            style="width:100%">
-          </p-select>
-        </div>
-
-        <!-- Paso 4: Justificación -->
-        <div class="form-field">
-          <label>Justificación / Motivo</label>
-          <textarea pTextarea [(ngModel)]="nuevoTraslado.justificacion" rows="3"
-            placeholder="Describe el motivo del traslado..."
-            style="width:100%;resize:vertical;border:2px solid #1e293b;border-radius:8px;padding:8px 10px;font-size:0.875rem;font-family:inherit">
-          </textarea>
-        </div>
-
-        <div *ngIf="nuevoTraslado.id_item" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <i class="pi pi-info-circle" style="color:#3b82f6;font-size:14px"></i>
-            <span style="font-size:12px;color:#1d4ed8">
-              El responsable del lugar actual recibirá una notificación y debe aprobar el traslado antes de que el ítem cambie de ubicación.
-            </span>
+        <!-- Datos del ítem encontrado -->
+        <div *ngIf="itemEncontradoTraslado" style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:14px 16px;margin-bottom:1.25rem">
+          <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
+            <i class="pi pi-check-circle mr-1"></i>Ítem encontrado
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
+            <div>
+              <div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Producto</div>
+              <div style="font-size:13px;font-weight:700;color:#1e293b">{{ itemEncontradoTraslado.producto?.nombre || '—' }}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">SKU / Placa</div>
+              <div style="font-size:13px;font-weight:700;color:#1e293b;font-family:monospace">
+                {{ itemEncontradoTraslado.placa_sena || itemEncontradoTraslado.codigo_sku || '—' }}
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Estado</div>
+              <div style="font-size:13px;font-weight:700"
+                [style.color]="itemEncontradoTraslado.estado === 'DISPONIBLE' ? '#16a34a' : '#dc2626'">
+                {{ itemEncontradoTraslado.estado }}
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Ubicación actual (origen)</div>
+              <div style="font-size:13px;font-weight:700;color:#1e293b">{{ ubicacionActualCrear || 'Sin ubicación' }}</div>
+            </div>
+            <div *ngIf="responsableOrigenNombre" style="grid-column:1/-1">
+              <div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Responsable (recibirá notificación)</div>
+              <div style="font-size:13px;font-weight:700;color:#0f172a">
+                <i class="pi pi-user mr-1" style="color:#6366f1"></i>{{ responsableOrigenNombre }}
+              </div>
+            </div>
+          </div>
+          <div *ngIf="itemEncontradoTraslado.prestamo_activo"
+            style="margin-top:10px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;font-size:12px;color:#92400e">
+            <i class="pi pi-info-circle mr-1"></i>
+            Tiene préstamo activo — el traslado quedará pendiente de aprobación.
           </div>
         </div>
+
+        <!-- Destino (siempre que haya ítem encontrado) -->
+        <ng-container *ngIf="itemEncontradoTraslado">
+
+          <!-- Separador de destino -->
+          <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem;padding-bottom:4px;border-bottom:1px solid #f1f5f9">
+            <i class="pi pi-map-marker mr-1" style="color:#6366f1"></i>Destino del traslado <span style="color:red">*</span>
+          </div>
+
+          <!-- Bodega -->
+          <div class="form-field" *ngIf="destinosBodegaOpciones.length > 0">
+            <label style="display:flex;align-items:center;gap:6px">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:#eef2ff;color:#4f46e5;font-size:11px;font-weight:700">B</span>
+              Bodega
+            </label>
+            <p-select
+              [options]="destinosBodegaOpciones"
+              [ngModel]="destinoBodega"
+              (ngModelChange)="onDestinoChange('bodega', $event)"
+              optionLabel="label" optionValue="value"
+              placeholder="Seleccionar bodega..."
+              [filter]="true" filterPlaceholder="Buscar bodega..."
+              [showClear]="true" appendTo="body" style="width:100%">
+            </p-select>
+          </div>
+
+          <!-- Ambiente -->
+          <div class="form-field" *ngIf="destinosAmbienteOpciones.length > 0">
+            <label style="display:flex;align-items:center;gap:6px">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:#ecfdf5;color:#059669;font-size:11px;font-weight:700">A</span>
+              Ambiente
+            </label>
+            <p-select
+              [options]="destinosAmbienteOpciones"
+              [ngModel]="destinoAmbiente"
+              (ngModelChange)="onDestinoChange('ambiente', $event)"
+              optionLabel="label" optionValue="value"
+              placeholder="Seleccionar ambiente..."
+              [filter]="true" filterPlaceholder="Buscar ambiente..."
+              [showClear]="true" appendTo="body" style="width:100%">
+            </p-select>
+          </div>
+
+          <!-- Laboratorio -->
+          <div class="form-field" *ngIf="destinosLaboratorioOpciones.length > 0">
+            <label style="display:flex;align-items:center;gap:6px">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:#fef3c7;color:#d97706;font-size:11px;font-weight:700">L</span>
+              Laboratorio
+            </label>
+            <p-select
+              [options]="destinosLaboratorioOpciones"
+              [ngModel]="destinoLaboratorio"
+              (ngModelChange)="onDestinoChange('laboratorio', $event)"
+              optionLabel="label" optionValue="value"
+              placeholder="Seleccionar laboratorio..."
+              [filter]="true" filterPlaceholder="Buscar laboratorio..."
+              [showClear]="true" appendTo="body" style="width:100%">
+            </p-select>
+          </div>
+
+          <!-- Resumen destino seleccionado -->
+          <div *ngIf="nuevoTraslado.id_sitio_destino"
+            style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 12px;margin-bottom:1rem;font-size:13px;font-weight:600;color:#166534">
+            <i class="pi pi-check-circle mr-1"></i>Destino: {{ getDestinoLabel() }}
+          </div>
+
+          <div class="form-field">
+            <label>Justificación / Motivo</label>
+            <textarea pTextarea [(ngModel)]="nuevoTraslado.justificacion" rows="3"
+              placeholder="Describe el motivo del traslado..."
+              style="width:100%;resize:vertical;border:2px solid #1e293b;border-radius:8px;padding:8px 10px;font-size:0.875rem;font-family:inherit">
+            </textarea>
+          </div>
+
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <i class="pi pi-info-circle" style="color:#3b82f6;font-size:14px"></i>
+              <span style="font-size:12px;color:#1d4ed8">
+                <b>{{ responsableOrigenNombre || 'El responsable del lugar' }}</b> recibirá una notificación y debe aprobar el traslado.
+              </span>
+            </div>
+          </div>
+        </ng-container>
       </div>
 
       <div class="dialog-footer">
         <button pButton label="Cancelar" class="btn-cancelar" (click)="displayDialogCrear = false"></button>
         <button pButton label="Solicitar Traslado" icon="pi pi-truck" class="btn-guardar"
-          [disabled]="!nuevoTraslado.id_item || !nuevoTraslado.id_sitio_destino" [loading]="creandoTraslado"
+          [disabled]="!itemEncontradoTraslado || !nuevoTraslado.id_sitio_destino"
+          [loading]="creandoTraslado"
           (click)="guardarTraslado()">
         </button>
       </div>
@@ -367,17 +431,27 @@ export class TrasladosComponent implements OnInit, OnDestroy {
 
   displayDialogCrear = false;
   creandoTraslado = false;
-  todosLosProductos: any[] = [];
-  productosOpciones: { label: string; value: number }[] = [];
   sitios: any[] = [];
-  itemsDelProductoSeleccionado: any[] = [];
-  itemsOpciones: { label: string; value: number }[] = [];
-  cargandoItemsProducto = false;
-  ubicacionActualCrear = '';
   destinosOpcionesCrear: { label: string; value: number }[] = [];
+  destinosBodegaOpciones: { label: string; value: number }[] = [];
+  destinosAmbienteOpciones: { label: string; value: number }[] = [];
+  destinosLaboratorioOpciones: { label: string; value: number }[] = [];
 
-  nuevoTraslado: { id_producto: number | null; id_item: number | null; id_sitio_destino: number | null; justificacion: string } =
-    { id_producto: null, id_item: null, id_sitio_destino: null, justificacion: '' };
+  // Selección de destino por tipo
+  destinoBodega: number | null = null;
+  destinoAmbiente: number | null = null;
+  destinoLaboratorio: number | null = null;
+
+  // Flujo por placa SENA
+  placaSenaTraslado = '';
+  buscandoPlaca = false;
+  itemEncontradoTraslado: any = null;
+  errorBusquedaPlaca: string | null = null;
+  ubicacionActualCrear = '';
+  responsableOrigenNombre = '';
+
+  nuevoTraslado: { id_item: number | null; id_sitio_destino: number | null; justificacion: string } =
+    { id_item: null, id_sitio_destino: null, justificacion: '' };
 
   private readonly TIPOS_LUGAR_VALIDOS = ['BODEGA', 'AMBIENTE', 'LABORATORIO', 'OTRO'];
   private readonly TIPOS_LUGAR_LABELS: Record<string, string> = {
@@ -391,7 +465,6 @@ export class TrasladosComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.cargarTraslados();
-    this.cargarProductos();
     this.cargarSitios();
     this.changesSub = this.apiService.changes.subscribe(() => this.cargarTraslados());
   }
@@ -412,20 +485,6 @@ export class TrasladosComponent implements OnInit, OnDestroy {
     });
   }
 
-  cargarProductos() {
-    this.productoService.getProductos().subscribe({
-      next: (res: any) => {
-        this.todosLosProductos = res?.data ?? res ?? [];
-        this.productosOpciones = this.todosLosProductos.map((p: any) => ({
-          label: p.SKU ? `${p.nombre}  ·  ${p.SKU}` : p.nombre,
-          value: p.id_producto,
-        }));
-        this.cdr.markForCheck();
-      },
-      error: () => { this.todosLosProductos = []; this.productosOpciones = []; this.cdr.markForCheck(); },
-    });
-  }
-
   cargarSitios() {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
@@ -437,66 +496,102 @@ export class TrasladosComponent implements OnInit, OnDestroy {
     });
   }
 
-  onProductoChangeCrear(id: number | null) {
-    this.nuevoTraslado.id_producto = id;
+  abrirDialogoCrear() {
+    this.placaSenaTraslado = '';
+    this.buscandoPlaca = false;
+    this.itemEncontradoTraslado = null;
+    this.errorBusquedaPlaca = null;
+    this.ubicacionActualCrear = '';
+    this.responsableOrigenNombre = '';
+    this.nuevoTraslado = { id_item: null, id_sitio_destino: null, justificacion: '' };
+    this.destinosOpcionesCrear = [];
+    this.destinosBodegaOpciones = [];
+    this.destinosAmbienteOpciones = [];
+    this.destinosLaboratorioOpciones = [];
+    this.destinoBodega = null;
+    this.destinoAmbiente = null;
+    this.destinoLaboratorio = null;
+    this.displayDialogCrear = true;
+  }
+
+  buscarPorPlaca() {
+    const placa = this.placaSenaTraslado.trim().toUpperCase();
+    if (!placa) return;
+    this.buscandoPlaca = true;
+    this.itemEncontradoTraslado = null;
+    this.errorBusquedaPlaca = null;
+    this.ubicacionActualCrear = '';
+    this.responsableOrigenNombre = '';
     this.nuevoTraslado.id_item = null;
     this.nuevoTraslado.id_sitio_destino = null;
-    this.itemsOpciones = [];
-    this.ubicacionActualCrear = '';
-    this.destinosOpcionesCrear = [];
-    if (!id) return;
+    this.cdr.markForCheck();
 
-    this.cargandoItemsProducto = true;
-    this.productoService.getItemsByProducto(id).subscribe({
+    this.productoService.buscarItemPorPlaca(placa).subscribe({
       next: (res: any) => {
-        const items = res?.data ?? res ?? [];
-        this.itemsDelProductoSeleccionado = items.filter((it: any) => it.estado === 'DISPONIBLE');
-        this.itemsOpciones = this.itemsDelProductoSeleccionado.map((it: any) => {
-          const referencia = it.placa_sena || it.codigo_sku || `#${it.id_item}`;
-          const sitio = this.sitios.find(s => s.id_sitio === it.id_sitio);
-          const ubicacion = sitio ? ` — ${sitio.nombre}` : '';
-          return { label: `${referencia}${ubicacion}`, value: it.id_item };
-        });
-        this.cargandoItemsProducto = false;
+        this.buscandoPlaca = false;
+        // El backend retorna { item, prestamo_activo, asignacion_activa, novedad_activa }
+        const detalle = res?.data ?? res ?? null;
+        const item = detalle?.item ?? detalle ?? null;
+
+        if (!item || !item.id_item) {
+          this.errorBusquedaPlaca = `No se encontró ningún ítem con la placa "${placa}".`;
+          this.cdr.markForCheck();
+          return;
+        }
+
+        // Enriquecer con datos de relaciones del detalle
+        const itemEnriquecido = {
+          ...item,
+          prestamo_activo: detalle.prestamo_activo ?? null,
+          asignacion_activa: detalle.asignacion_activa ?? null,
+          novedad_activa: detalle.novedad_activa ?? null,
+        };
+        this.itemEncontradoTraslado = itemEnriquecido;
+        this.nuevoTraslado.id_item = item.id_item;
+
+        // Ubicación actual — viene en item.sitio (backend ahora lo carga con la relación)
+        const sitioDelItem = item.sitio ?? null;
+        const idSitio = item.id_sitio ?? sitioDelItem?.id_sitio ?? null;
+
+        // Nombre y tipo del lugar actual
+        const sitioLocal = this.sitios.find(s => s.id_sitio === idSitio);
+        const sitioParaMostrar = sitioDelItem ?? sitioLocal;
+        this.ubicacionActualCrear = sitioParaMostrar
+          ? `${sitioParaMostrar.nombre}${this.getTipoLabel(sitioParaMostrar) ? '  ·  ' + this.getTipoLabel(sitioParaMostrar) : ''}`
+          : 'Sin ubicación registrada';
+
+        // Responsable — viene en item.sitio.responsable
+        this.responsableOrigenNombre = sitioDelItem?.responsable?.nombre
+          ?? sitioLocal?.responsable?.nombre
+          ?? '';
+
+        // Destinos: todos los sitios excepto el actual, separados por tipo
+        const sitiosDestino = this.sitios
+          .filter(s => s.id_sitio !== idSitio)
+          .map(s => ({
+            label: `${s.nombre}${s.codigo_lugar ? '  ·  ' + s.codigo_lugar : ''}`,
+            value: s.id_sitio,
+            tipo: s.tipo as string,
+          }));
+        this.destinosBodegaOpciones = sitiosDestino.filter(s => s.tipo === 'BODEGA');
+        this.destinosAmbienteOpciones = sitiosDestino.filter(s => s.tipo === 'AMBIENTE');
+        this.destinosLaboratorioOpciones = sitiosDestino.filter(s => s.tipo === 'LABORATORIO');
+        this.destinosOpcionesCrear = sitiosDestino;
+        // Resetear selección previa
+        this.destinoBodega = null;
+        this.destinoAmbiente = null;
+        this.destinoLaboratorio = null;
+        this.nuevoTraslado.id_sitio_destino = null;
+
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.itemsDelProductoSeleccionado = [];
-        this.itemsOpciones = [];
-        this.cargandoItemsProducto = false;
+      error: (err: any) => {
+        this.buscandoPlaca = false;
+        const msg = err?.error?.message;
+        this.errorBusquedaPlaca = msg || `No se encontró ningún ítem con la placa "${placa}".`;
         this.cdr.markForCheck();
       },
     });
-  }
-
-  onItemChangeCrear(id: number | null) {
-    this.nuevoTraslado.id_item = id;
-    this.nuevoTraslado.id_sitio_destino = null;
-    this.ubicacionActualCrear = '';
-    this.destinosOpcionesCrear = [];
-    if (!id) return;
-
-    const item = this.itemsDelProductoSeleccionado.find(it => it.id_item === id);
-    const idSitioActual = item?.id_sitio ?? null;
-    const sitioActual = this.sitios.find(s => s.id_sitio === idSitioActual);
-    this.ubicacionActualCrear = sitioActual
-      ? `${sitioActual.nombre}${this.getTipoLabel(sitioActual) ? ' · ' + this.getTipoLabel(sitioActual) : ''}`
-      : '';
-
-    this.destinosOpcionesCrear = this.sitios
-      .filter(s => s.id_sitio !== idSitioActual)
-      .map(s => ({
-        label: `${s.nombre}${this.getTipoLabel(s) ? ' · ' + this.getTipoLabel(s) : ''}`,
-        value: s.id_sitio,
-      }));
-  }
-
-  abrirDialogoCrear() {
-    this.nuevoTraslado = { id_producto: null, id_item: null, id_sitio_destino: null, justificacion: '' };
-    this.itemsOpciones = [];
-    this.ubicacionActualCrear = '';
-    this.destinosOpcionesCrear = [];
-    this.displayDialogCrear = true;
   }
 
   guardarTraslado() {
@@ -510,7 +605,7 @@ export class TrasladosComponent implements OnInit, OnDestroy {
       id_usuario_solicita: userId,
     }).subscribe({
       next: () => {
-        this.notification.add({ module: 'Traslados', severity: 'success', summary: 'Solicitud enviada', detail: 'Traslado solicitado. El responsable del lugar actual recibirá una notificación.' });
+        this.notification.add({ module: 'Traslados', severity: 'success', summary: 'Solicitud enviada', detail: `Traslado solicitado. ${this.responsableOrigenNombre ? this.responsableOrigenNombre + ' recibirá' : 'El responsable recibirá'} una notificación para aprobar.` });
         this.creandoTraslado = false;
         this.displayDialogCrear = false;
         this.cargarTraslados();
@@ -522,6 +617,20 @@ export class TrasladosComponent implements OnInit, OnDestroy {
         this.notification.add({ module: 'Traslados', severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo solicitar el traslado' });
       },
     });
+  }
+
+  onDestinoChange(tipo: 'bodega' | 'ambiente' | 'laboratorio', valor: number | null) {
+    this.destinoBodega = tipo === 'bodega' ? valor : null;
+    this.destinoAmbiente = tipo === 'ambiente' ? valor : null;
+    this.destinoLaboratorio = tipo === 'laboratorio' ? valor : null;
+    this.nuevoTraslado.id_sitio_destino = valor;
+  }
+
+  getDestinoLabel(): string {
+    const id = this.nuevoTraslado.id_sitio_destino;
+    if (!id) return '';
+    const opt = this.destinosOpcionesCrear.find(o => o.value === id);
+    return opt?.label ?? '';
   }
 
   getTipoLabel(sitio: any): string {

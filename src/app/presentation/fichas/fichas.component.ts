@@ -145,6 +145,12 @@ interface Ficha {
                     (click)="verAsignacionesFicha(ficha)">
                   </button>
                   <button
+                    pButton type="button" icon="pi pi-pencil"
+                    class="btn-table-action btn-editor"
+                    pTooltip="Editar ficha" tooltipPosition="top"
+                    (click)="editarFicha(ficha)">
+                  </button>
+                  <button
                     pButton type="button" icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
                     pTooltip="Eliminar ficha" tooltipPosition="top"
@@ -231,9 +237,9 @@ interface Ficha {
       </ng-template>
     </p-dialog>
 
-    <!-- Dialog para crear nueva ficha -->
+    <!-- Dialog para crear/editar ficha -->
     <p-dialog [dismissableMask]="true"
-      header="✨ Registrar Nueva Ficha de Formación"
+      [header]="esEditando ? '✏️ Editar Ficha de Formación' : '✨ Registrar Nueva Ficha de Formación'"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"
@@ -313,7 +319,7 @@ interface Ficha {
         ></button>
         <button
           pButton
-          [label]="saving ? 'Guardando...' : 'Registrar Ficha'"
+          [label]="saving ? 'Guardando...' : (esEditando ? 'Actualizar Ficha' : 'Registrar Ficha')"
           class="btn-guardar"
           (click)="guardar()"
           [disabled]="saving"
@@ -341,6 +347,8 @@ export class FichasComponent implements OnInit {
   asignacionesDeFichaVista: any[] = [];
   filtro = '';
   displayDialog = false;
+  esEditando = false;
+  fichaEditandoId: number | null = null;
   saving = false;
   loading = false;
   ficha: Ficha = this.getNuevaFiscal();
@@ -468,25 +476,30 @@ export class FichasComponent implements OnInit {
 
   openNew() {
     this.ficha = this.getNuevaFiscal();
+    this.esEditando = false;
+    this.fichaEditandoId = null;
+    this.displayDialog = true;
+  }
+
+  editarFicha(f: Ficha) {
+    this.ficha = {
+      numero_ficha: f.numero_ficha,
+      id_programa: f.id_programa ?? (f as any).programa?.id_programa,
+      id_responsable: f.id_responsable ?? (f as any).responsable?.id_usuario,
+      ambiente: f.ambiente ?? '',
+    };
+    this.esEditando = true;
+    this.fichaEditandoId = f.id_ficha ?? null;
     this.displayDialog = true;
   }
 
   guardar() {
     if (!this.ficha.numero_ficha || !this.ficha.id_programa) {
-      this.notification.add({ module: 'Fichas',
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'El número de ficha y el programa son requeridos',
-      });
+      this.notification.add({ module: 'Fichas', severity: 'warn', summary: 'Advertencia', detail: 'El número de ficha y el programa son requeridos' });
       return;
     }
-
     if (!this.ficha.id_responsable) {
-      this.notification.add({ module: 'Fichas',
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'Debe seleccionar un instructor responsable antes de crear la ficha',
-      });
+      this.notification.add({ module: 'Fichas', severity: 'warn', summary: 'Advertencia', detail: 'Debe seleccionar un instructor responsable' });
       return;
     }
 
@@ -495,17 +508,16 @@ export class FichasComponent implements OnInit {
       numero_ficha: this.ficha.numero_ficha,
       id_programa: Number(this.ficha.id_programa),
       id_responsable: Number(this.ficha.id_responsable),
-      ...(this.ficha.ambiente ? { ambiente: this.ficha.ambiente } : {})
+      ...(this.ficha.ambiente ? { ambiente: this.ficha.ambiente } : {}),
     };
 
-    this.fichaService.crearFiscal(payload).subscribe({
+    const request$ = this.esEditando && this.fichaEditandoId
+      ? this.fichaService.actualizarFiscal(this.fichaEditandoId, payload)
+      : this.fichaService.crearFiscal(payload);
+
+    request$.subscribe({
       next: () => {
-        this.notification.add({
-          module: 'Fichas',
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Ficha creada correctamente',
-        });
+        this.notification.add({ module: 'Fichas', severity: 'success', summary: 'Éxito', detail: this.esEditando ? 'Ficha actualizada correctamente' : 'Ficha creada correctamente' });
         this.saving = false;
         this.displayDialog = false;
         this.cargarFichas();
@@ -514,11 +526,7 @@ export class FichasComponent implements OnInit {
       error: (err: any) => {
         this.saving = false;
         this.cdr.markForCheck();
-        this.notification.add({ module: 'Fichas',
-          severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'No se pudo crear la ficha',
-        });
+        this.notification.add({ module: 'Fichas', severity: 'error', summary: 'Error', detail: err.error?.message || (this.esEditando ? 'No se pudo actualizar la ficha' : 'No se pudo crear la ficha') });
       },
     });
   }

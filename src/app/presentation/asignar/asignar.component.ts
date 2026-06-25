@@ -357,12 +357,13 @@ interface Asignacion {
 
           <p-select *ngIf="modoNueva === 'bodega'"
             [options]="bodegasOpciones"
-            [(ngModel)]="nueva.id_sitio"
+            [ngModel]="nueva.id_sitio"
+            (ngModelChange)="nueva.id_sitio = $event"
             optionLabel="label"
             optionValue="value"
-            placeholder="Seleccionar bodega o ambiente..."
+            placeholder="Seleccionar bodega, ambiente o laboratorio..."
             [filter]="true"
-            filterPlaceholder="Buscar bodega..."
+            filterPlaceholder="Buscar ubicación..."
             appendTo="body"
             style="width:100%">
           </p-select>
@@ -494,10 +495,18 @@ export class AsignarComponent implements OnInit, OnDestroy {
   cargarBodegas() {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
-        const items = res?.data ?? res ?? [];
-        this.bodegasOpciones = items
+        const tipoLabel: Record<string, string> = {
+          BODEGA: 'Bodega', AMBIENTE: 'Ambiente',
+          LABORATORIO: 'Laboratorio', OTRO: 'Otro',
+        };
+        const orden: Record<string, number> = { BODEGA: 0, AMBIENTE: 1, LABORATORIO: 2, OTRO: 3 };
+        const items = (res?.data ?? res ?? [])
           .filter((s: any) => s.estado !== false)
-          .map((s: any) => ({ label: s.nombre, value: s.id_sitio }));
+          .sort((a: any, b: any) => (orden[a.tipo] ?? 9) - (orden[b.tipo] ?? 9));
+        this.bodegasOpciones = items.map((s: any) => ({
+          label: `${s.nombre}${s.codigo_lugar ? '  ·  ' + s.codigo_lugar : ''}  [${tipoLabel[s.tipo] ?? s.tipo}]`,
+          value: s.id_sitio,
+        }));
         this.cdr.markForCheck();
       },
       error: () => { this.bodegasOpciones = []; this.cdr.markForCheck(); },

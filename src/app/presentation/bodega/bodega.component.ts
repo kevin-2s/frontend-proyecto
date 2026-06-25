@@ -223,6 +223,7 @@ interface Bodega {
             (ngModelChange)="onTipoChange($event)"
             [options]="tiposLugar" optionLabel="label" optionValue="value"
             placeholder="Seleccione el tipo de lugar"
+            [filter]="true" filterPlaceholder="Buscar tipo..."
             appendTo="body" styleClass="w-full">
           </p-select>
         </div>

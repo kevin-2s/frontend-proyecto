@@ -16,6 +16,7 @@ export class AsignacionService {
     cantidad: number;
     id_usuario_asigna: number;
     observacion?: string;
+    id_items?: number[];
   }): Observable<any> {
     return this.api.post<any>('/asignaciones', data);
   }

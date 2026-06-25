@@ -250,6 +250,7 @@ const TIPOS_NOVEDAD = [
             optionLabel="label"
             optionValue="value"
             placeholder="Seleccionar tipo..."
+            [filter]="true" filterPlaceholder="Buscar tipo..."
             appendTo="body"
             style="width:100%">
           </p-select>

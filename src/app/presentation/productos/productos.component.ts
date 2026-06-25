@@ -23,6 +23,7 @@ import { AuthService } from '../../infrastructure/services/auth.service';
 import { NovedadService } from '../../infrastructure/services/novedad.service';
 import { AsignacionService } from '../../infrastructure/services/asignacion.service';
 import { TrasladoService } from '../../infrastructure/services/traslado.service';
+import { FichaService } from '../../infrastructure/services/ficha.service';
 import { ApiService } from '../../core/services/api.service';
 
 interface Producto {
@@ -259,9 +260,8 @@ type SelectOption = { label: string; value: string };
               formControlName="codigo_unspsc"
               [options]="codigosUnspsc"
               [filter]="true"
-              [editable]="true"
-              filterPlaceholder="Buscar código o producto..."
-              placeholder="Seleccione o escriba el código"
+              filterPlaceholder="Escriba el código o nombre del producto..."
+              placeholder="Seleccione el código UNSPSC"
               appendTo="body"
               styleClass="w-full"
               [showClear]="true"
@@ -284,6 +284,7 @@ type SelectOption = { label: string; value: string };
             <div class="input-with-button">
               <p-select id="tipo_material" formControlName="tipo_material"
                 [options]="tiposMaterial" placeholder="Seleccione tipo"
+                [filter]="true" filterPlaceholder="Buscar tipo..."
                 appendTo="body" styleClass="w-full"
                 (onChange)="onTipoMaterialChange($event.value)"></p-select>
               <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
@@ -295,6 +296,7 @@ type SelectOption = { label: string; value: string };
             <div class="input-with-button">
               <p-select id="unidad_medida" formControlName="unidad_medida"
                 [options]="unidadesDisponibles" placeholder="Seleccione unidad"
+                [filter]="true" filterPlaceholder="Buscar unidad..."
                 appendTo="body" styleClass="w-full"
                 (onChange)="onUnidadMedidaChange($event.value)"></p-select>
               <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
@@ -306,37 +308,39 @@ type SelectOption = { label: string; value: string };
           </div>
         </div>
 
-        <!-- Campos especiales BULTO -->
+        <!-- Campos especiales BULTO / PAQUETE -->
         <div *ngIf="esBulto" class="product-form-row" style="background:#fff7ed;border-radius:10px;padding:10px 8px 4px;margin-bottom:2px;border:1px solid #fed7aa;">
           <div class="form-field">
             <label style="color:#c2410c;font-weight:700;">
-              <i class="pi pi-box mr-1"></i>Unidad de peso del bulto
+              <i class="pi pi-box mr-1"></i>Unidad de peso del {{ labelPresentacion }}
             </label>
             <p-select formControlName="unidad_peso_bulto" [options]="unidadesPeso"
               placeholder="kg / g / lb..." appendTo="body" styleClass="w-full"
+              [filter]="true" filterPlaceholder="Buscar unidad..."
               [showClear]="true"></p-select>
           </div>
           <div class="form-field" *ngIf="mostrarPesoPorBulto">
             <label style="color:#c2410c;font-weight:700;">
-              Peso por bulto ({{ productoForm.get('unidad_peso_bulto')?.value | lowercase }})
+              Peso por {{ labelPresentacion }} ({{ productoForm.get('unidad_peso_bulto')?.value | lowercase }})
             </label>
             <input pInputText type="number" formControlName="peso_por_bulto"
-              placeholder="Ej: 50" min="0.01" step="0.01" />
+              placeholder="Ej: 50" min="0.01" step="0.01" style="width:100%" />
           </div>
         </div>
 
-        <!-- Peso / volumen por presentación — solo para unidades de peso/volumen (no BULTO) -->
+        <!-- Peso / volumen por presentación — solo para unidades de peso/volumen (no BULTO/PAQUETE) -->
         <div *ngIf="esMedidaPesoVol"
-          style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 10px 8px;margin-bottom:2px;">
-          <label style="color:#1d4ed8;font-weight:700;font-size:0.875rem;display:block;margin-bottom:6px;">
-            <i class="pi pi-info-circle mr-1"></i>
+          style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 12px 10px;margin-bottom:2px;">
+          <label style="color:#1d4ed8;font-weight:700;font-size:0.875rem;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+            <i class="pi pi-info-circle"></i>
             ¿Cuántos {{ unidadActual | lowercase }} tiene cada presentación/bolsa?
-            <span style="font-weight:400;color:#64748b;font-size:0.78rem;margin-left:4px;">(Opcional)</span>
+            <span style="font-weight:400;color:#64748b;font-size:0.78rem;">(Opcional)</span>
           </label>
           <input pInputText type="number" formControlName="peso_por_bulto"
             [placeholder]="'Ej: si cada bolsa pesa 10 ' + (unidadActual | lowercase) + ', ingrese 10'"
-            min="0.001" step="0.001" />
-          <small style="color:#3b82f6;font-size:0.75rem;margin-top:4px;display:block;">
+            min="0.001" step="0.001"
+            style="width:100%;background:#fff;border:2px solid #93c5fd;border-radius:8px;padding:10px 12px;font-size:0.9rem;color:#1e293b;outline:none" />
+          <small style="color:#3b82f6;font-size:0.75rem;margin-top:6px;display:block;">
             Si el producto no viene en presentaciones de peso fijo, deje este campo vacío.
           </small>
         </div>
@@ -344,7 +348,7 @@ type SelectOption = { label: string; value: string };
         <!-- Cantidad + Stock mínimo -->
         <div class="product-form-row">
           <div *ngIf="esNuevo" class="form-field">
-            <label for="cantidad">{{ esBulto ? 'Cantidad de bultos *' : 'Cantidad de unidades *' }}</label>
+            <label for="cantidad">{{ esBulto ? ('Cantidad de ' + labelPresentacion + 's *') : 'Cantidad de unidades *' }}</label>
             <input pInputText type="number" id="cantidad" formControlName="cantidad"
               placeholder="Ej: 5" min="1" />
             <small *ngIf="esMedidaPesoVol && productoForm.get('peso_por_bulto')?.value"
@@ -373,7 +377,7 @@ type SelectOption = { label: string; value: string };
           <input pInputText type="date" id="fecha_vencimiento"
             formControlName="fecha_vencimiento"
             [min]="minDate"
-            class="w-full border border-orange-300 rounded-lg p-2 bg-white" />
+            style="width:100%;background:#fff;border:2px solid #fed7aa;border-radius:10px;padding:11px 14px;font-size:0.9rem;color:#1e293b;cursor:pointer;min-height:44px" />
           <small *ngIf="fechaInvalida" class="text-red-500 mt-1 block">
             <i class="pi pi-exclamation-triangle mr-1"></i>La fecha debe ser igual o posterior a hoy.
           </small>
@@ -387,6 +391,7 @@ type SelectOption = { label: string; value: string };
               <p-select id="id_categoria" formControlName="id_categoria"
                 [options]="categorias" optionLabel="nombre" optionValue="id_categoria"
                 placeholder="Seleccione una categoría" [showClear]="true"
+                [filter]="true" filterPlaceholder="Buscar categoría..."
                 appendTo="body" styleClass="w-full"></p-select>
               <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
                 (click)="displayAddCategoria=true" pTooltip="Agregar categoría"></button>
@@ -397,6 +402,7 @@ type SelectOption = { label: string; value: string };
             <p-select id="id_sitio" formControlName="id_sitio"
               [options]="bodegas" optionLabel="nombre" optionValue="id_sitio"
               placeholder="Seleccione la bodega" [showClear]="true"
+              [filter]="true" filterPlaceholder="Buscar bodega..."
               appendTo="body" styleClass="w-full">
               <ng-template let-b pTemplate="item">
                 <div class="flex items-center gap-2">
@@ -687,43 +693,45 @@ type SelectOption = { label: string; value: string };
 
         <!-- Modo Ficha -->
         <div *ngIf="modoAsignacion === 'ficha'" class="form-field">
-          <label>Asignación activa <span style="color:red">*</span></label>
+          <label>Ficha de Formación <span style="color:red">*</span></label>
           <p-select
-            [options]="asignacionesActivasProducto"
-            [ngModel]="asignacionSeleccionada"
-            (ngModelChange)="asignacionSeleccionada = $event"
+            [options]="fichasParaAsignar"
+            [ngModel]="fichaSeleccionadaAsignar"
+            (ngModelChange)="fichaSeleccionadaAsignar = $event"
             optionLabel="label"
             optionValue="value"
-            placeholder="Selecciona una ficha con asignación activa..."
+            placeholder="Buscar ficha por número o programa..."
             [filter]="true"
+            filterPlaceholder="Escriba número o programa..."
             appendTo="body"
             style="width:100%">
           </p-select>
-          <small *ngIf="cargandoAsignacionesActivas" style="color:#94a3b8;font-size:12px;margin-top:4px;display:block">
-            <i class="pi pi-spin pi-spinner mr-1"></i>Cargando asignaciones activas...
+          <small *ngIf="fichasParaAsignar.length === 0"
+            style="color:#94a3b8;font-size:12px;margin-top:4px;display:block">
+            <i class="pi pi-spin pi-spinner mr-1"></i>Cargando fichas...
           </small>
-          <small *ngIf="!cargandoAsignacionesActivas && asignacionesActivasProducto.length === 0"
-            style="color:#ef4444;font-size:12px;margin-top:4px;display:block">
-            No hay asignaciones activas para este producto. Crea una desde el módulo "Asignar".
+          <small *ngIf="fichaSeleccionadaAsignar" style="color:#64748b;font-size:11px;margin-top:4px;display:block">
+            Si no existe una asignación activa para este producto y ficha, se creará automáticamente.
           </small>
         </div>
 
         <!-- Modo Bodega/Ambiente -->
         <div *ngIf="modoAsignacion === 'bodega'" class="form-field">
-          <label>Bodega / Ambiente <span style="color:red">*</span></label>
+          <label>Bodega / Ambiente / Laboratorio <span style="color:red">*</span></label>
           <p-select
-            [options]="bodegas"
+            [options]="bodegasConLabel"
             [ngModel]="bodegaSeleccionadaAsignacion"
             (ngModelChange)="bodegaSeleccionadaAsignacion = $event"
-            optionLabel="nombre"
-            optionValue="id_sitio"
-            placeholder="Selecciona la bodega o ambiente..."
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Buscar bodega, ambiente o laboratorio..."
             [filter]="true"
+            filterPlaceholder="Escriba el nombre o código..."
             appendTo="body"
             style="width:100%">
           </p-select>
           <small style="color:#64748b;font-size:12px;margin-top:4px;display:block">
-            El ítem quedará registrado en esa ubicación sin estar asignado a ninguna ficha.
+            El ítem quedará registrado en esa ubicación sin asignarse a ninguna ficha.
           </small>
         </div>
       </div>
@@ -731,7 +739,7 @@ type SelectOption = { label: string; value: string };
         <div class="dialog-footer">
           <button pButton label="Cancelar" class="btn-cancelar" (click)="displayAsignarItemDialog=false"></button>
           <button *ngIf="modoAsignacion === 'ficha'" pButton label="Asignar a Ficha" icon="pi pi-users" class="btn-guardar"
-            [disabled]="!asignacionSeleccionada" [loading]="asignandoItem"
+            [disabled]="!fichaSeleccionadaAsignar" [loading]="asignandoItem"
             (click)="confirmarAsignarItem()"></button>
           <button *ngIf="modoAsignacion === 'bodega'" pButton label="Asignar a Bodega" icon="pi pi-box" class="btn-guardar"
             [disabled]="!bodegaSeleccionadaAsignacion" [loading]="asignandoABodega"
@@ -952,6 +960,7 @@ type SelectOption = { label: string; value: string };
             optionLabel="label"
             optionValue="value"
             placeholder="Seleccionar tipo..."
+            [filter]="true" filterPlaceholder="Buscar tipo..."
             appendTo="body"
             style="width:100%">
           </p-select>
@@ -1047,6 +1056,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
   private novedadService = inject(NovedadService);
   private asignacionService = inject(AsignacionService);
   private trasladoService = inject(TrasladoService);
+  private fichaService = inject(FichaService);
   private apiService = inject(ApiService);
   private changesSub!: Subscription;
 
@@ -1095,12 +1105,13 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   displayAsignarItemDialog = false;
   itemParaAsignar: any = null;
-  asignacionesActivasProducto: { label: string; value: number }[] = [];
-  asignacionSeleccionada: number | null = null;
+  allFichas: any[] = [];
+  fichasParaAsignar: { label: string; value: number }[] = [];
+  fichaSeleccionadaAsignar: number | null = null;
+  bodegasConLabel: { label: string; value: number }[] = [];
   modoAsignacion: 'ficha' | 'bodega' = 'ficha';
   bodegaSeleccionadaAsignacion: number | null = null;
   asignandoABodega = false;
-  cargandoAsignacionesActivas = false;
   asignandoItem = false;
 
   displayTrasladarItemDialog = false;
@@ -1489,7 +1500,12 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   get esBulto(): boolean {
-    return this.productoForm.get('unidad_medida')?.value === 'BULTO';
+    const u = this.productoForm.get('unidad_medida')?.value;
+    return u === 'BULTO' || u === 'PAQUETE';
+  }
+
+  get labelPresentacion(): string {
+    return this.productoForm.get('unidad_medida')?.value === 'PAQUETE' ? 'paquete' : 'bulto';
   }
 
   get mostrarPesoPorBulto(): boolean {
@@ -1515,6 +1531,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
     this.cargarDatos();
     this.cargarCategorias();
     this.cargarBodegas();
+    this.cargarFichas();
     this.changesSub = this.apiService.changes.subscribe(() => this.cargarDatos());
   }
 
@@ -1532,9 +1549,30 @@ export class ProductosComponent implements OnInit, OnDestroy {
       next: (res: any) => {
         const all: any[] = res?.data || res || [];
         this.bodegas = all.filter(s => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo));
+        const orden: Record<string, number> = { BODEGA: 0, AMBIENTE: 1, LABORATORIO: 2, OTRO: 3 };
+        const sorted = [...this.bodegas].sort((a, b) => (orden[a.tipo] ?? 9) - (orden[b.tipo] ?? 9));
+        this.bodegasConLabel = sorted.map(s => ({
+          label: `${s.nombre}${s.codigo_lugar ? '  ·  ' + s.codigo_lugar : ''}  [${this.TIPOS_LUGAR_LABELS[s.tipo] ?? s.tipo}]`,
+          value: s.id_sitio,
+        }));
         this.cdr.markForCheck();
       },
-      error: () => { this.bodegas = []; },
+      error: () => { this.bodegas = []; this.bodegasConLabel = []; },
+    });
+  }
+
+  cargarFichas() {
+    this.fichaService.getFichas().subscribe({
+      next: (res: any) => {
+        this.allFichas = res?.data ?? res ?? [];
+        this.fichasParaAsignar = this.allFichas.map((f: any) => {
+          const num = f.numero_ficha ? `Ficha ${f.numero_ficha}` : `Ficha #${f.id_ficha}`;
+          const prog = f.programa?.nombre ? ` — ${f.programa.nombre}` : '';
+          return { label: `${num}${prog}`, value: f.id_ficha };
+        });
+        this.cdr.markForCheck();
+      },
+      error: () => { this.allFichas = []; this.fichasParaAsignar = []; },
     });
   }
 
@@ -1636,7 +1674,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   onUnidadMedidaChange(value: string) {
-    if (value !== 'BULTO') {
+    if (value !== 'BULTO' && value !== 'PAQUETE') {
       this.productoForm.patchValue({ unidad_peso_bulto: null, peso_por_bulto: null });
     }
   }
@@ -1764,7 +1802,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
     const formValue = this.productoForm.getRawValue();
     const esPerecedero = formValue.tipo_material === 'PERECEDERO';
-    const esBultoVal = formValue.unidad_medida === 'BULTO';
+    const esBultoVal = formValue.unidad_medida === 'BULTO' || formValue.unidad_medida === 'PAQUETE';
 
     const productoData: any = {
       nombre: formValue.nombre,
@@ -1989,54 +2027,81 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   private continuarAsignarItem(item: any) {
     this.itemParaAsignar = item;
-    this.asignacionSeleccionada = null;
+    this.fichaSeleccionadaAsignar = null;
     this.bodegaSeleccionadaAsignacion = null;
     this.modoAsignacion = 'ficha';
-    this.asignacionesActivasProducto = [];
     this.displayAsignarItemDialog = true;
-    this.cargandoAsignacionesActivas = true;
-    this.asignacionService.getAsignaciones().subscribe({
-      next: (res: any) => {
-        const all = res?.data || res || [];
-        const productoId = item.id_producto;
-        const activas = all.filter((a: any) => {
-          const mismoProducto =
-            a.id_producto === productoId ||
-            a.producto?.id_producto === productoId;
-          const estadoActiva = a.estado?.toUpperCase() === 'ACTIVA';
-          return mismoProducto && estadoActiva;
-        });
-        this.asignacionesActivasProducto = activas.map((a: any) => {
-          const ficha = a.ficha?.numero_ficha ? `Ficha ${a.ficha.numero_ficha}` : `Ficha #${a.id_ficha}`;
-          const programa = a.ficha?.programa?.nombre ? ` — ${a.ficha.programa.nombre}` : '';
-          return { label: `${ficha}${programa} (${a.cantidad} unidad(es))`, value: a.id_asignacion };
-        });
-        this.cargandoAsignacionesActivas = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.asignacionesActivasProducto = [];
-        this.cargandoAsignacionesActivas = false;
-        this.cdr.markForCheck();
-      },
-    });
+    // fichasParaAsignar ya está cargado en ngOnInit; si está vacío, recargamos
+    if (this.fichasParaAsignar.length === 0) this.cargarFichas();
+    this.cdr.markForCheck();
   }
 
   confirmarAsignarItem() {
-    if (!this.itemParaAsignar || !this.asignacionSeleccionada) return;
+    if (!this.itemParaAsignar || !this.fichaSeleccionadaAsignar) return;
+    const productoId: number = this.itemParaAsignar.id_producto;
+    const fichaId: number = this.fichaSeleccionadaAsignar;
     this.asignandoItem = true;
-    this.asignacionService.agregarItemAAsignacion(this.asignacionSeleccionada, this.itemParaAsignar.id_item).subscribe({
-      next: () => {
-        this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Item asignado correctamente a la ficha' });
-        this.asignandoItem = false;
-        this.displayAsignarItemDialog = false;
-        this.verItems(this.productoSeleccionadoParaItems);
-        this.cargarDatos();
+    this.cdr.markForCheck();
+
+    this.asignacionService.getAsignaciones().subscribe({
+      next: (res: any) => {
+        const all: any[] = res?.data ?? res ?? [];
+        const existente = all.find((a: any) => {
+          const mismoProducto = a.id_producto === productoId || a.producto?.id_producto === productoId;
+          const mismaFicha = a.id_ficha === fichaId || a.ficha?.id_ficha === fichaId;
+          return mismoProducto && mismaFicha && a.estado?.toUpperCase() === 'ACTIVA';
+        });
+
+        const agregarItem = (idAsignacion: number) => {
+          this.asignacionService.agregarItemAAsignacion(idAsignacion, this.itemParaAsignar.id_item).subscribe({
+            next: () => {
+              this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Ítem asignado a la ficha correctamente' });
+              this.asignandoItem = false;
+              this.displayAsignarItemDialog = false;
+              this.verItems(this.productoSeleccionadoParaItems);
+              this.cargarDatos();
+            },
+            error: (err: any) => {
+              this.asignandoItem = false;
+              this.cdr.markForCheck();
+              this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo asignar el ítem' });
+            },
+          });
+        };
+
+        if (existente) {
+          // Asignación activa existe → agregar el ítem específico a ella
+          agregarItem(existente.id_asignacion);
+        } else {
+          // No existe asignación → crearla pasando el ítem específico para evitar descuento aleatorio
+          const idUsuarioFinal = Number(this.authService.getUserId()) || 1;
+          this.asignacionService.crearAsignacion({
+            id_ficha: fichaId,
+            id_producto: productoId,
+            cantidad: 1,
+            id_usuario_asigna: idUsuarioFinal,
+            id_items: [this.itemParaAsignar.id_item],
+          }).subscribe({
+            next: () => {
+              // El ítem ya quedó marcado como PRESTADO y vinculado por el backend
+              this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Ítem asignado a la ficha correctamente' });
+              this.asignandoItem = false;
+              this.displayAsignarItemDialog = false;
+              this.verItems(this.productoSeleccionadoParaItems);
+              this.cargarDatos();
+            },
+            error: (err: any) => {
+              this.asignandoItem = false;
+              this.cdr.markForCheck();
+              this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo crear la asignación' });
+            },
+          });
+        }
       },
-      error: (err) => {
+      error: () => {
         this.asignandoItem = false;
-        const backendMsg = err?.error?.message;
-        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: backendMsg || 'No se pudo asignar el item' });
+        this.cdr.markForCheck();
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudo verificar las asignaciones existentes' });
       },
     });
   }

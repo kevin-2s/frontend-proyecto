@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -19,6 +20,8 @@ import { ProductoService } from '../../infrastructure/services/producto.service'
 import { FichaService } from '../../infrastructure/services/ficha.service';
 import { InventarioService } from '../../infrastructure/services/inventario.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
+import { SitioService } from '../../infrastructure/services/sitio.service';
 
 interface Asignacion {
   id_asignacion?: number;
@@ -44,6 +47,7 @@ interface Asignacion {
     SelectModule, TextareaModule,
   ],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   template: `
     <p-toast position="bottom-right"></p-toast>
@@ -98,7 +102,7 @@ interface Asignacion {
 
       <div class="data-table-wrapper">
         <p-table [value]="asignacionesFiltradas" [paginator]="true" [rows]="15"
-          [rowsPerPageOptions]="[5,15,20]" styleClass="modern-table" [rowHover]="true"
+          styleClass="modern-table" [rowHover]="true"
           dataKey="id_asignacion">
           <ng-template pTemplate="header">
             <tr>
@@ -140,15 +144,15 @@ interface Asignacion {
               <td><span class="fecha-cell">{{ a.fecha_asignacion | date:'dd/MM/yyyy' }}</span></td>
               <td><span class="status-badge" [ngClass]="getStatusClass(a.estado)">{{ a.estado }}</span></td>
               <td>
-                <div class="action-buttons" style="justify-content:center">
-                  <button pButton icon="pi pi-eye" class="p-button-text p-button-sm"
-                    style="color:#10b981" (click)="ver(a)" pTooltip="Ver detalles"></button>
+                <div class="action-buttons justify-center">
+                  <button pButton icon="pi pi-eye" class="btn-table-action btn-ver"
+                    (click)="ver(a)" pTooltip="Ver detalles" tooltipPosition="top"></button>
                   <button *ngIf="a.estado === 'ACTIVA' && esAdmin()" pButton icon="pi pi-ban"
-                    class="p-button-text p-button-sm" style="color:#f97316"
-                    (click)="anular(a)" pTooltip="Anular"></button>
+                    class="btn-table-action btn-anular"
+                    (click)="anular(a)" pTooltip="Anular" tooltipPosition="top"></button>
                   <button *ngIf="esAdmin()" pButton icon="pi pi-trash"
-                    class="p-button-text p-button-sm" style="color:#ef4444"
-                    (click)="eliminar(a)" pTooltip="Eliminar"></button>
+                    class="btn-table-action btn-eliminar"
+                    (click)="eliminar(a)" pTooltip="Eliminar" tooltipPosition="top"></button>
                 </div>
               </td>
             </tr>
@@ -321,10 +325,25 @@ interface Asignacion {
           </div>
         </div>
 
-        <!-- PASO 3: Ficha -->
+        <!-- PASO 3: Destino (Ficha o Bodega) -->
         <div class="asignar-step">
-          <span class="step-label">3 · Ficha de formación <span class="required">*</span></span>
-          <p-select
+          <span class="step-label">3 · Destino <span class="required">*</span></span>
+
+          <!-- Toggle modo -->
+          <div style="display:flex;gap:8px;margin-bottom:0.875rem">
+            <button pButton label="Ficha de formación" icon="pi pi-users"
+              [class]="modoNueva === 'ficha' ? 'btn-guardar' : 'btn-cancelar'"
+              style="flex:1;font-size:12px;padding:6px 10px"
+              (click)="modoNueva = 'ficha'">
+            </button>
+            <button pButton label="Bodega / Ambiente" icon="pi pi-box"
+              [class]="modoNueva === 'bodega' ? 'btn-guardar' : 'btn-cancelar'"
+              style="flex:1;font-size:12px;padding:6px 10px"
+              (click)="modoNueva = 'bodega'">
+            </button>
+          </div>
+
+          <p-select *ngIf="modoNueva === 'ficha'"
             [options]="fichasOpciones"
             [(ngModel)]="nueva.id_ficha"
             optionLabel="label"
@@ -335,6 +354,22 @@ interface Asignacion {
             appendTo="body"
             style="width:100%">
           </p-select>
+
+          <p-select *ngIf="modoNueva === 'bodega'"
+            [options]="bodegasOpciones"
+            [ngModel]="nueva.id_sitio"
+            (ngModelChange)="nueva.id_sitio = $event"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar bodega, ambiente o laboratorio..."
+            [filter]="true"
+            filterPlaceholder="Buscar ubicación..."
+            appendTo="body"
+            style="width:100%">
+          </p-select>
+          <small *ngIf="modoNueva === 'bodega'" style="color:#64748b;font-size:12px;margin-top:4px;display:block">
+            Los ítems disponibles quedarán registrados en esa ubicación sin estar vinculados a una ficha.
+          </small>
         </div>
 
         <!-- PASO 4: Observación -->
@@ -352,22 +387,31 @@ interface Asignacion {
 
       <div class="dialog-footer">
         <button pButton label="Cancelar" class="btn-cancelar" (click)="displayDialogCrear = false"></button>
-        <button pButton label="Asignar" icon="pi pi-user-plus" class="btn-guardar"
+        <button *ngIf="modoNueva === 'ficha'" pButton label="Asignar a Ficha" icon="pi pi-user-plus" class="btn-guardar"
           [disabled]="!puedeGuardar()"
           (click)="guardar()">
+        </button>
+        <button *ngIf="modoNueva === 'bodega'" pButton label="Asignar a Bodega" icon="pi pi-box" class="btn-guardar"
+          [disabled]="!puedeGuardarBodega()" [loading]="guardandoBodega"
+          (click)="guardarBodega()">
         </button>
       </div>
     </p-dialog>
   `
 })
-export class AsignarComponent implements OnInit {
+export class AsignarComponent implements OnInit, OnDestroy {
   private asignacionService = inject(AsignacionService);
   private productoService = inject(ProductoService);
   private fichaService = inject(FichaService);
+  private sitioService = inject(SitioService);
   private inventarioService = inject(InventarioService);
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private authService = inject(AuthService);
+  private apiService = inject(ApiService);
+  private cdr = inject(ChangeDetectorRef);
+
+  private changesSub!: Subscription;
 
   asignaciones: Asignacion[] = [];
   asignacionesFiltradas: Asignacion[] = [];
@@ -379,12 +423,15 @@ export class AsignarComponent implements OnInit {
 
   productosOpciones: { label: string; value: number }[] = [];
   fichasOpciones: { label: string; value: number }[] = [];
+  bodegasOpciones: { label: string; value: number }[] = [];
 
   stock = { disponibles: 0, total: 0, cargando: false };
   selectedProductoId: number | null = null;
+  modoNueva: 'ficha' | 'bodega' = 'ficha';
+  guardandoBodega = false;
 
-  nueva: { id_producto: number | null; id_ficha: number | null; cantidad: number; observacion: string } =
-    { id_producto: null, id_ficha: null, cantidad: 1, observacion: '' };
+  nueva: { id_producto: number | null; id_ficha: number | null; id_sitio: number | null; cantidad: number; observacion: string } =
+    { id_producto: null, id_ficha: null, id_sitio: null, cantidad: 1, observacion: '' };
 
   esAdmin(): boolean {
     const role = this.authService.getUserRole()?.toUpperCase() ?? '';
@@ -395,6 +442,12 @@ export class AsignarComponent implements OnInit {
     this.cargar();
     this.cargarProductos();
     this.cargarFichas();
+    this.cargarBodegas();
+    this.changesSub = this.apiService.changes.subscribe(() => this.cargar());
+  }
+
+  ngOnDestroy() {
+    this.changesSub.unsubscribe();
   }
 
   cargar() {
@@ -403,8 +456,9 @@ export class AsignarComponent implements OnInit {
         const data = res?.data ?? res ?? [];
         this.asignaciones = data;
         this.asignacionesFiltradas = data;
+        this.cdr.markForCheck();
       },
-      error: () => { this.asignaciones = []; this.asignacionesFiltradas = []; },
+      error: () => { this.asignaciones = []; this.asignacionesFiltradas = []; this.cdr.markForCheck(); },
     });
   }
 
@@ -416,8 +470,9 @@ export class AsignarComponent implements OnInit {
           label: p.SKU ? `${p.nombre}  ·  ${p.SKU}` : p.nombre,
           value: p.id_producto,
         }));
+        this.cdr.markForCheck();
       },
-      error: () => { this.productosOpciones = []; },
+      error: () => { this.productosOpciones = []; this.cdr.markForCheck(); },
     });
   }
 
@@ -431,9 +486,89 @@ export class AsignarComponent implements OnInit {
             : f.numero_ficha,
           value: f.id_ficha,
         }));
+        this.cdr.markForCheck();
       },
-      error: () => { this.fichasOpciones = []; },
+      error: () => { this.fichasOpciones = []; this.cdr.markForCheck(); },
     });
+  }
+
+  cargarBodegas() {
+    this.sitioService.getSitios().subscribe({
+      next: (res: any) => {
+        const tipoLabel: Record<string, string> = {
+          BODEGA: 'Bodega', AMBIENTE: 'Ambiente',
+          LABORATORIO: 'Laboratorio', OTRO: 'Otro',
+        };
+        const orden: Record<string, number> = { BODEGA: 0, AMBIENTE: 1, LABORATORIO: 2, OTRO: 3 };
+        const items = (res?.data ?? res ?? [])
+          .filter((s: any) => s.estado !== false)
+          .sort((a: any, b: any) => (orden[a.tipo] ?? 9) - (orden[b.tipo] ?? 9));
+        this.bodegasOpciones = items.map((s: any) => ({
+          label: `${s.nombre}${s.codigo_lugar ? '  ·  ' + s.codigo_lugar : ''}  [${tipoLabel[s.tipo] ?? s.tipo}]`,
+          value: s.id_sitio,
+        }));
+        this.cdr.markForCheck();
+      },
+      error: () => { this.bodegasOpciones = []; this.cdr.markForCheck(); },
+    });
+  }
+
+  puedeGuardarBodega(): boolean {
+    return !!(
+      this.selectedProductoId &&
+      this.nueva.id_sitio &&
+      this.nueva.cantidad >= 1 &&
+      this.nueva.cantidad <= this.stock.disponibles &&
+      !this.stock.cargando
+    );
+  }
+
+  guardarBodega() {
+    if (!this.selectedProductoId || !this.nueva.id_sitio) return;
+    this.guardandoBodega = true;
+    this.cdr.markForCheck();
+    this.productoService.getItemsByProducto(this.selectedProductoId).subscribe({
+      next: (res: any) => {
+        const todos = res?.data ?? res ?? [];
+        const disponibles = todos.filter((i: any) => i.estado === 'DISPONIBLE').slice(0, this.nueva.cantidad);
+        if (disponibles.length === 0) {
+          this.notification.add({ module: 'Asignar', severity: 'warn', summary: 'Sin ítems', detail: 'No hay ítems disponibles para este producto.' });
+          this.guardandoBodega = false;
+          this.cdr.markForCheck();
+          return;
+        }
+        let completados = 0;
+        let errores = 0;
+        disponibles.forEach((item: any) => {
+          this.productoService.actualizarItem(item.id_item, { id_sitio: this.nueva.id_sitio }).subscribe({
+            next: () => {
+              completados++;
+              if (completados + errores === disponibles.length) this.finalizarGuardarBodega(completados, errores);
+            },
+            error: () => {
+              errores++;
+              if (completados + errores === disponibles.length) this.finalizarGuardarBodega(completados, errores);
+            },
+          });
+        });
+      },
+      error: () => {
+        this.guardandoBodega = false;
+        this.cdr.markForCheck();
+        this.notification.add({ module: 'Asignar', severity: 'error', summary: 'Error', detail: 'No se pudieron obtener los ítems del producto.' });
+      },
+    });
+  }
+
+  private finalizarGuardarBodega(completados: number, errores: number) {
+    this.guardandoBodega = false;
+    this.displayDialogCrear = false;
+    this.cdr.markForCheck();
+    if (errores === 0) {
+      this.notification.add({ module: 'Asignar', severity: 'success', summary: 'Éxito', detail: `${completados} ítem(s) asignado(s) a la bodega correctamente.` });
+    } else {
+      this.notification.add({ module: 'Asignar', severity: 'warn', summary: 'Parcial', detail: `${completados} asignado(s), ${errores} con error.` });
+    }
   }
 
   onProductoChange(id: number | null) {
@@ -449,8 +584,9 @@ export class AsignarComponent implements OnInit {
       next: (res: any) => {
         const d = res?.data ?? res;
         this.stock = { disponibles: d.disponibles ?? 0, total: d.total ?? 0, cargando: false };
+        this.cdr.markForCheck();
       },
-      error: () => { this.stock = { disponibles: 0, total: 0, cargando: false }; },
+      error: () => { this.stock = { disponibles: 0, total: 0, cargando: false }; this.cdr.markForCheck(); },
     });
   }
 
@@ -493,9 +629,10 @@ export class AsignarComponent implements OnInit {
   ver(a: Asignacion) { this.asignacionView = a; this.displayDialog = true; }
 
   abrirDialogoCrear() {
-    this.nueva = { id_producto: null, id_ficha: null, cantidad: 1, observacion: '' };
+    this.nueva = { id_producto: null, id_ficha: null, id_sitio: null, cantidad: 1, observacion: '' };
     this.stock = { disponibles: 0, total: 0, cargando: false };
     this.selectedProductoId = null;
+    this.modoNueva = 'ficha';
     this.displayDialogCrear = true;
   }
 

@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +23,9 @@ import { AuthService } from '../../infrastructure/services/auth.service';
 import { NovedadService } from '../../infrastructure/services/novedad.service';
 import { AsignacionService } from '../../infrastructure/services/asignacion.service';
 import { OnlyLettersDirective } from '../directives/only-letters.directive';
+import { TrasladoService } from '../../infrastructure/services/traslado.service';
+import { FichaService } from '../../infrastructure/services/ficha.service';
+import { ApiService } from '../../core/services/api.service';
 
 interface Producto {
   id_producto: number;
@@ -125,6 +129,7 @@ type SelectOption = { label: string; value: string };
                   <i class="pi pi-home text-indigo-400 text-xs"></i>
                   <span class="text-sm font-semibold text-indigo-700">{{ getBodegaNombre(producto.id_sitio) }}</span>
                 </div>
+                <span *ngIf="getBodegaTipoLabel(producto.id_sitio)" class="text-xs text-slate-400">{{ getBodegaTipoLabel(producto.id_sitio) }}</span>
               </td>
 
               <!-- Categoría -->
@@ -257,9 +262,8 @@ type SelectOption = { label: string; value: string };
               formControlName="codigo_unspsc"
               [options]="codigosUnspsc"
               [filter]="true"
-              [editable]="true"
-              filterPlaceholder="Buscar código o producto..."
-              placeholder="Seleccione o escriba el código"
+              filterPlaceholder="Escriba el código o nombre del producto..."
+              placeholder="Seleccione el código UNSPSC"
               appendTo="body"
               styleClass="w-full"
               [showClear]="true"
@@ -282,6 +286,7 @@ type SelectOption = { label: string; value: string };
             <div class="input-with-button">
               <p-select id="tipo_material" formControlName="tipo_material"
                 [options]="tiposMaterial" placeholder="Seleccione tipo"
+                [filter]="true" filterPlaceholder="Buscar tipo..."
                 appendTo="body" styleClass="w-full"
                 (onChange)="onTipoMaterialChange($event.value)"></p-select>
               <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
@@ -293,6 +298,7 @@ type SelectOption = { label: string; value: string };
             <div class="input-with-button">
               <p-select id="unidad_medida" formControlName="unidad_medida"
                 [options]="unidadesDisponibles" placeholder="Seleccione unidad"
+                [filter]="true" filterPlaceholder="Buscar unidad..."
                 appendTo="body" styleClass="w-full"
                 (onChange)="onUnidadMedidaChange($event.value)"></p-select>
               <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
@@ -304,37 +310,39 @@ type SelectOption = { label: string; value: string };
           </div>
         </div>
 
-        <!-- Campos especiales BULTO -->
+        <!-- Campos especiales BULTO / PAQUETE -->
         <div *ngIf="esBulto" class="product-form-row" style="background:#fff7ed;border-radius:10px;padding:10px 8px 4px;margin-bottom:2px;border:1px solid #fed7aa;">
           <div class="form-field">
             <label style="color:#c2410c;font-weight:700;">
-              <i class="pi pi-box mr-1"></i>Unidad de peso del bulto
+              <i class="pi pi-box mr-1"></i>Unidad de peso del {{ labelPresentacion }}
             </label>
             <p-select formControlName="unidad_peso_bulto" [options]="unidadesPeso"
               placeholder="kg / g / lb..." appendTo="body" styleClass="w-full"
+              [filter]="true" filterPlaceholder="Buscar unidad..."
               [showClear]="true"></p-select>
           </div>
           <div class="form-field" *ngIf="mostrarPesoPorBulto">
             <label style="color:#c2410c;font-weight:700;">
-              Peso por bulto ({{ productoForm.get('unidad_peso_bulto')?.value | lowercase }})
+              Peso por {{ labelPresentacion }} ({{ productoForm.get('unidad_peso_bulto')?.value | lowercase }})
             </label>
             <input pInputText type="number" formControlName="peso_por_bulto"
-              placeholder="Ej: 50" min="0.01" step="0.01" />
+              placeholder="Ej: 50" min="0.01" step="0.01" style="width:100%" />
           </div>
         </div>
 
-        <!-- Peso / volumen por presentación — solo para unidades de peso/volumen (no BULTO) -->
+        <!-- Peso / volumen por presentación — solo para unidades de peso/volumen (no BULTO/PAQUETE) -->
         <div *ngIf="esMedidaPesoVol"
-          style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 10px 8px;margin-bottom:2px;">
-          <label style="color:#1d4ed8;font-weight:700;font-size:0.875rem;display:block;margin-bottom:6px;">
-            <i class="pi pi-info-circle mr-1"></i>
+          style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 12px 10px;margin-bottom:2px;">
+          <label style="color:#1d4ed8;font-weight:700;font-size:0.875rem;display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+            <i class="pi pi-info-circle"></i>
             ¿Cuántos {{ unidadActual | lowercase }} tiene cada presentación/bolsa?
-            <span style="font-weight:400;color:#64748b;font-size:0.78rem;margin-left:4px;">(Opcional)</span>
+            <span style="font-weight:400;color:#64748b;font-size:0.78rem;">(Opcional)</span>
           </label>
           <input pInputText type="number" formControlName="peso_por_bulto"
             [placeholder]="'Ej: si cada bolsa pesa 10 ' + (unidadActual | lowercase) + ', ingrese 10'"
-            min="0.001" step="0.001" />
-          <small style="color:#3b82f6;font-size:0.75rem;margin-top:4px;display:block;">
+            min="0.001" step="0.001"
+            style="width:100%;background:#fff;border:2px solid #93c5fd;border-radius:8px;padding:10px 12px;font-size:0.9rem;color:#1e293b;outline:none" />
+          <small style="color:#3b82f6;font-size:0.75rem;margin-top:6px;display:block;">
             Si el producto no viene en presentaciones de peso fijo, deje este campo vacío.
           </small>
         </div>
@@ -342,7 +350,7 @@ type SelectOption = { label: string; value: string };
         <!-- Cantidad + Stock mínimo -->
         <div class="product-form-row">
           <div *ngIf="esNuevo" class="form-field">
-            <label for="cantidad">{{ esBulto ? 'Cantidad de bultos *' : 'Cantidad de unidades *' }}</label>
+            <label for="cantidad">{{ esBulto ? ('Cantidad de ' + labelPresentacion + 's *') : 'Cantidad de unidades *' }}</label>
             <input pInputText type="number" id="cantidad" formControlName="cantidad"
               placeholder="Ej: 5" min="1" />
             <small *ngIf="esMedidaPesoVol && productoForm.get('peso_por_bulto')?.value"
@@ -371,7 +379,7 @@ type SelectOption = { label: string; value: string };
           <input pInputText type="date" id="fecha_vencimiento"
             formControlName="fecha_vencimiento"
             [min]="minDate"
-            class="w-full border border-orange-300 rounded-lg p-2 bg-white" />
+            style="width:100%;background:#fff;border:2px solid #fed7aa;border-radius:10px;padding:11px 14px;font-size:0.9rem;color:#1e293b;cursor:pointer;min-height:44px" />
           <small *ngIf="fechaInvalida" class="text-red-500 mt-1 block">
             <i class="pi pi-exclamation-triangle mr-1"></i>La fecha debe ser igual o posterior a hoy.
           </small>
@@ -385,6 +393,7 @@ type SelectOption = { label: string; value: string };
               <p-select id="id_categoria" formControlName="id_categoria"
                 [options]="categorias" optionLabel="nombre" optionValue="id_categoria"
                 placeholder="Seleccione una categoría" [showClear]="true"
+                [filter]="true" filterPlaceholder="Buscar categoría..."
                 appendTo="body" styleClass="w-full"></p-select>
               <button pButton type="button" icon="pi pi-plus" class="btn-inline-add"
                 (click)="displayAddCategoria=true" pTooltip="Agregar categoría"></button>
@@ -395,11 +404,15 @@ type SelectOption = { label: string; value: string };
             <p-select id="id_sitio" formControlName="id_sitio"
               [options]="bodegas" optionLabel="nombre" optionValue="id_sitio"
               placeholder="Seleccione la bodega" [showClear]="true"
+              [filter]="true" filterPlaceholder="Buscar bodega..."
               appendTo="body" styleClass="w-full">
               <ng-template let-b pTemplate="item">
                 <div class="flex items-center gap-2">
                   <i class="pi pi-home text-indigo-400 text-sm"></i>
-                  <span class="text-sm font-semibold">{{ b.nombre }}</span>
+                  <div>
+                    <span class="text-sm font-semibold block">{{ b.nombre }}</span>
+                    <small class="text-xs text-slate-400">{{ getBodegaTipoLabel(b.id_sitio) }}</small>
+                  </div>
                 </div>
               </ng-template>
             </p-select>
@@ -549,6 +562,7 @@ type SelectOption = { label: string; value: string };
               <th style="width:80px">ID</th>
               <th>Código SKU</th>
               <th>Placa SENA</th>
+              <th>Ubicación</th>
               <th class="text-center" style="width:130px">Estado</th>
               <th class="text-center" style="width:110px">Acciones</th>
             </tr>
@@ -564,6 +578,10 @@ type SelectOption = { label: string; value: string };
                 <span *ngIf="item.placa_sena" class="sku-cell">{{ item.placa_sena }}</span>
                 <span *ngIf="!item.placa_sena" class="text-slate-300 italic">Sin placa</span>
               </td>
+              <td>
+                <span style="font-size:12px;color:#374151;display:block">{{ getBodegaNombre(item.id_sitio) }}</span>
+                <span *ngIf="getBodegaTipoLabel(item.id_sitio)" style="font-size:11px;color:#94a3b8">{{ getBodegaTipoLabel(item.id_sitio) }}</span>
+              </td>
               <td class="text-center">
                 <p-tag [value]="item.estado" [severity]="getItemSeverity(item.estado)"
                   styleClass="px-3 py-1 font-bold rounded-lg"></p-tag>
@@ -576,6 +594,13 @@ type SelectOption = { label: string; value: string };
                     pTooltip="Asignar a una ficha"
                     tooltipPosition="top"
                     (click)="abrirAsignarItem(item)">
+                  </button>
+                  <button *ngIf="item.estado === 'DISPONIBLE'" pButton icon="pi pi-truck"
+                    class="p-button-text"
+                    style="color:#7c3aed"
+                    pTooltip="Trasladar a otro lugar"
+                    tooltipPosition="top"
+                    (click)="abrirTrasladarItem(item)">
                   </button>
                   <button pButton icon="pi pi-pencil"
                     class="p-button-text"
@@ -596,7 +621,7 @@ type SelectOption = { label: string; value: string };
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
-            <tr><td colspan="5" class="text-center p-4">
+            <tr><td colspan="6" class="text-center p-4">
               <i class="pi pi-info-circle text-4xl text-slate-300 mb-2"></i>
               <p class="text-slate-500">No se encontraron items para este producto.</p>
             </td></tr>
@@ -636,46 +661,154 @@ type SelectOption = { label: string; value: string };
       </ng-template>
     </p-dialog>
 
-    <!-- Asignar Item a una asignación (ficha) existente -->
+    <!-- Asignar Item: a una ficha o directamente a una bodega/ambiente -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      header="📨 Asignar Ítem a una Ficha"
+      header="📨 Asignar Ítem"
       [(visible)]="displayAsignarItemDialog" [modal]="true"
-      [style]="{width:'90vw',maxWidth:'460px'}"
+      [style]="{width:'90vw',maxWidth:'480px'}"
       [draggable]="true" [resizable]="false"
       styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
       <div class="form-container mt-2" *ngIf="itemParaAsignar">
+        <!-- Info del ítem -->
         <div style="font-size:12px;color:#94a3b8;margin-bottom:1rem">
           Item #{{ itemParaAsignar.id_item }} &nbsp;·&nbsp; SKU: {{ itemParaAsignar.codigo_sku || '—' }}
           <span *ngIf="itemParaAsignar.placa_sena" style="display:block;margin-top:2px">Placa SENA: {{ itemParaAsignar.placa_sena }}</span>
         </div>
-        <div class="form-field">
-          <label>Asignación activa <span style="color:red">*</span></label>
+
+        <!-- Selector de modo -->
+        <div style="display:flex;gap:8px;margin-bottom:1.25rem">
+          <button pButton
+            [label]="'Asignar a Ficha'"
+            icon="pi pi-users"
+            [class]="modoAsignacion === 'ficha' ? 'btn-guardar' : 'btn-cancelar'"
+            style="flex:1;font-size:13px"
+            (click)="modoAsignacion = 'ficha'">
+          </button>
+          <button pButton
+            [label]="'Asignar a Bodega'"
+            icon="pi pi-box"
+            [class]="modoAsignacion === 'bodega' ? 'btn-guardar' : 'btn-cancelar'"
+            style="flex:1;font-size:13px"
+            (click)="modoAsignacion = 'bodega'">
+          </button>
+        </div>
+
+        <!-- Modo Ficha -->
+        <div *ngIf="modoAsignacion === 'ficha'" class="form-field">
+          <label>Ficha de Formación <span style="color:red">*</span></label>
           <p-select
-            [options]="asignacionesActivasProducto"
-            [ngModel]="asignacionSeleccionada"
-            (ngModelChange)="asignacionSeleccionada = $event"
+            [options]="fichasParaAsignar"
+            [ngModel]="fichaSeleccionadaAsignar"
+            (ngModelChange)="fichaSeleccionadaAsignar = $event"
             optionLabel="label"
             optionValue="value"
-            placeholder="Selecciona una ficha con asignación activa..."
+            placeholder="Buscar ficha por número o programa..."
             [filter]="true"
+            filterPlaceholder="Escriba número o programa..."
             appendTo="body"
             style="width:100%">
           </p-select>
-          <small *ngIf="cargandoAsignacionesActivas" style="color:#94a3b8;font-size:12px;margin-top:4px;display:block">
-            <i class="pi pi-spin pi-spinner mr-1"></i>Cargando asignaciones activas...
+          <small *ngIf="fichasParaAsignar.length === 0"
+            style="color:#94a3b8;font-size:12px;margin-top:4px;display:block">
+            <i class="pi pi-spin pi-spinner mr-1"></i>Cargando fichas...
           </small>
-          <small *ngIf="!cargandoAsignacionesActivas && asignacionesActivasProducto.length === 0"
-            style="color:#ef4444;font-size:12px;margin-top:4px;display:block">
-            No hay asignaciones activas para este producto. Crea una nueva desde el módulo "Asignar".
+          <small *ngIf="fichaSeleccionadaAsignar" style="color:#64748b;font-size:11px;margin-top:4px;display:block">
+            Si no existe una asignación activa para este producto y ficha, se creará automáticamente.
+          </small>
+        </div>
+
+        <!-- Modo Bodega/Ambiente -->
+        <div *ngIf="modoAsignacion === 'bodega'" class="form-field">
+          <label>Bodega / Ambiente / Laboratorio <span style="color:red">*</span></label>
+          <p-select
+            [options]="bodegasConLabel"
+            [ngModel]="bodegaSeleccionadaAsignacion"
+            (ngModelChange)="bodegaSeleccionadaAsignacion = $event"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Buscar bodega, ambiente o laboratorio..."
+            [filter]="true"
+            filterPlaceholder="Escriba el nombre o código..."
+            appendTo="body"
+            style="width:100%">
+          </p-select>
+          <small style="color:#64748b;font-size:12px;margin-top:4px;display:block">
+            El ítem quedará registrado en esa ubicación sin asignarse a ninguna ficha.
           </small>
         </div>
       </div>
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
           <button pButton label="Cancelar" class="btn-cancelar" (click)="displayAsignarItemDialog=false"></button>
-          <button pButton label="Asignar" class="btn-guardar"
-            [disabled]="!asignacionSeleccionada" [loading]="asignandoItem"
+          <button *ngIf="modoAsignacion === 'ficha'" pButton label="Asignar a Ficha" icon="pi pi-users" class="btn-guardar"
+            [disabled]="!fichaSeleccionadaAsignar" [loading]="asignandoItem"
             (click)="confirmarAsignarItem()"></button>
+          <button *ngIf="modoAsignacion === 'bodega'" pButton label="Asignar a Bodega" icon="pi pi-box" class="btn-guardar"
+            [disabled]="!bodegaSeleccionadaAsignacion" [loading]="asignandoABodega"
+            (click)="confirmarAsignarABodega()"></button>
+        </div>
+      </ng-template>
+    </p-dialog>
+
+    <!-- Trasladar Item a otro lugar (ambiente/laboratorio/otro) -->
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+      header="🚚 Trasladar Ítem"
+      [(visible)]="displayTrasladarItemDialog" [modal]="true"
+      [style]="{width:'90vw',maxWidth:'460px'}"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
+      <div class="form-container mt-2" *ngIf="itemParaTrasladar">
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:1rem">
+          Item #{{ itemParaTrasladar.id_item }} &nbsp;·&nbsp; SKU: {{ itemParaTrasladar.codigo_sku || '—' }}
+          <span *ngIf="itemParaTrasladar.placa_sena" style="display:block;margin-top:2px">Placa SENA: {{ itemParaTrasladar.placa_sena }}</span>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-bottom:1rem">
+          <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase">Ubicación actual</div>
+          <div style="font-size:14px;font-weight:700;color:#1e293b;margin-top:2px">{{ ubicacionActualTraslado || 'Sin ubicación asignada' }}</div>
+        </div>
+
+        <div class="form-field">
+          <label>Trasladar a <span style="color:red">*</span></label>
+          <p-select
+            [options]="destinosTrasladoOpciones"
+            [ngModel]="sitioDestinoTraslado"
+            (ngModelChange)="sitioDestinoTraslado = $event"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecciona el lugar de destino..."
+            [filter]="true"
+            appendTo="body"
+            style="width:100%">
+          </p-select>
+          <small *ngIf="destinosTrasladoOpciones.length === 0" style="color:#ef4444;font-size:12px;margin-top:4px;display:block">
+            No hay otros lugares disponibles. Crea más bodegas/ambientes/laboratorios desde <strong>Inventario › Bodegas</strong>.
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label>Justificación</label>
+          <textarea pTextarea [(ngModel)]="justificacionTraslado" rows="3"
+            placeholder="Describe el motivo del traslado..."
+            style="width:100%;resize:vertical;border:2px solid #1e293b;border-radius:8px;padding:8px 10px;font-size:0.875rem;font-family:inherit">
+          </textarea>
+        </div>
+
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <i class="pi pi-info-circle" style="color:#3b82f6;font-size:14px"></i>
+            <span style="font-size:12px;color:#1d4ed8">
+              El responsable del lugar actual recibirá una notificación y debe aprobar el traslado antes de que el ítem cambie de ubicación.
+            </span>
+          </div>
+        </div>
+      </div>
+      <ng-template pTemplate="footer">
+        <div class="dialog-footer">
+          <button pButton label="Cancelar" class="btn-cancelar" (click)="displayTrasladarItemDialog=false"></button>
+          <button pButton label="Solicitar Traslado" icon="pi pi-truck" class="btn-guardar"
+            [disabled]="!sitioDestinoTraslado" [loading]="trasladandoItem"
+            (click)="confirmarTrasladarItem()"></button>
         </div>
       </ng-template>
     </p-dialog>
@@ -740,7 +873,7 @@ type SelectOption = { label: string; value: string };
           <div class="detail-row"><span class="detail-label">Placa SENA:</span><span class="detail-value font-bold">{{ resultadoBusquedaPlaca.item.placa_sena }}</span></div>
           <div class="detail-row"><span class="detail-label">Código SKU del item:</span><span class="detail-value" style="font-family:monospace">{{ resultadoBusquedaPlaca.item.codigo_sku || '—' }}</span></div>
           <div class="detail-row"><span class="detail-label">SKU del producto:</span><span class="detail-value">{{ resultadoBusquedaPlaca.item.producto?.SKU ?? '—' }}</span></div>
-          <div class="detail-row"><span class="detail-label">Ubicación (bodega):</span><span class="detail-value">{{ getBodegaNombre(resultadoBusquedaPlaca.item.producto?.id_sitio) }}</span></div>
+          <div class="detail-row"><span class="detail-label">Ubicación:</span><span class="detail-value">{{ getBodegaNombre(resultadoBusquedaPlaca.item.id_sitio ?? resultadoBusquedaPlaca.item.producto?.id_sitio) }}<span *ngIf="getBodegaTipoLabel(resultadoBusquedaPlaca.item.id_sitio ?? resultadoBusquedaPlaca.item.producto?.id_sitio)" class="text-slate-400"> ({{ getBodegaTipoLabel(resultadoBusquedaPlaca.item.id_sitio ?? resultadoBusquedaPlaca.item.producto?.id_sitio) }})</span></span></div>
 
           <!-- Estado físico: novedad activa o "Bueno" -->
           <div class="detail-row">
@@ -829,6 +962,7 @@ type SelectOption = { label: string; value: string };
             optionLabel="label"
             optionValue="value"
             placeholder="Seleccionar tipo..."
+            [filter]="true" filterPlaceholder="Buscar tipo..."
             appendTo="body"
             style="width:100%">
           </p-select>
@@ -850,9 +984,69 @@ type SelectOption = { label: string; value: string };
         </button>
       </div>
     </p-dialog>
+
+    <!-- ===== DIÁLOGO PLACAS SENA ===== -->
+    <p-dialog
+      header="📋 Asignar Placas SENA"
+      [(visible)]="displayPlacasDialog" [modal]="true"
+      [style]="{ width: '90vw', maxWidth: '460px' }"
+      [draggable]="false" [resizable]="false" [closable]="false"
+      styleClass="form-dialog shadow-2xl" appendTo="body">
+
+      <div style="padding:0.5rem 0">
+        <!-- Progreso -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <span style="font-size:0.85rem;color:#64748b;font-weight:700;letter-spacing:.03em">
+            ÍTEM {{ placaActualIndex + 1 }} DE {{ itemsParaPlaca.length }}
+          </span>
+          <div style="display:flex;gap:5px;align-items:center">
+            <span *ngFor="let it of itemsParaPlaca; let i = index"
+              [style.width]="'10px'" [style.height]="'10px'" [style.border-radius]="'50%'"
+              [style.background]="i < placaActualIndex ? '#10B981' : i === placaActualIndex ? '#39A900' : '#e2e8f0'"
+              style="display:inline-block;transition:background .25s">
+            </span>
+          </div>
+        </div>
+
+        <!-- Info del item -->
+        <div style="background:#f8fafc;border-radius:12px;padding:.875rem 1rem;margin-bottom:1.25rem;border:1px solid #e2e8f0">
+          <div style="font-size:.7rem;color:#94a3b8;font-weight:700;letter-spacing:.06em;margin-bottom:.25rem">CÓDIGO SKU</div>
+          <div style="font-size:1rem;font-weight:700;color:#111827;font-family:monospace">
+            {{ itemsParaPlaca[placaActualIndex]?.codigo_sku ?? '—' }}
+          </div>
+        </div>
+
+        <!-- Input placa -->
+        <div class="form-field">
+          <label>Placa SENA <span style="color:#ef4444">*</span></label>
+          <input pInputText
+            [(ngModel)]="placaActualValor"
+            placeholder="Ej: SENA-2024-001"
+            style="width:100%;font-family:monospace;text-transform:uppercase;letter-spacing:.05em;font-size:1rem"
+            (keydown.enter)="guardarPlacaYSiguiente()"
+            [disabled]="guardandoPlaca" />
+          <small style="color:#64748b;margin-top:5px;display:block">
+            Presiona <kbd style="background:#f1f5f9;border:1px solid #cbd5e1;padding:1px 6px;border-radius:4px;font-size:.72rem">Enter</kbd>
+            para avanzar al siguiente ítem automáticamente
+          </small>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button pButton label="Omitir" icon="pi pi-forward" class="btn-cancelar"
+          [disabled]="guardandoPlaca" (click)="omitirPlacaActual()">
+        </button>
+        <button pButton
+          [label]="placaActualIndex < itemsParaPlaca.length - 1 ? 'Guardar y siguiente' : 'Finalizar'"
+          [icon]="placaActualIndex < itemsParaPlaca.length - 1 ? 'pi pi-arrow-right' : 'pi pi-check'"
+          class="btn-guardar" [loading]="guardandoPlaca"
+          (click)="guardarPlacaYSiguiente()">
+        </button>
+      </div>
+    </p-dialog>
   `
 })
-export class ProductosComponent implements OnInit {
+export class ProductosComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private productoService = inject(ProductoService);
   private categoriaService = inject(CategoriaService);
@@ -863,6 +1057,10 @@ export class ProductosComponent implements OnInit {
   private authService = inject(AuthService);
   private novedadService = inject(NovedadService);
   private asignacionService = inject(AsignacionService);
+  private trasladoService = inject(TrasladoService);
+  private fichaService = inject(FichaService);
+  private apiService = inject(ApiService);
+  private changesSub!: Subscription;
 
   esAdmin(): boolean {
     return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
@@ -898,15 +1096,33 @@ export class ProductosComponent implements OnInit {
 
   displayEditarItemDialog = false;
   itemEnEdicion: any = null;
+
+  displayPlacasDialog = false;
+  itemsParaPlaca: any[] = [];
+  placaActualIndex = 0;
+  placaActualValor = '';
+  guardandoPlaca = false;
   editPlacaSena = '';
   guardandoItem = false;
 
   displayAsignarItemDialog = false;
   itemParaAsignar: any = null;
-  asignacionesActivasProducto: { label: string; value: number }[] = [];
-  asignacionSeleccionada: number | null = null;
-  cargandoAsignacionesActivas = false;
+  allFichas: any[] = [];
+  fichasParaAsignar: { label: string; value: number }[] = [];
+  fichaSeleccionadaAsignar: number | null = null;
+  bodegasConLabel: { label: string; value: number }[] = [];
+  modoAsignacion: 'ficha' | 'bodega' = 'ficha';
+  bodegaSeleccionadaAsignacion: number | null = null;
+  asignandoABodega = false;
   asignandoItem = false;
+
+  displayTrasladarItemDialog = false;
+  itemParaTrasladar: any = null;
+  ubicacionActualTraslado = '';
+  destinosTrasladoOpciones: { label: string; value: number }[] = [];
+  sitioDestinoTraslado: number | null = null;
+  justificacionTraslado = '';
+  trasladandoItem = false;
 
   displayBuscarPlacaDialog = false;
   placaBuscada = '';
@@ -1286,7 +1502,12 @@ export class ProductosComponent implements OnInit {
   }
 
   get esBulto(): boolean {
-    return this.productoForm.get('unidad_medida')?.value === 'BULTO';
+    const u = this.productoForm.get('unidad_medida')?.value;
+    return u === 'BULTO' || u === 'PAQUETE';
+  }
+
+  get labelPresentacion(): string {
+    return this.productoForm.get('unidad_medida')?.value === 'PAQUETE' ? 'paquete' : 'bulto';
   }
 
   get mostrarPesoPorBulto(): boolean {
@@ -1312,16 +1533,48 @@ export class ProductosComponent implements OnInit {
     this.cargarDatos();
     this.cargarCategorias();
     this.cargarBodegas();
+    this.cargarFichas();
+    this.changesSub = this.apiService.changes.subscribe(() => this.cargarDatos());
   }
+
+  ngOnDestroy() {
+    this.changesSub.unsubscribe();
+  }
+
+  private readonly TIPOS_LUGAR_VALIDOS = ['BODEGA', 'AMBIENTE', 'LABORATORIO', 'OTRO'];
+  private readonly TIPOS_LUGAR_LABELS: Record<string, string> = {
+    BODEGA: 'Bodega', AMBIENTE: 'Ambiente', LABORATORIO: 'Laboratorio', OTRO: 'Otro',
+  };
 
   cargarBodegas() {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
         const all: any[] = res?.data || res || [];
-        this.bodegas = all.filter(s => s.tipo === 'BODEGA');
-        setTimeout(() => this.cdr.detectChanges());
+        this.bodegas = all.filter(s => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo));
+        const orden: Record<string, number> = { BODEGA: 0, AMBIENTE: 1, LABORATORIO: 2, OTRO: 3 };
+        const sorted = [...this.bodegas].sort((a, b) => (orden[a.tipo] ?? 9) - (orden[b.tipo] ?? 9));
+        this.bodegasConLabel = sorted.map(s => ({
+          label: `${s.nombre}${s.codigo_lugar ? '  ·  ' + s.codigo_lugar : ''}  [${this.TIPOS_LUGAR_LABELS[s.tipo] ?? s.tipo}]`,
+          value: s.id_sitio,
+        }));
+        this.cdr.markForCheck();
       },
-      error: () => { this.bodegas = []; },
+      error: () => { this.bodegas = []; this.bodegasConLabel = []; },
+    });
+  }
+
+  cargarFichas() {
+    this.fichaService.getFichas().subscribe({
+      next: (res: any) => {
+        this.allFichas = res?.data ?? res ?? [];
+        this.fichasParaAsignar = this.allFichas.map((f: any) => {
+          const num = f.numero_ficha ? `Ficha ${f.numero_ficha}` : `Ficha #${f.id_ficha}`;
+          const prog = f.programa?.nombre ? ` — ${f.programa.nombre}` : '';
+          return { label: `${num}${prog}`, value: f.id_ficha };
+        });
+        this.cdr.markForCheck();
+      },
+      error: () => { this.allFichas = []; this.fichasParaAsignar = []; },
     });
   }
 
@@ -1329,6 +1582,14 @@ export class ProductosComponent implements OnInit {
     if (!id_sitio) return '—';
     const b = this.bodegas.find(b => b.id_sitio === id_sitio);
     return b ? b.nombre : '—';
+  }
+
+  getBodegaTipoLabel(id_sitio: number | null | undefined): string {
+    if (!id_sitio) return '';
+    const b = this.bodegas.find(b => b.id_sitio === id_sitio);
+    if (!b) return '';
+    const tipo = b.tipo === 'OTRO' ? (b.tipo_personalizado || 'Otro') : (this.TIPOS_LUGAR_LABELS[b.tipo] || b.tipo || '');
+    return b.codigo_lugar ? `${tipo} · ${b.codigo_lugar}` : tipo;
   }
 
   cargarDatos() {
@@ -1344,19 +1605,19 @@ export class ProductosComponent implements OnInit {
               return { ...p, itemsDisponibles: disponibles, totalItems: productItems.length };
             });
             this.productosFiltrados = this.productos;
-            setTimeout(() => this.cdr.detectChanges());
+            this.cdr.markForCheck();
           },
           error: () => {
             this.productos = prods.map((p: any) => ({ ...p, itemsDisponibles: 0, totalItems: 0 }));
             this.productosFiltrados = this.productos;
-            setTimeout(() => this.cdr.detectChanges());
+            this.cdr.markForCheck();
           }
         });
       },
       error: () => {
         this.productos = [];
         this.productosFiltrados = [];
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
     });
   }
@@ -1365,7 +1626,7 @@ export class ProductosComponent implements OnInit {
     this.categoriaService.getCategorias().subscribe({
       next: (res: any) => {
         this.categorias = res?.data || res || [];
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: () => { this.categorias = []; },
     });
@@ -1415,7 +1676,7 @@ export class ProductosComponent implements OnInit {
   }
 
   onUnidadMedidaChange(value: string) {
-    if (value !== 'BULTO') {
+    if (value !== 'BULTO' && value !== 'PAQUETE') {
       this.productoForm.patchValue({ unidad_peso_bulto: null, peso_por_bulto: null });
     }
   }
@@ -1486,6 +1747,55 @@ export class ProductosComponent implements OnInit {
     this.displayDialog = true;
   }
 
+  abrirDialogoPlacas(items: any[]) {
+    this.itemsParaPlaca = items;
+    this.placaActualIndex = 0;
+    this.placaActualValor = '';
+    this.displayPlacasDialog = true;
+    this.cdr.markForCheck();
+  }
+
+  guardarPlacaYSiguiente() {
+    if (!this.placaActualValor.trim()) {
+      this.notification.add({ module: 'Productos', severity: 'warn', summary: 'Placa requerida', detail: 'Ingresa la placa SENA antes de continuar. Si el ítem no tiene placa, usa "Omitir".' });
+      return;
+    }
+    const item = this.itemsParaPlaca[this.placaActualIndex];
+    this.guardandoPlaca = true;
+    this.cdr.markForCheck();
+    this.productoService.actualizarItem(item.id_item, { placa_sena: this.placaActualValor.trim().toUpperCase() }).subscribe({
+      next: () => {
+        this.guardandoPlaca = false;
+        if (this.placaActualIndex < this.itemsParaPlaca.length - 1) {
+          this.placaActualIndex++;
+          this.placaActualValor = '';
+        } else {
+          this.displayPlacasDialog = false;
+          this.notification.add({ module: 'Productos', severity: 'success', summary: '¡Listo!', detail: 'Todas las placas SENA fueron asignadas correctamente.' });
+          this.cargarDatos();
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.guardandoPlaca = false;
+        this.cdr.markForCheck();
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudo guardar la placa SENA. Intenta de nuevo.' });
+      },
+    });
+  }
+
+  omitirPlacaActual() {
+    this.notification.add({ module: 'Productos', severity: 'warn', summary: 'Sin placa SENA', detail: `El ítem ${this.placaActualIndex + 1} quedará sin placa asignada. Puedes asignarla después desde la vista de ítems.` });
+    if (this.placaActualIndex < this.itemsParaPlaca.length - 1) {
+      this.placaActualIndex++;
+      this.placaActualValor = '';
+    } else {
+      this.displayPlacasDialog = false;
+      this.cargarDatos();
+    }
+    this.cdr.markForCheck();
+  }
+
   guardar() {
     if (this.productoForm.invalid || this.fechaInvalida) {
       this.notification.add({ module: 'Productos', severity: 'warn', summary: 'Advertencia', detail: 'Complete los campos requeridos correctamente' });
@@ -1494,7 +1804,7 @@ export class ProductosComponent implements OnInit {
 
     const formValue = this.productoForm.getRawValue();
     const esPerecedero = formValue.tipo_material === 'PERECEDERO';
-    const esBultoVal = formValue.unidad_medida === 'BULTO';
+    const esBultoVal = formValue.unidad_medida === 'BULTO' || formValue.unidad_medida === 'PAQUETE';
 
     const productoData: any = {
       nombre: formValue.nombre,
@@ -1521,14 +1831,13 @@ export class ProductosComponent implements OnInit {
       this.productoService.crearProducto(productoData).subscribe({
         next: (res: any) => {
           const itemsGenerados = res?.data?.items_generados ?? res?.items_generados ?? [];
-          this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Producto creado correctamente' });
-          this.notification.info(
-            `📦 Material nuevo registrado: "${productoData.nombre}" — ${itemsGenerados.length} unidad(es) agregada(s) al inventario`,
-            'Productos',
-            { life: 4000 },
-          );
+          this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: `Producto creado — ${itemsGenerados.length} ítem(s) generado(s)` });
           this.displayDialog = false;
-          this.cargarDatos();
+          if (itemsGenerados.length > 0) {
+            this.abrirDialogoPlacas(itemsGenerados);
+          } else {
+            this.cargarDatos();
+          }
         },
         error: (err) => {
           const backendMsg = err?.error?.message;
@@ -1573,7 +1882,7 @@ export class ProductosComponent implements OnInit {
             else if (newCat?.id_categoria) this.productoForm.patchValue({ id_categoria: newCat.id_categoria });
             this.displayAddCategoria = false;
             this.nuevoNombreCategoria = '';
-            setTimeout(() => this.cdr.detectChanges());
+            this.cdr.markForCheck();
           },
           error: () => { this.displayAddCategoria = false; this.nuevoNombreCategoria = ''; }
         });
@@ -1633,12 +1942,12 @@ export class ProductosComponent implements OnInit {
       next: (res: any) => {
         this.itemsDelProducto = res?.data || res || [];
         this.cargandoItems = false;
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: () => {
         this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items' });
         this.cargandoItems = false;
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       }
     });
   }
@@ -1720,45 +2029,143 @@ export class ProductosComponent implements OnInit {
 
   private continuarAsignarItem(item: any) {
     this.itemParaAsignar = item;
-    this.asignacionSeleccionada = null;
-    this.asignacionesActivasProducto = [];
+    this.fichaSeleccionadaAsignar = null;
+    this.bodegaSeleccionadaAsignacion = null;
+    this.modoAsignacion = 'ficha';
     this.displayAsignarItemDialog = true;
-    this.cargandoAsignacionesActivas = true;
+    // fichasParaAsignar ya está cargado en ngOnInit; si está vacío, recargamos
+    if (this.fichasParaAsignar.length === 0) this.cargarFichas();
+    this.cdr.markForCheck();
+  }
+
+  confirmarAsignarItem() {
+    if (!this.itemParaAsignar || !this.fichaSeleccionadaAsignar) return;
+    const productoId: number = this.itemParaAsignar.id_producto;
+    const fichaId: number = this.fichaSeleccionadaAsignar;
+    this.asignandoItem = true;
+    this.cdr.markForCheck();
+
     this.asignacionService.getAsignaciones().subscribe({
       next: (res: any) => {
-        const all = res?.data || res || [];
-        const activas = all.filter((a: any) => a.id_producto === item.id_producto && a.estado === 'ACTIVA');
-        this.asignacionesActivasProducto = activas.map((a: any) => {
-          const ficha = a.ficha?.numero_ficha ? `Ficha ${a.ficha.numero_ficha}` : `Ficha #${a.id_ficha}`;
-          const programa = a.ficha?.programa?.nombre ? ` — ${a.ficha.programa.nombre}` : '';
-          return { label: `${ficha}${programa} (${a.cantidad} unidad(es))`, value: a.id_asignacion };
+        const all: any[] = res?.data ?? res ?? [];
+        const existente = all.find((a: any) => {
+          const mismoProducto = a.id_producto === productoId || a.producto?.id_producto === productoId;
+          const mismaFicha = a.id_ficha === fichaId || a.ficha?.id_ficha === fichaId;
+          return mismoProducto && mismaFicha && a.estado?.toUpperCase() === 'ACTIVA';
         });
-        this.cargandoAsignacionesActivas = false;
-        setTimeout(() => this.cdr.detectChanges());
+
+        const agregarItem = (idAsignacion: number) => {
+          this.asignacionService.agregarItemAAsignacion(idAsignacion, this.itemParaAsignar.id_item).subscribe({
+            next: () => {
+              this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Ítem asignado a la ficha correctamente' });
+              this.asignandoItem = false;
+              this.displayAsignarItemDialog = false;
+              this.verItems(this.productoSeleccionadoParaItems);
+              this.cargarDatos();
+            },
+            error: (err: any) => {
+              this.asignandoItem = false;
+              this.cdr.markForCheck();
+              this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo asignar el ítem' });
+            },
+          });
+        };
+
+        if (existente) {
+          // Asignación activa existe → agregar el ítem específico a ella
+          agregarItem(existente.id_asignacion);
+        } else {
+          // No existe asignación → crearla pasando el ítem específico para evitar descuento aleatorio
+          const idUsuarioFinal = Number(this.authService.getUserId()) || 1;
+          this.asignacionService.crearAsignacion({
+            id_ficha: fichaId,
+            id_producto: productoId,
+            cantidad: 1,
+            id_usuario_asigna: idUsuarioFinal,
+            id_items: [this.itemParaAsignar.id_item],
+          }).subscribe({
+            next: () => {
+              // El ítem ya quedó marcado como PRESTADO y vinculado por el backend
+              this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Ítem asignado a la ficha correctamente' });
+              this.asignandoItem = false;
+              this.displayAsignarItemDialog = false;
+              this.verItems(this.productoSeleccionadoParaItems);
+              this.cargarDatos();
+            },
+            error: (err: any) => {
+              this.asignandoItem = false;
+              this.cdr.markForCheck();
+              this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo crear la asignación' });
+            },
+          });
+        }
       },
       error: () => {
-        this.asignacionesActivasProducto = [];
-        this.cargandoAsignacionesActivas = false;
-        setTimeout(() => this.cdr.detectChanges());
+        this.asignandoItem = false;
+        this.cdr.markForCheck();
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudo verificar las asignaciones existentes' });
       },
     });
   }
 
-  confirmarAsignarItem() {
-    if (!this.itemParaAsignar || !this.asignacionSeleccionada) return;
-    this.asignandoItem = true;
-    this.asignacionService.agregarItemAAsignacion(this.asignacionSeleccionada, this.itemParaAsignar.id_item).subscribe({
+  confirmarAsignarABodega() {
+    if (!this.itemParaAsignar || !this.bodegaSeleccionadaAsignacion) return;
+    this.asignandoABodega = true;
+    this.cdr.markForCheck();
+    this.productoService.actualizarItem(this.itemParaAsignar.id_item, { id_sitio: this.bodegaSeleccionadaAsignacion }).subscribe({
       next: () => {
-        this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Item asignado correctamente a la ficha' });
-        this.asignandoItem = false;
+        this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: 'Ítem asignado a la bodega/ambiente correctamente' });
+        this.asignandoABodega = false;
         this.displayAsignarItemDialog = false;
         this.verItems(this.productoSeleccionadoParaItems);
-        this.cargarDatos();
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        this.asignandoItem = false;
+        this.asignandoABodega = false;
+        this.cdr.markForCheck();
         const backendMsg = err?.error?.message;
-        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: backendMsg || 'No se pudo asignar el item' });
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: backendMsg || 'No se pudo asignar el ítem a la bodega' });
+      },
+    });
+  }
+
+  abrirTrasladarItem(item: any) {
+    this.itemParaTrasladar = item;
+    this.sitioDestinoTraslado = null;
+    this.justificacionTraslado = '';
+    const idSitioActual = item.id_sitio ?? this.productoSeleccionadoParaItems?.id_sitio ?? null;
+    const tipoActual = this.getBodegaTipoLabel(idSitioActual);
+    this.ubicacionActualTraslado = idSitioActual
+      ? `${this.getBodegaNombre(idSitioActual)}${tipoActual ? ' · ' + tipoActual : ''}`
+      : '';
+    this.destinosTrasladoOpciones = this.bodegas
+      .filter(b => b.id_sitio !== idSitioActual)
+      .map(b => {
+        const tipo = this.getBodegaTipoLabel(b.id_sitio);
+        return { label: `${b.nombre}${tipo ? ' · ' + tipo : ''}`, value: b.id_sitio };
+      });
+    this.displayTrasladarItemDialog = true;
+  }
+
+  confirmarTrasladarItem() {
+    if (!this.itemParaTrasladar || !this.sitioDestinoTraslado) return;
+    this.trasladandoItem = true;
+    const userId = Number(this.authService.getUserId()) || 1;
+    this.trasladoService.crearTraslado({
+      id_item: this.itemParaTrasladar.id_item,
+      id_sitio_destino: this.sitioDestinoTraslado,
+      justificacion: this.justificacionTraslado?.trim() || undefined,
+      id_usuario_solicita: userId,
+    }).subscribe({
+      next: () => {
+        this.notification.add({ module: 'Productos', severity: 'success', summary: 'Solicitud enviada', detail: 'Traslado solicitado. El responsable del lugar actual debe aprobarlo.' });
+        this.trasladandoItem = false;
+        this.displayTrasladarItemDialog = false;
+      },
+      error: (err) => {
+        this.trasladandoItem = false;
+        const backendMsg = err?.error?.message;
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: backendMsg || 'No se pudo solicitar el traslado' });
       },
     });
   }
@@ -1780,12 +2187,12 @@ export class ProductosComponent implements OnInit {
       next: (res: any) => {
         this.resultadoBusquedaPlaca = res?.data || res;
         this.buscandoPlaca = false;
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.buscandoPlaca = false;
         this.errorBusquedaPlaca = err?.error?.message || `No se encontró ningún ítem con la placa SENA: ${placa}`;
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
     });
   }

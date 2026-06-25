@@ -352,7 +352,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
         { title: 'Bodegas', path: 'inventario/bodega', icon: 'pi-home', requiredPermission: 'ver_inventario' },
         { title: 'Solicitudes', path: 'inventario/solicitudes', icon: 'pi-inbox', requiredPermission: 'ver_solicitudes' },
         { title: 'Asignar', path: 'inventario/asignar', icon: 'pi-user-plus', requiredPermission: 'ver_solicitudes' },
-        { title: 'Novedades', path: 'inventario/novedades', icon: 'pi-exclamation-circle', requiredPermission: 'ver_inventario' }
+        { title: 'Novedades', path: 'inventario/novedades', icon: 'pi-exclamation-circle', requiredPermission: 'ver_inventario' },
+        { title: 'Traslados', path: 'inventario/traslados', icon: 'pi-truck', requiredPermission: 'ver_traslados' }
       ]
     },
     {
@@ -499,12 +500,36 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   hasAccess(item: any): boolean {
-    // Si el item tiene un permiso requerido, usamos la verificación granular
-    if (item?.requiredPermission) {
-      return this.authService.hasPermission(item.requiredPermission);
+    // Si el item tiene un permiso requerido y lo cumple, retornamos true
+    if (item?.requiredPermission && this.authService.hasPermission(item.requiredPermission)) {
+      return true;
     }
-    // Fallback: los administradores siempre ven todo
-    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+
+    const role = this.authService.getUserRole()?.toUpperCase() || '';
+    if (role === 'ADMINISTRADOR') {
+      return true;
+    }
+
+    const path = item?.path || '';
+    if (role === 'INSTRUCTOR') {
+      const instructorPaths = [
+        'sedes', 'sitios', 'areas', 'programas', 'fichas',
+        'inventario/productos', 'inventario/categoria', 'inventario/bodega', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades', 'inventario/traslados',
+        'movimientos', 'home',
+        'kardex', 'reportes', 'qr'
+      ];
+      return instructorPaths.includes(path);
+    }
+
+    if (role === 'APRENDIZ') {
+      const aprendizPaths = [
+        'inventario/productos', 'inventario/categoria', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades',
+        'home', 'qr'
+      ];
+      return aprendizPaths.includes(path);
+    }
+    
+    return false;
   }
 
   hasSectionAccess(section: any): boolean {

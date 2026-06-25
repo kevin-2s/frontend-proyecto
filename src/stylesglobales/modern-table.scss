@@ -371,6 +371,18 @@ $bg-soft:    #F8FAFC;
     color: #EF4444 !important;
     &:hover { background: #EF4444 !important; color: #fff !important; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(239,68,68,0.3); }
   }
+
+  &.btn-ver {
+    background: #ECFDF5 !important;
+    color: #10B981 !important;
+    &:hover { background: #10B981 !important; color: #fff !important; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(16,185,129,0.3); }
+  }
+
+  &.btn-anular {
+    background: #FFF7ED !important;
+    color: #F97316 !important;
+    &:hover { background: #F97316 !important; color: #fff !important; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
+  }
 }
 
 /* ── PrimeNG Tooltip (pTooltip) — sin tema oficial cargado, así que se

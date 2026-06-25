@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -14,6 +14,7 @@ import { FichaService } from '../../infrastructure/services/ficha.service';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService } from '../../infrastructure/services/rol.service';
 import { ProgramaService } from '../../infrastructure/services/programa.service';
+import { AsignacionService } from '../../infrastructure/services/asignacion.service';
 import { forkJoin } from 'rxjs';
 
 interface Ficha {
@@ -47,6 +48,7 @@ interface Ficha {
     TooltipModule
   ],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-toast position="top-right"></p-toast>
     
@@ -82,8 +84,9 @@ interface Ficha {
               <th>Programa de Formación</th>
               <th>Instructor Responsable</th>
               <th>Ambiente</th>
+              <th style="width:90px" class="text-center">Ítems</th>
               <th style="width:120px">Estado</th>
-              <th style="width:110px">Acciones</th>
+              <th style="width:130px">Acciones</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-ficha>
@@ -92,7 +95,7 @@ interface Ficha {
               <td><span class="nombre-cell font-bold text-slate-800">{{ ficha.numero_ficha }}</span></td>
               <td>
                 <span class="correo-cell text-slate-600 font-medium">
-                  {{ ficha.programa?.nombre || 'Sin programa' }} 
+                  {{ ficha.programa?.nombre || 'Sin programa' }}
                   <span class="text-xs font-mono text-slate-400" *ngIf="ficha.programa?.codigo">
                     ({{ ficha.programa?.codigo }})
                   </span>
@@ -109,13 +112,22 @@ interface Ficha {
                   {{ ficha.ambiente || 'Sin ambiente' }}
                 </span>
               </td>
+              <td class="text-center">
+                <span *ngIf="contarItemsFicha(ficha.id_ficha) > 0"
+                  style="display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">
+                  <i class="pi pi-box" style="font-size:11px"></i>
+                  {{ contarItemsFicha(ficha.id_ficha) }}
+                </span>
+                <span *ngIf="contarItemsFicha(ficha.id_ficha) === 0"
+                  style="color:#94a3b8;font-size:12px">—</span>
+              </td>
               <td>
                 <div class="flex items-center gap-2.5">
                   <label class="custom-switch" pTooltip="Cambiar estado" tooltipPosition="top">
-                    <input 
-                      type="checkbox" 
-                      [checked]="ficha.estado !== false" 
-                      (change)="cambiarEstado(ficha)" 
+                    <input
+                      type="checkbox"
+                      [checked]="ficha.estado !== false"
+                      (change)="cambiarEstado(ficha)"
                     />
                     <span class="custom-switch-slider"></span>
                   </label>
@@ -127,21 +139,30 @@ interface Ficha {
               <td>
                 <div class="action-buttons justify-center gap-2 flex">
                   <button
-                    pButton
-                    type="button"
-                    icon="pi pi-trash"
+                    pButton type="button" icon="pi pi-eye"
+                    class="btn-table-action btn-ver"
+                    pTooltip="Ver asignaciones" tooltipPosition="top"
+                    (click)="verAsignacionesFicha(ficha)">
+                  </button>
+                  <button
+                    pButton type="button" icon="pi pi-pencil"
+                    class="btn-table-action btn-editor"
+                    pTooltip="Editar ficha" tooltipPosition="top"
+                    (click)="editarFicha(ficha)">
+                  </button>
+                  <button
+                    pButton type="button" icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
-                    pTooltip="Eliminar ficha"
-                    tooltipPosition="top"
-                    (click)="eliminarFicha(ficha)"
-                  ></button>
+                    pTooltip="Eliminar ficha" tooltipPosition="top"
+                    (click)="eliminarFicha(ficha)">
+                  </button>
                 </div>
               </td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="7" class="empty-message py-20 text-center">
+              <td colspan="8" class="empty-message py-20 text-center">
                 <i class="pi pi-id-card text-5xl text-slate-300 opacity-50 mb-3 block"></i>
                 <p class="text-slate-400 font-bold text-lg">No se encontraron fichas registradas</p>
               </td>
@@ -151,9 +172,74 @@ interface Ficha {
       </div>
     </div>
 
-    <!-- Dialog para crear nueva ficha -->
+    <!-- Diálogo detalle de asignaciones de la ficha -->
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+      [header]="'📋 Asignaciones — Ficha ' + (fichaVista?.numero_ficha ?? '')"
+      [(visible)]="displayAsignacionesDialog" [modal]="true"
+      [style]="{ width: '95vw', maxWidth: '760px' }"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
+
+      <div *ngIf="asignacionesDeFichaVista.length === 0"
+        style="text-align:center;padding:2.5rem 0;color:#94a3b8">
+        <i class="pi pi-inbox" style="font-size:2.5rem;display:block;margin-bottom:0.75rem"></i>
+        <p style="font-weight:600">Esta ficha no tiene asignaciones registradas</p>
+      </div>
+
+      <p-table *ngIf="asignacionesDeFichaVista.length > 0"
+        [value]="asignacionesDeFichaVista"
+        [paginator]="asignacionesDeFichaVista.length > 10" [rows]="10"
+        styleClass="modern-table" [rowHover]="true">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width:70px">ID</th>
+            <th>Producto</th>
+            <th style="width:90px" class="text-center">Cantidad</th>
+            <th>Observación</th>
+            <th style="width:110px" class="text-center">Estado</th>
+            <th style="width:130px">Fecha</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-a>
+          <tr>
+            <td><span class="id-badge">#{{ a.id_asignacion }}</span></td>
+            <td>
+              <span style="font-weight:600;color:#1e293b;font-size:13px">{{ a.producto?.nombre || '—' }}</span>
+              <small *ngIf="a.producto?.SKU" style="display:block;font-family:monospace;color:#94a3b8;font-size:11px">
+                {{ a.producto.SKU }}
+              </small>
+            </td>
+            <td class="text-center">
+              <span style="font-weight:700;font-size:15px;color:#1d4ed8">{{ a.cantidad }}</span>
+            </td>
+            <td>
+              <span style="font-size:12px;color:#64748b">{{ a.observacion || '—' }}</span>
+            </td>
+            <td class="text-center">
+              <p-tag [value]="a.estado"
+                [severity]="getEstadoAsignacionSeverity(a.estado)"
+                styleClass="px-2 py-1 text-xs font-bold rounded-lg">
+              </p-tag>
+            </td>
+            <td>
+              <span style="font-size:12px;color:#64748b">
+                {{ a.fecha_asignacion ? (a.fecha_asignacion | date:'dd/MM/yyyy') : '—' }}
+              </span>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <ng-template pTemplate="footer">
+        <div class="dialog-footer">
+          <button pButton label="Cerrar" class="btn-cancelar" (click)="displayAsignacionesDialog = false"></button>
+        </div>
+      </ng-template>
+    </p-dialog>
+
+    <!-- Dialog para crear/editar ficha -->
     <p-dialog [dismissableMask]="true"
-      header="Registrar Nueva Ficha de Formación"
+      [header]="esEditando ? '✏️ Editar Ficha de Formación' : '✨ Registrar Nueva Ficha de Formación'"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"
@@ -233,7 +319,7 @@ interface Ficha {
         ></button>
         <button
           pButton
-          [label]="saving ? 'Guardando...' : 'Registrar Ficha'"
+          [label]="saving ? 'Guardando...' : (esEditando ? 'Actualizar Ficha' : 'Registrar Ficha')"
           class="btn-guardar"
           (click)="guardar()"
           [disabled]="saving"
@@ -247,6 +333,7 @@ export class FichasComponent implements OnInit {
   private usuarioService = inject(UsuarioService);
   private rolService = inject(RolService);
   private programaService = inject(ProgramaService);
+  private asignacionService = inject(AsignacionService);
   private notification = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
 
@@ -254,8 +341,14 @@ export class FichasComponent implements OnInit {
   fichasFiltradas: Ficha[] = [];
   instructores: any[] = [];
   programas: any[] = [];
+  todasLasAsignaciones: any[] = [];
+  displayAsignacionesDialog = false;
+  fichaVista: Ficha | null = null;
+  asignacionesDeFichaVista: any[] = [];
   filtro = '';
   displayDialog = false;
+  esEditando = false;
+  fichaEditandoId: number | null = null;
   saving = false;
   loading = false;
   ficha: Ficha = this.getNuevaFiscal();
@@ -264,6 +357,7 @@ export class FichasComponent implements OnInit {
     this.cargarFichas();
     this.cargarInstructores();
     this.cargarProgramas();
+    this.cargarAsignaciones();
   }
 
   cargarFichas() {
@@ -274,13 +368,13 @@ export class FichasComponent implements OnInit {
         this.fichas = d.map((f: any) => ({ ...f, estado: f.estado !== false }));
         this.fichasFiltradas = [...this.fichas];
         this.loading = false;
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: () => {
         this.fichas = [];
         this.fichasFiltradas = [];
         this.loading = false;
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
     });
   }
@@ -303,13 +397,13 @@ export class FichasComponent implements OnInit {
         } else {
           this.instructores = usuariosData;
         }
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: () => {
         this.usuarioService.getAll().subscribe({
           next: (res: any) => {
             this.instructores = Array.isArray(res) ? res : res.data || [];
-            setTimeout(() => this.cdr.detectChanges());
+            this.cdr.markForCheck();
           }
         });
       }
@@ -321,13 +415,43 @@ export class FichasComponent implements OnInit {
       next: (res: any) => {
         const d = res?.data || res || [];
         this.programas = d;
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: () => {
         this.programas = [];
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
     });
+  }
+
+  cargarAsignaciones() {
+    this.asignacionService.getAsignaciones().subscribe({
+      next: (res: any) => {
+        this.todasLasAsignaciones = res?.data ?? res ?? [];
+        this.cdr.markForCheck();
+      },
+      error: () => { this.todasLasAsignaciones = []; },
+    });
+  }
+
+  contarItemsFicha(idFicha: number | undefined): number {
+    if (!idFicha) return 0;
+    return this.todasLasAsignaciones
+      .filter(a => a.id_ficha === idFicha && a.estado?.toUpperCase() === 'ACTIVA')
+      .reduce((sum: number, a: any) => sum + (a.cantidad ?? 0), 0);
+  }
+
+  verAsignacionesFicha(f: Ficha) {
+    this.fichaVista = f;
+    this.asignacionesDeFichaVista = this.todasLasAsignaciones
+      .filter(a => a.id_ficha === f.id_ficha);
+    this.displayAsignacionesDialog = true;
+  }
+
+  getEstadoAsignacionSeverity(estado: string): 'success' | 'warn' | 'danger' | 'secondary' {
+    if (estado?.toUpperCase() === 'ACTIVA') return 'success';
+    if (estado?.toUpperCase() === 'ANULADA') return 'danger';
+    return 'secondary';
   }
 
   getResponsableNombre(ficha: any): string {
@@ -352,25 +476,30 @@ export class FichasComponent implements OnInit {
 
   openNew() {
     this.ficha = this.getNuevaFiscal();
+    this.esEditando = false;
+    this.fichaEditandoId = null;
+    this.displayDialog = true;
+  }
+
+  editarFicha(f: Ficha) {
+    this.ficha = {
+      numero_ficha: f.numero_ficha,
+      id_programa: f.id_programa ?? (f as any).programa?.id_programa,
+      id_responsable: f.id_responsable ?? (f as any).responsable?.id_usuario,
+      ambiente: f.ambiente ?? '',
+    };
+    this.esEditando = true;
+    this.fichaEditandoId = f.id_ficha ?? null;
     this.displayDialog = true;
   }
 
   guardar() {
     if (!this.ficha.numero_ficha || !this.ficha.id_programa) {
-      this.notification.add({ module: 'Fichas',
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'El número de ficha y el programa son requeridos',
-      });
+      this.notification.add({ module: 'Fichas', severity: 'warn', summary: 'Advertencia', detail: 'El número de ficha y el programa son requeridos' });
       return;
     }
-
     if (!this.ficha.id_responsable) {
-      this.notification.add({ module: 'Fichas',
-        severity: 'warn',
-        summary: 'Advertencia',
-        detail: 'Debe seleccionar un instructor responsable antes de crear la ficha',
-      });
+      this.notification.add({ module: 'Fichas', severity: 'warn', summary: 'Advertencia', detail: 'Debe seleccionar un instructor responsable' });
       return;
     }
 
@@ -379,28 +508,25 @@ export class FichasComponent implements OnInit {
       numero_ficha: this.ficha.numero_ficha,
       id_programa: Number(this.ficha.id_programa),
       id_responsable: Number(this.ficha.id_responsable),
-      ...(this.ficha.ambiente ? { ambiente: this.ficha.ambiente } : {})
+      ...(this.ficha.ambiente ? { ambiente: this.ficha.ambiente } : {}),
     };
 
-    this.fichaService.crearFiscal(payload).subscribe({
+    const request$ = this.esEditando && this.fichaEditandoId
+      ? this.fichaService.actualizarFiscal(this.fichaEditandoId, payload)
+      : this.fichaService.crearFiscal(payload);
+
+    request$.subscribe({
       next: () => {
-        this.notification.add({
-          module: 'Fichas',
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Ficha creada correctamente',
-        });
+        this.notification.add({ module: 'Fichas', severity: 'success', summary: 'Éxito', detail: this.esEditando ? 'Ficha actualizada correctamente' : 'Ficha creada correctamente' });
         this.saving = false;
         this.displayDialog = false;
         this.cargarFichas();
+        this.cdr.markForCheck();
       },
       error: (err: any) => {
         this.saving = false;
-        this.notification.add({ module: 'Fichas',
-          severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'No se pudo crear la ficha',
-        });
+        this.cdr.markForCheck();
+        this.notification.add({ module: 'Fichas', severity: 'error', summary: 'Error', detail: err.error?.message || (this.esEditando ? 'No se pudo actualizar la ficha' : 'No se pudo crear la ficha') });
       },
     });
   }

@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -15,10 +16,15 @@ import { ConfirmationService } from 'primeng/api';
 import { SitioService } from '../../infrastructure/services/sitio.service';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
+import { ProductoService } from '../../infrastructure/services/producto.service';
 
 interface Bodega {
   id_sitio?: number;
   nombre: string;
+  tipo?: string;
+  tipo_personalizado?: string | null;
+  codigo_lugar?: string | null;
   id_responsable?: number | null;
   responsable?: { id_usuario: number; nombre?: string; correo: string };
   estado?: boolean;
@@ -60,9 +66,11 @@ interface Bodega {
             <tr>
               <th style="width:80px">ID</th>
               <th style="min-width:180px">Nombre de la Bodega</th>
+              <th style="min-width:130px">Tipo de Lugar</th>
               <th style="min-width:180px">Responsable</th>
+              <th style="width:90px" class="text-center">Ítems</th>
               <th style="min-width:100px" class="text-center">Estado</th>
-              <th style="width:130px" class="text-center">Acciones</th>
+              <th style="width:140px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-bodega>
@@ -73,6 +81,11 @@ interface Bodega {
                   <i class="pi pi-home text-indigo-500 text-base"></i>
                   <span class="nombre-cell font-semibold text-slate-700">{{ bodega.nombre }}</span>
                 </div>
+              </td>
+              <td>
+                <p-tag [value]="getTipoLabel(bodega)" severity="secondary"
+                  styleClass="px-2 py-1 text-xs font-bold rounded-lg"></p-tag>
+                <span *ngIf="bodega.codigo_lugar" class="block text-xs text-slate-400 font-mono mt-1">{{ bodega.codigo_lugar }}</span>
               </td>
               <td>
                 <div *ngIf="bodega.responsable || bodega.id_responsable; else sinResponsable">
@@ -86,12 +99,25 @@ interface Bodega {
                 </ng-template>
               </td>
               <td class="text-center">
+                <span *ngIf="contarItemsBodega(bodega.id_sitio) > 0"
+                  style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700">
+                  <i class="pi pi-box" style="font-size:11px"></i>
+                  {{ contarItemsBodega(bodega.id_sitio) }}
+                </span>
+                <span *ngIf="contarItemsBodega(bodega.id_sitio) === 0"
+                  style="color:#94a3b8;font-size:12px">—</span>
+              </td>
+              <td class="text-center">
                 <p-tag [value]="bodega.estado !== false ? 'Activa' : 'Inactiva'"
                   [severity]="bodega.estado !== false ? 'success' : 'danger'"
                   styleClass="px-2 py-1 text-xs font-bold rounded-lg"></p-tag>
               </td>
               <td>
                 <div class="action-buttons justify-center">
+                  <button pButton icon="pi pi-eye"
+                    class="btn-table-action btn-ver"
+                    pTooltip="Ver ítems en esta bodega" tooltipPosition="top"
+                    (click)="verItemsBodega(bodega)"></button>
                   <button *ngIf="esAdmin()" pButton icon="pi pi-pencil"
                     class="btn-table-action btn-editor"
                     (click)="editar(bodega)" pTooltip="Editar bodega"></button>
@@ -104,7 +130,7 @@ interface Bodega {
           </ng-template>
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="5" class="empty-message">
+              <td colspan="7" class="empty-message">
                 <i class="pi pi-home"></i>
                 <p>No hay bodegas registradas</p>
               </td>
@@ -113,6 +139,65 @@ interface Bodega {
         </p-table>
       </div>
     </div>
+
+    <!-- Diálogo ítems de la bodega -->
+    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+      [header]="'📦 Ítems en: ' + (bodegaVista?.nombre ?? '')"
+      [(visible)]="displayItemsDialog" [modal]="true"
+      [style]="{ width: '95vw', maxWidth: '720px' }"
+      [draggable]="true" [resizable]="false"
+      styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
+
+      <div *ngIf="itemsDeBodegaVista.length === 0" style="text-align:center;padding:2.5rem 0;color:#94a3b8">
+        <i class="pi pi-box" style="font-size:2.5rem;display:block;margin-bottom:0.75rem"></i>
+        <p style="font-weight:600">Esta bodega no tiene ítems registrados</p>
+      </div>
+
+      <p-table *ngIf="itemsDeBodegaVista.length > 0"
+        [value]="itemsDeBodegaVista" [paginator]="itemsDeBodegaVista.length > 10"
+        [rows]="10" styleClass="modern-table" [rowHover]="true">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width:70px">ID</th>
+            <th>SKU</th>
+            <th>Placa SENA</th>
+            <th>Producto</th>
+            <th class="text-center">Estado</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td><span class="id-badge">#{{ item.id_item }}</span></td>
+            <td><span style="font-family:monospace;font-size:12px;color:#475569">{{ item.codigo_sku || '—' }}</span></td>
+            <td>
+              <span *ngIf="item.placa_sena"
+                style="font-family:monospace;font-size:12px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:2px 8px">
+                {{ item.placa_sena }}
+              </span>
+              <span *ngIf="!item.placa_sena" style="color:#94a3b8;font-size:12px">Sin placa</span>
+            </td>
+            <td>
+              <span style="font-weight:600;color:#1e293b;font-size:13px">
+                {{ item.producto?.nombre || '—' }}
+              </span>
+            </td>
+            <td class="text-center">
+              <p-tag
+                [value]="item.estado"
+                [severity]="item.estado === 'DISPONIBLE' ? 'success' : item.estado === 'PRESTADO' ? 'warn' : 'danger'"
+                styleClass="px-2 py-1 text-xs font-bold rounded-lg">
+              </p-tag>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <ng-template pTemplate="footer">
+        <div class="dialog-footer">
+          <button pButton label="Cerrar" class="btn-cancelar" (click)="displayItemsDialog = false"></button>
+        </div>
+      </ng-template>
+    </p-dialog>
 
     <!-- Diálogo Crear / Editar -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
@@ -128,6 +213,36 @@ interface Bodega {
           <label for="nombre">Nombre de la Bodega *</label>
           <input pInputText id="nombre" [(ngModel)]="bodega.nombre"
             placeholder="Ej: Bodega Principal Gastronomía" />
+        </div>
+
+        <!-- Tipo de lugar -->
+        <div class="form-field">
+          <label for="tipo">Tipo de Lugar *</label>
+          <p-select id="tipo"
+            [ngModel]="bodega.tipo"
+            (ngModelChange)="onTipoChange($event)"
+            [options]="tiposLugar" optionLabel="label" optionValue="value"
+            placeholder="Seleccione el tipo de lugar"
+            [filter]="true" filterPlaceholder="Buscar tipo..."
+            appendTo="body" styleClass="w-full">
+          </p-select>
+        </div>
+
+        <!-- Tipo personalizado (solo si tipo = OTRO) -->
+        <div class="form-field" *ngIf="bodega.tipo === 'OTRO'">
+          <label for="tipo_personalizado">Especifica el tipo de lugar *</label>
+          <input pInputText id="tipo_personalizado" [(ngModel)]="bodega.tipo_personalizado"
+            placeholder="Ej: Auditorio, Cafetería, Taller..." />
+        </div>
+
+        <!-- Código / identificador del lugar (siempre que haya un tipo seleccionado) -->
+        <div class="form-field" *ngIf="bodega.tipo">
+          <label for="codigo_lugar">Código del lugar</label>
+          <input pInputText id="codigo_lugar" [(ngModel)]="bodega.codigo_lugar"
+            placeholder="Ej: Y-14, A-201..." />
+          <small class="text-slate-400 text-xs mt-1 block">
+            Identifica este lugar específico (útil cuando hay varios del mismo tipo, ej. varios ambientes en TIC).
+          </small>
         </div>
 
         <!-- Responsable -->
@@ -173,22 +288,47 @@ interface Bodega {
     </p-dialog>
   `
 })
-export class BodegaComponent implements OnInit {
+export class BodegaComponent implements OnInit, OnDestroy {
   private sitioService = inject(SitioService);
   private usuarioService = inject(UsuarioService);
+  private productoService = inject(ProductoService);
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
+  private apiService = inject(ApiService);
+  private changesSub!: Subscription;
 
   bodegas: Bodega[] = [];
   bodegasFiltradas: Bodega[] = [];
   usuariosResponsables: any[] = [];
+  todosLosItems: any[] = [];
+  displayItemsDialog = false;
+  bodegaVista: Bodega | null = null;
+  itemsDeBodegaVista: any[] = [];
   filtro = '';
   displayDialog = false;
   esNueva = true;
   saving = false;
   bodega: Bodega = this.nuevaBodega();
+
+  readonly tiposLugar = [
+    { label: 'Bodega', value: 'BODEGA' },
+    { label: 'Ambiente', value: 'AMBIENTE' },
+    { label: 'Laboratorio', value: 'LABORATORIO' },
+    { label: 'Otro', value: 'OTRO' },
+  ];
+
+  onTipoChange(value: string) {
+    this.bodega.tipo = value;
+    if (value !== 'OTRO') this.bodega.tipo_personalizado = null;
+  }
+
+  getTipoLabel(b: Bodega): string {
+    if (b.tipo === 'OTRO') return b.tipo_personalizado || 'Otro';
+    const found = this.tiposLugar.find(t => t.value === b.tipo);
+    return found ? found.label : (b.tipo || '—');
+  }
 
   esAdmin(): boolean {
     return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
@@ -197,15 +337,26 @@ export class BodegaComponent implements OnInit {
   ngOnInit() {
     this.cargarBodegas();
     this.cargarUsuarios();
+    this.cargarItems();
+    this.changesSub = this.apiService.changes.subscribe(() => {
+      this.cargarBodegas();
+      this.cargarItems();
+    });
   }
+
+  ngOnDestroy() {
+    this.changesSub.unsubscribe();
+  }
+
+  private readonly TIPOS_VALIDOS = ['BODEGA', 'AMBIENTE', 'LABORATORIO', 'OTRO'];
 
   cargarBodegas() {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
         const all: any[] = res?.data || res || [];
-        this.bodegas = all.filter(s => s.tipo === 'BODEGA');
+        this.bodegas = all.filter(s => this.TIPOS_VALIDOS.includes(s.tipo));
         this.bodegasFiltradas = [...this.bodegas];
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: () => {
         this.bodegas = [];
@@ -228,16 +379,39 @@ export class BodegaComponent implements OnInit {
           displayName: `${u.nombre || ''} ${u.apellidos || ''}`.trim() || u.correo,
           rolNombre: u.rolNombre || u.rol?.nombre || '',
         }));
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: () => { this.usuariosResponsables = []; },
     });
+  }
+
+  cargarItems() {
+    this.productoService.getAllItems().subscribe({
+      next: (res: any) => {
+        this.todosLosItems = res?.data ?? res ?? [];
+        this.cdr.markForCheck();
+      },
+      error: () => { this.todosLosItems = []; },
+    });
+  }
+
+  contarItemsBodega(idSitio: number | undefined): number {
+    if (!idSitio) return 0;
+    return this.todosLosItems.filter(i => i.id_sitio === idSitio).length;
+  }
+
+  verItemsBodega(b: Bodega) {
+    this.bodegaVista = b;
+    this.itemsDeBodegaVista = this.todosLosItems.filter(i => i.id_sitio === b.id_sitio);
+    this.displayItemsDialog = true;
   }
 
   filtrar() {
     const f = this.filtro.toLowerCase();
     this.bodegasFiltradas = this.bodegas.filter(b =>
       b.nombre?.toLowerCase().includes(f) ||
+      this.getTipoLabel(b).toLowerCase().includes(f) ||
+      b.codigo_lugar?.toLowerCase().includes(f) ||
       b.responsable?.nombre?.toLowerCase().includes(f) ||
       b.responsable?.correo?.toLowerCase().includes(f)
     );
@@ -250,7 +424,7 @@ export class BodegaComponent implements OnInit {
   }
 
   nuevaBodega(): Bodega {
-    return { nombre: '', id_responsable: null, estado: true };
+    return { nombre: '', tipo: 'BODEGA', tipo_personalizado: null, codigo_lugar: null, id_responsable: null, estado: true };
   }
 
   openNew() {
@@ -270,6 +444,14 @@ export class BodegaComponent implements OnInit {
       this.notification.warn('El nombre de la bodega es requerido', 'Bodegas');
       return;
     }
+    if (!this.bodega.tipo) {
+      this.notification.warn('Debe seleccionar el tipo de lugar', 'Bodegas');
+      return;
+    }
+    if (this.bodega.tipo === 'OTRO' && !this.bodega.tipo_personalizado?.trim()) {
+      this.notification.warn('Debe especificar el tipo de lugar', 'Bodegas');
+      return;
+    }
     if (!this.bodega.id_responsable) {
       this.notification.warn('Debe seleccionar un responsable', 'Bodegas');
       return;
@@ -277,7 +459,9 @@ export class BodegaComponent implements OnInit {
 
     const payload = {
       nombre: this.bodega.nombre.trim(),
-      tipo: 'BODEGA',
+      tipo: this.bodega.tipo,
+      tipo_personalizado: this.bodega.tipo === 'OTRO' ? this.bodega.tipo_personalizado!.trim() : null,
+      codigo_lugar: this.bodega.codigo_lugar?.trim() || null,
       id_responsable: this.bodega.id_responsable,
       estado: true,
     };

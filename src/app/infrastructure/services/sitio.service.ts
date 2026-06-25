@@ -10,7 +10,7 @@ export class SitioService {
     return this.api.get<any>('/sitios');
   }
 
-  crearSitio(data: { nombre: string; tipo: string; id_responsable?: number | null; id_centro?: number | null; estado?: boolean }): Observable<any> {
+  crearSitio(data: { nombre: string; tipo: string; tipo_personalizado?: string | null; codigo_lugar?: string | null; id_responsable?: number | null; id_centro?: number | null; estado?: boolean }): Observable<any> {
     return this.api.post<any>('/sitios', data);
   }
 

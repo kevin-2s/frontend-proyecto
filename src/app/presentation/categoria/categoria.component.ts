@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef} from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -14,6 +15,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmationService } from 'primeng/api';
 import { CategoriaService } from '../../infrastructure/services/categoria.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 
 interface Categoria {
   id?: number;
@@ -148,12 +150,14 @@ interface Categoria {
     </p-dialog>
   `
 })
-export class CategoriaComponent implements OnInit {
+export class CategoriaComponent implements OnInit, OnDestroy {
   private categoriaService = inject(CategoriaService);
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
+  private apiService = inject(ApiService);
+  private changesSub!: Subscription;
 
   esAdmin(): boolean {
     return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
@@ -166,27 +170,28 @@ export class CategoriaComponent implements OnInit {
   categoria: Categoria = this.getNuevaCategoria();
   ngOnInit() {
     this.cargarCategorias();
+    this.changesSub = this.apiService.changes.subscribe(() => this.cargarCategorias());
+  }
+
+  ngOnDestroy() {
+    this.changesSub.unsubscribe();
   }
   cargarCategorias() {
     this.categoriaService.getCategorias().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        setTimeout(() => {
-          this.categorias = d.map((c: any) => ({
-            ...c,
-            id: c.id_categoria ?? c.id,
-            nombre: c.nombre
-          }));
-          this.categoriasFiltradas = [...this.categorias];
-          this.cdr.detectChanges();
-        });
+        this.categorias = d.map((c: any) => ({
+          ...c,
+          id: c.id_categoria ?? c.id,
+          nombre: c.nombre
+        }));
+        this.categoriasFiltradas = [...this.categorias];
+        this.cdr.markForCheck();
       },
       error: () => {
-        setTimeout(() => {
-          this.categorias = [];
-          this.categoriasFiltradas = [];
-          this.cdr.detectChanges();
-        });
+        this.categorias = [];
+        this.categoriasFiltradas = [];
+        this.cdr.markForCheck();
       },
     });
   }

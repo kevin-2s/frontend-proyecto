@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -16,6 +17,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { NovedadService } from '../../infrastructure/services/novedad.service';
 import { ProductoService } from '../../infrastructure/services/producto.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 
 interface Novedad {
   id_novedad?: number;
@@ -47,6 +49,7 @@ const TIPOS_NOVEDAD = [
     SelectModule, TextareaModule,
   ],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService],
   template: `
     <p-toast position="bottom-right"></p-toast>
@@ -247,6 +250,7 @@ const TIPOS_NOVEDAD = [
             optionLabel="label"
             optionValue="value"
             placeholder="Seleccionar tipo..."
+            [filter]="true" filterPlaceholder="Buscar tipo..."
             appendTo="body"
             style="width:100%">
           </p-select>
@@ -282,12 +286,15 @@ const TIPOS_NOVEDAD = [
     </p-dialog>
   `
 })
-export class NovedadesComponent implements OnInit {
+export class NovedadesComponent implements OnInit, OnDestroy {
   private novedadService = inject(NovedadService);
   private productoService = inject(ProductoService);
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private authService = inject(AuthService);
+  private apiService = inject(ApiService);
+  private cdr = inject(ChangeDetectorRef);
+  private changesSub!: Subscription;
 
   novedades: Novedad[] = [];
   novedadesFiltradas: Novedad[] = [];
@@ -310,6 +317,11 @@ export class NovedadesComponent implements OnInit {
   ngOnInit() {
     this.cargar();
     this.cargarItems();
+    this.changesSub = this.apiService.changes.subscribe(() => this.cargar());
+  }
+
+  ngOnDestroy() {
+    this.changesSub.unsubscribe();
   }
 
   cargar() {
@@ -318,6 +330,7 @@ export class NovedadesComponent implements OnInit {
         const data = res?.data ?? res ?? [];
         this.novedades = data;
         this.novedadesFiltradas = data;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.novedades = [];
@@ -334,8 +347,9 @@ export class NovedadesComponent implements OnInit {
           label: `${i.producto?.nombre ?? 'Item'} — ${i.codigo_sku ?? i.id_item ?? i.id}`,
           value: i.id_item ?? i.id,
         }));
+        this.cdr.markForCheck();
       },
-      error: () => { this.itemsOpciones = []; },
+      error: () => { this.itemsOpciones = []; this.cdr.markForCheck(); },
     });
   }
 

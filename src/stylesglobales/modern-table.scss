@@ -371,6 +371,161 @@ $bg-soft:    #F8FAFC;
     color: #EF4444 !important;
     &:hover { background: #EF4444 !important; color: #fff !important; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(239,68,68,0.3); }
   }
+
+  &.btn-ver {
+    background: #ECFDF5 !important;
+    color: #10B981 !important;
+    &:hover { background: #10B981 !important; color: #fff !important; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(16,185,129,0.3); }
+  }
+
+  &.btn-anular {
+    background: #FFF7ED !important;
+    color: #F97316 !important;
+    &:hover { background: #F97316 !important; color: #fff !important; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(249,115,22,0.3); }
+  }
+}
+
+/* ── PrimeNG Tooltip (pTooltip) — sin tema oficial cargado, así que se
+   le da fondo y sombra propios para que sea legible sobre cualquier
+   elemento (ej. botones de acción muy próximos entre sí) ────────── */
+.p-tooltip {
+  z-index: 100000 !important;
+
+  .p-tooltip-text {
+    background: $navy !important;
+    color: #fff !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    padding: 0.45rem 0.85rem !important;
+    border-radius: 8px !important;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.35) !important;
+    white-space: nowrap !important;
+    line-height: 1.3 !important;
+  }
+
+  .p-tooltip-arrow {
+    border-color: transparent !important;
+  }
+
+  &.p-tooltip-top .p-tooltip-arrow { border-top-color: $navy !important; }
+  &.p-tooltip-bottom .p-tooltip-arrow { border-bottom-color: $navy !important; }
+  &.p-tooltip-left .p-tooltip-arrow { border-left-color: $navy !important; }
+  &.p-tooltip-right .p-tooltip-arrow { border-right-color: $navy !important; }
+}
+
+/* ── ConfirmDialog (<p-confirmDialog>) — el proyecto no carga el tema
+   oficial de PrimeNG, así que este componente (que internamente usa su
+   propio <p-dialog> sin la clase .form-dialog) sale completamente sin
+   estilos por defecto. Se le da aquí una tarjeta consistente con el
+   resto de diálogos del proyecto ──────────────────────────────────── */
+.p-confirmdialog {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18) !important;
+  max-width: 460px !important;
+
+  .p-dialog-header {
+    background: #fff !important;
+    padding: 1.5rem 1.75rem 0.5rem !important;
+    border-bottom: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+  }
+
+  .p-dialog-title {
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    color: $navy !important;
+  }
+
+  .p-dialog-header-actions {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .p-dialog-close-button {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #64748b !important;
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease !important;
+
+    &:hover { background: #f1f5f9 !important; }
+  }
+
+  .p-dialog-content {
+    background: #fff !important;
+    padding: 1rem 1.75rem 1.5rem !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 0.85rem !important;
+  }
+
+  .p-dialog-footer {
+    background: #fff !important;
+    border-top: none !important;
+    padding: 0 1.75rem 1.5rem !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 0.75rem !important;
+  }
+
+  .p-confirmdialog-icon {
+    flex-shrink: 0 !important;
+    font-size: 1.5rem !important;
+    color: #f59e0b !important;
+    margin-top: 2px !important;
+  }
+
+  .p-confirmdialog-message {
+    font-size: 0.9rem !important;
+    color: $slate-mid !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Botones <p-button> internos del footer (no usan pButton directive) */
+  .p-dialog-footer .p-button {
+    padding: 0.55rem 1.25rem !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    cursor: pointer !important;
+    border: 1px solid transparent !important;
+    transition: all 0.2s ease !important;
+    background: linear-gradient(135deg, $green 0%, #2D8600 100%) !important;
+    color: #fff !important;
+
+    &:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 12px rgba(57, 169, 0, 0.3) !important;
+    }
+
+    &.p-button-secondary {
+      background: #fff !important;
+      color: #6b7280 !important;
+      border-color: #d1d5db !important;
+      &:hover { background: #f3f4f6 !important; border-color: #9ca3af !important; box-shadow: none !important; }
+    }
+
+    &.p-button-danger {
+      background: #ef4444 !important;
+      color: #fff !important;
+      &:hover { background: #dc2626 !important; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important; }
+    }
+
+    &.p-button-success {
+      background: linear-gradient(135deg, $green 0%, #2D8600 100%) !important;
+      color: #fff !important;
+    }
+  }
 }
 
 /* ── Form dialog ───────────────────────────────────── */

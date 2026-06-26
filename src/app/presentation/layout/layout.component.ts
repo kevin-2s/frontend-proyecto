@@ -304,14 +304,18 @@ export class LayoutComponent implements OnInit, OnDestroy {
       expanded: true,
       items: [
         { title: 'Productos', path: 'inventario/productos', icon: 'pi-box' },
-        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' }
+        { title: 'Categorías', path: 'inventario/categoria', icon: 'pi-tag' },
+        { title: 'Bodegas', path: 'inventario/bodega', icon: 'pi-home' },
+        { title: 'Solicitudes', path: 'inventario/solicitudes', icon: 'pi-inbox' },
+        { title: 'Asignar', path: 'inventario/asignar', icon: 'pi-user-plus' },
+        { title: 'Novedades', path: 'inventario/novedades', icon: 'pi-exclamation-circle' },
+        { title: 'Traslados', path: 'inventario/traslados', icon: 'pi-truck' }
       ]
     },
     {
       title: 'MOVIMIENTOS',
       expanded: true,
       items: [
-        { title: 'Solicitudes', path: 'solicitudes', icon: 'pi-inbox' },
         { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h' },
         { title: 'Préstamos', path: 'prestamos', icon: 'pi-send' },
         { title: 'Kardex', path: 'kardex', icon: 'pi-history' }
@@ -459,18 +463,18 @@ export class LayoutComponent implements OnInit, OnDestroy {
     
     if (role === 'INSTRUCTOR') {
       const instructorPaths = [
-        'sedes', 'sitios', 'areas', 'programas', 'fichas', 
-        'inventario/productos', 'inventario/categoria', 
-        'solicitudes', 'movimientos', 'home', 
+        'sedes', 'sitios', 'areas', 'programas', 'fichas',
+        'inventario/productos', 'inventario/categoria', 'inventario/bodega', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades', 'inventario/traslados',
+        'movimientos', 'home',
         'kardex', 'reportes', 'qr'
       ];
       return instructorPaths.includes(path);
     }
-    
+
     if (role === 'APRENDIZ') {
       const aprendizPaths = [
-        'inventario/productos', 'inventario/categoria', 
-        'solicitudes', 'home', 'qr'
+        'inventario/productos', 'inventario/categoria', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades',
+        'home', 'qr'
       ];
       return aprendizPaths.includes(path);
     }

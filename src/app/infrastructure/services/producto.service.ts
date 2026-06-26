@@ -37,4 +37,16 @@ export class ProductoService {
   crearItem(data: any): Observable<any> {
     return this.api.post<any>('/items', data);
   }
+
+  agregarItemAProducto(id_producto: number, placa_sena?: string): Observable<any> {
+    return this.api.post<any>(`/productos/${id_producto}/items`, placa_sena ? { placa_sena } : {});
+  }
+
+  actualizarItem(id_item: number, data: { placa_sena?: string | null; id_sitio?: number | null }): Observable<any> {
+    return this.api.patch<any>(`/items/${id_item}`, data);
+  }
+
+  buscarItemPorPlaca(placa: string): Observable<any> {
+    return this.api.get<any>(`/items/buscar/${encodeURIComponent(placa)}`);
+  }
 }

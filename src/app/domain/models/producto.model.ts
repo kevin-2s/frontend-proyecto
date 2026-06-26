@@ -1,15 +1,16 @@
-export interface Producto { 
+export interface Producto {
   id_producto: number;
-  nombre: string; 
-  descripcion?: string; 
-  codigo_unspsc?: string; 
-  SKU: string; 
+  nombre: string;
+  descripcion?: string;
+  codigo_unspsc?: string;
+  SKU: string;
   tipo_material: string;
   unidad_medida: string;
   es_psd: boolean;
   fecha_vencimiento?: string;
   id_categoria?: number;
   stock_minimo: number;
+  id_sitio?: number | null;
   categoria?: {
     id_categoria: number;
     nombre: string;

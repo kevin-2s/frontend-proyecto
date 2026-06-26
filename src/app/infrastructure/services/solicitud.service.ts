@@ -16,6 +16,8 @@ export class SolicitudService {
 
   crearSolicitud(data: {
     tipo: string;
+    id_producto: number;
+    cantidad: number;
     observacion?: string;
     id_usuario: number;
     id_ficha?: number;

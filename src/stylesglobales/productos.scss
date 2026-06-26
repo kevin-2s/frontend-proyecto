@@ -211,3 +211,174 @@
     font-size: 1.1rem !important;
   }
 }
+
+/* ── Diálogo "Ver items del lote" ──────────────────────────────── */
+.items-dialog .p-dialog-content {
+  padding: 1.5rem 1.75rem !important;
+}
+
+.items-dialog-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.25rem !important;
+}
+
+.items-summary-card {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  flex-wrap: wrap !important;
+  background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%) !important;
+  border: 1px solid #dcfce7 !important;
+  border-radius: 16px !important;
+  padding: 1rem 1.25rem !important;
+}
+
+.items-summary-main {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.85rem !important;
+  min-width: 0 !important;
+}
+
+.items-summary-icon {
+  flex-shrink: 0 !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  background: #39A900 !important;
+  color: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.1rem !important;
+  box-shadow: 0 4px 10px rgba(57, 169, 0, 0.3) !important;
+}
+
+.items-summary-name {
+  display: block !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1.25 !important;
+}
+
+.items-summary-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  font-size: 0.78rem !important;
+  color: #64748b !important;
+  margin-top: 2px !important;
+}
+
+.items-summary-dot {
+  color: #cbd5e1 !important;
+}
+
+.items-stats-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 0.85rem !important;
+}
+
+.items-stat {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.7rem !important;
+  padding: 0.85rem 0.9rem !important;
+  border-radius: 14px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #fff !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+
+  &:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
+  }
+}
+
+.items-stat-icon {
+  flex-shrink: 0 !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1rem !important;
+}
+
+.items-stat-text {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+.items-stat-value {
+  display: block !important;
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1.1 !important;
+}
+
+.items-stat-label {
+  display: block !important;
+  font-size: 0.66rem !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+  white-space: nowrap !important;
+}
+
+.items-stat-total {
+  border-color: #c7d2fe !important;
+  .items-stat-icon { background: #eef2ff !important; color: #4f46e5 !important; }
+}
+
+.items-stat-disponible {
+  border-color: #bbf7d0 !important;
+  .items-stat-icon { background: #dcfce7 !important; color: #16a34a !important; }
+  .items-stat-value { color: #16a34a !important; }
+}
+
+.items-stat-prestado {
+  border-color: #fde68a !important;
+  .items-stat-icon { background: #fef3c7 !important; color: #d97706 !important; }
+  .items-stat-value { color: #d97706 !important; }
+}
+
+.items-stat-danado {
+  border-color: #fecaca !important;
+  .items-stat-icon { background: #fee2e2 !important; color: #dc2626 !important; }
+  .items-stat-value { color: #dc2626 !important; }
+}
+
+@media (max-width: 640px) {
+  .items-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .items-stat-label {
+    white-space: normal !important;
+  }
+}
+
+/* ── Diálogo Placas SENA ──────────────────────────────────────────── */
+.placa-dialog .p-dialog-content {
+  padding: 0 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+.placa-dialog {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18) !important;
+}

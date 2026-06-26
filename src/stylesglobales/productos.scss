@@ -369,3 +369,16 @@
     white-space: normal !important;
   }
 }
+
+/* ── Diálogo Placas SENA ──────────────────────────────────────────── */
+.placa-dialog .p-dialog-content {
+  padding: 0 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+.placa-dialog {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18) !important;
+}

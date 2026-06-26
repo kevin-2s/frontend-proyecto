@@ -272,8 +272,16 @@ type SelectOption = { label: string; value: string };
             </small>
           </div>
           <div *ngIf="!esGastronomia" class="form-field" style="flex:1">
-            <label for="SKU">SKU *</label>
-            <input pInputText id="SKU" formControlName="SKU" placeholder="Ej: ARR-001" />
+            <label for="SKU">SKU <span style="color:#94a3b8;font-weight:400;font-size:11px">(opcional)</span></label>
+            <input pInputText id="SKU" formControlName="SKU"
+              style="font-family:monospace;font-weight:700"
+              placeholder="Ej: DEL-1  (se genera solo si lo dejas vacío)" />
+            <small style="color:#6366f1;font-size:11px;margin-top:4px;display:flex;align-items:center;gap:4px">
+              <i class="pi pi-bolt"></i>
+              <span *ngIf="esNuevo && skuEsAuto">Auto-generando del nombre — escribe aquí para personalizarlo.</span>
+              <span *ngIf="esNuevo && !skuEsAuto">SKU personalizado. Bórralo para volver al automático.</span>
+              <span *ngIf="!esNuevo">Puedes cambiar el SKU si lo necesitas.</span>
+            </small>
           </div>
         </div>
 
@@ -985,61 +993,108 @@ type SelectOption = { label: string; value: string };
 
     <!-- ===== DIÁLOGO PLACAS SENA ===== -->
     <p-dialog
-      header="📋 Asignar Placas SENA"
       [(visible)]="displayPlacasDialog" [modal]="true"
-      [style]="{ width: '90vw', maxWidth: '460px' }"
+      [style]="{ width: '92vw', maxWidth: '480px' }"
       [draggable]="false" [resizable]="false" [closable]="false"
-      styleClass="form-dialog shadow-2xl" appendTo="body">
+      [showHeader]="false" styleClass="placa-dialog" appendTo="body">
 
-      <div style="padding:0.5rem 0">
-        <!-- Progreso -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-          <span style="font-size:0.85rem;color:#64748b;font-weight:700;letter-spacing:.03em">
-            ÍTEM {{ placaActualIndex + 1 }} DE {{ itemsParaPlaca.length }}
-          </span>
-          <div style="display:flex;gap:5px;align-items:center">
-            <span *ngFor="let it of itemsParaPlaca; let i = index"
-              [style.width]="'10px'" [style.height]="'10px'" [style.border-radius]="'50%'"
-              [style.background]="i < placaActualIndex ? '#10B981' : i === placaActualIndex ? '#39A900' : '#e2e8f0'"
-              style="display:inline-block;transition:background .25s">
+      <div style="border-radius:16px;overflow:hidden">
+
+        <!-- Header con gradiente -->
+        <div style="background:linear-gradient(135deg,#39A900 0%,#2d8000 100%);padding:1.5rem 1.75rem 1.25rem;position:relative">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem">
+            <div style="width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center">
+              <i class="pi pi-id-card" style="color:#fff;font-size:17px"></i>
+            </div>
+            <div>
+              <div style="color:#fff;font-size:1rem;font-weight:600;line-height:1.1">Asignar Placas SENA</div>
+              <div style="color:rgba(255,255,255,.75);font-size:11px;font-weight:400">Registro de identificación física</div>
+            </div>
+          </div>
+
+          <!-- Barra de progreso -->
+          <div style="background:rgba(255,255,255,.2);border-radius:999px;height:6px;overflow:hidden">
+            <div [style.width]="((placaActualIndex + 1) / itemsParaPlaca.length * 100) + '%'"
+              style="height:100%;background:#fff;border-radius:999px;transition:width .4s ease">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px">
+            <span style="color:rgba(255,255,255,.8);font-size:10px;font-weight:600">
+              Ítem {{ placaActualIndex + 1 }} de {{ itemsParaPlaca.length }}
+            </span>
+            <div style="display:flex;gap:4px">
+              <span *ngFor="let it of itemsParaPlaca; let i = index"
+                [style.width]="'8px'" [style.height]="'8px'" [style.border-radius]="'50%'"
+                [style.background]="i < placaActualIndex ? '#fff' : i === placaActualIndex ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.3)'"
+                [style.transform]="i === placaActualIndex ? 'scale(1.3)' : 'scale(1)'"
+                style="display:inline-block;transition:all .25s">
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cuerpo -->
+        <div style="padding:1.5rem 1.75rem;background:#fff">
+
+          <!-- Card del ítem -->
+          <div style="background:linear-gradient(135deg,#f0fdf4,#f8fafc);border:1.5px solid #bbf7d0;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:14px">
+            <div style="width:42px;height:42px;background:#39A900;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="pi pi-box" style="color:#fff;font-size:18px"></i>
+            </div>
+            <div style="min-width:0">
+              <div style="font-size:10px;color:#6b7280;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px">Código SKU del ítem</div>
+              <div style="font-size:1rem;font-weight:600;color:#111827;font-family:monospace;letter-spacing:.03em">
+                {{ itemsParaPlaca[placaActualIndex]?.codigo_sku ?? '—' }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Input placa -->
+          <div style="margin-bottom:1.25rem">
+            <label style="display:block;font-weight:500;color:#374151;font-size:13px;margin-bottom:.5rem">
+              Placa SENA
+              <span style="color:#ef4444;margin-left:2px">*</span>
+              <span style="color:#94a3b8;font-weight:400;font-size:11px;margin-left:6px">identificación física del equipo</span>
+            </label>
+            <div style="position:relative">
+              <i class="pi pi-tag" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#39A900;font-size:15px;z-index:1"></i>
+              <input pInputText
+                [(ngModel)]="placaActualValor"
+                placeholder="Ej: SENA-2024-001"
+                style="width:100%;padding-left:2.5rem;font-family:monospace;text-transform:uppercase;letter-spacing:.05em;font-size:.95rem;font-weight:400;border:1.5px solid #e2e8f0;border-radius:10px;transition:border-color .2s;box-sizing:border-box"
+                (keydown.enter)="guardarPlacaYSiguiente()"
+                [disabled]="guardandoPlaca"
+                autofocus />
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:.5rem">
+              <kbd style="background:#f1f5f9;border:1px solid #cbd5e1;border-bottom-width:2px;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:500;color:#475569">Enter</kbd>
+              <span style="font-size:11px;color:#94a3b8">avanza al siguiente ítem automáticamente</span>
+            </div>
+          </div>
+
+          <!-- Tip -->
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:.7rem 1rem;display:flex;gap:8px;align-items:flex-start">
+            <i class="pi pi-lightbulb" style="color:#d97706;font-size:14px;margin-top:1px;flex-shrink:0"></i>
+            <span style="font-size:11px;color:#92400e;line-height:1.5">
+              Si el ítem <b>no tiene placa SENA</b> asignada aún, usa <b>Omitir</b> — podrás registrarla después desde la vista de ítems.
             </span>
           </div>
         </div>
 
-        <!-- Info del item -->
-        <div style="background:#f8fafc;border-radius:12px;padding:.875rem 1rem;margin-bottom:1.25rem;border:1px solid #e2e8f0">
-          <div style="font-size:.7rem;color:#94a3b8;font-weight:700;letter-spacing:.06em;margin-bottom:.25rem">CÓDIGO SKU</div>
-          <div style="font-size:1rem;font-weight:700;color:#111827;font-family:monospace">
-            {{ itemsParaPlaca[placaActualIndex]?.codigo_sku ?? '—' }}
-          </div>
+        <!-- Footer -->
+        <div style="padding:1rem 1.75rem 1.5rem;background:#f8fafc;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:.75rem">
+          <button pButton label="Omitir" icon="pi pi-step-forward"
+            style="background:#fff;color:#64748b;border:1.5px solid #e2e8f0;border-radius:9px;font-weight:400;padding:.55rem 1.1rem;font-size:13px"
+            [disabled]="guardandoPlaca" (click)="omitirPlacaActual()">
+          </button>
+          <button pButton
+            [label]="placaActualIndex < itemsParaPlaca.length - 1 ? 'Guardar y siguiente' : 'Finalizar'"
+            [icon]="placaActualIndex < itemsParaPlaca.length - 1 ? 'pi pi-arrow-right' : 'pi pi-check-circle'"
+            style="background:linear-gradient(135deg,#39A900,#2d8000);border:none;border-radius:9px;font-weight:500;padding:.55rem 1.3rem;font-size:13px;color:#fff"
+            [loading]="guardandoPlaca"
+            (click)="guardarPlacaYSiguiente()">
+          </button>
         </div>
-
-        <!-- Input placa -->
-        <div class="form-field">
-          <label>Placa SENA <span style="color:#ef4444">*</span></label>
-          <input pInputText
-            [(ngModel)]="placaActualValor"
-            placeholder="Ej: SENA-2024-001"
-            style="width:100%;font-family:monospace;text-transform:uppercase;letter-spacing:.05em;font-size:1rem"
-            (keydown.enter)="guardarPlacaYSiguiente()"
-            [disabled]="guardandoPlaca" />
-          <small style="color:#64748b;margin-top:5px;display:block">
-            Presiona <kbd style="background:#f1f5f9;border:1px solid #cbd5e1;padding:1px 6px;border-radius:4px;font-size:.72rem">Enter</kbd>
-            para avanzar al siguiente ítem automáticamente
-          </small>
-        </div>
-      </div>
-
-      <div class="dialog-footer">
-        <button pButton label="Omitir" icon="pi pi-forward" class="btn-cancelar"
-          [disabled]="guardandoPlaca" (click)="omitirPlacaActual()">
-        </button>
-        <button pButton
-          [label]="placaActualIndex < itemsParaPlaca.length - 1 ? 'Guardar y siguiente' : 'Finalizar'"
-          [icon]="placaActualIndex < itemsParaPlaca.length - 1 ? 'pi pi-arrow-right' : 'pi pi-check'"
-          class="btn-guardar" [loading]="guardandoPlaca"
-          (click)="guardarPlacaYSiguiente()">
-        </button>
       </div>
     </p-dialog>
   `
@@ -1059,6 +1114,8 @@ export class ProductosComponent implements OnInit, OnDestroy {
   private fichaService = inject(FichaService);
   private apiService = inject(ApiService);
   private changesSub!: Subscription;
+  skuEsAuto = true;
+  private settingSkuAuto = false;
 
   esAdmin(): boolean {
     return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
@@ -1469,7 +1526,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
     nombre: ['', Validators.required],
     descripcion: [''],
     codigo_unspsc: [null],
-    SKU: ['', Validators.required],
+    SKU: [''],
     tipo_material: ['CONSUMO', Validators.required],
     unidad_medida: ['UNIDAD', Validators.required],
     es_psd: [false],
@@ -1533,6 +1590,31 @@ export class ProductosComponent implements OnInit, OnDestroy {
     this.cargarBodegas();
     this.cargarFichas();
     this.changesSub = this.apiService.changes.subscribe(() => this.cargarDatos());
+
+    // Auto-generar SKU mientras el usuario escribe el nombre (solo productos nuevos)
+    this.productoForm.get('nombre')!.valueChanges.subscribe((nombre: string) => {
+      if (!this.skuEsAuto) return;
+      const sku = this.generarSku(nombre || '');
+      this.settingSkuAuto = true;
+      this.productoForm.patchValue({ SKU: sku }, { emitEvent: false });
+      this.settingSkuAuto = false;
+    });
+
+    // Detectar edición manual del SKU: si el usuario borra el campo vuelve al auto-fill
+    this.productoForm.get('SKU')!.valueChanges.subscribe((val: string) => {
+      if (this.settingSkuAuto) return;
+      if (!val || !val.trim()) {
+        // Campo vacío → volver al auto-fill con el nombre actual
+        this.skuEsAuto = true;
+        const nombre = this.productoForm.get('nombre')?.value || '';
+        const sku = this.generarSku(nombre);
+        this.settingSkuAuto = true;
+        this.productoForm.patchValue({ SKU: sku }, { emitEvent: false });
+        this.settingSkuAuto = false;
+      } else {
+        this.skuEsAuto = false;
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -1656,11 +1738,12 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   private actualizarValidadoresSKU() {
     const skuControl = this.productoForm.get('SKU');
+    // SKU siempre opcional — se auto-genera del nombre para no gastronomía
     if (this.esGastronomia) {
       skuControl?.clearValidators();
       skuControl?.setValue(null);
     } else {
-      skuControl?.setValidators([Validators.required]);
+      skuControl?.clearValidators();
     }
     skuControl?.updateValueAndValidity();
   }
@@ -1691,14 +1774,29 @@ export class ProductosComponent implements OnInit, OnDestroy {
     (event.target as HTMLImageElement).style.display = 'none';
   }
 
+  private generarSku(nombre: string): string {
+    const clean = nombre.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const prefix = clean.substring(0, 3);
+    if (!prefix) return '';
+    const nums = (this.productos || [])
+      .map((p: any) => {
+        const sku: string = (p.SKU || '').toUpperCase();
+        if (!sku.startsWith(prefix + '-')) return NaN;
+        return parseInt(sku.split('-').pop() ?? '', 10);
+      })
+      .filter((n: number) => !isNaN(n) && n > 0);
+    const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+    return `${prefix}-${next}`;
+  }
+
   openNew() {
     this.esNuevo = true;
+    this.skuEsAuto = true;
+    this.settingSkuAuto = false;
     this.esGastronomia = false;
     this.codigoUnspscSeleccionado = false;
     this.unidadesDisponibles = [...this.unidadesMedidaBase];
     this.productoForm.get('cantidad')?.enable();
-    this.productoForm.get('SKU')?.setValidators([Validators.required]);
-    this.productoForm.get('SKU')?.updateValueAndValidity();
     this.productoForm.reset({
       id_producto: null, nombre: '', descripcion: '', codigo_unspsc: null,
       SKU: '', tipo_material: 'CONSUMO', unidad_medida: 'UNIDAD',
@@ -1710,6 +1808,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   editar(producto: Producto) {
     this.esNuevo = false;
+    this.skuEsAuto = false;
     this.productoForm.get('cantidad')?.disable();
     const id_categoria = producto.id_categoria ?? producto.categoria?.id_categoria ?? null;
 
@@ -1774,10 +1873,14 @@ export class ProductosComponent implements OnInit, OnDestroy {
         }
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err: any) => {
         this.guardandoPlaca = false;
         this.cdr.markForCheck();
-        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Error', detail: 'No se pudo guardar la placa SENA. Intenta de nuevo.' });
+        const backendMsg = err?.error?.message;
+        const detail = backendMsg?.toLowerCase().includes('uso')
+          ? `La placa "${this.placaActualValor.trim().toUpperCase()}" ya está registrada en otro ítem. Ingresa una placa diferente.`
+          : (backendMsg || 'No se pudo guardar la placa SENA. Intenta de nuevo.');
+        this.notification.add({ module: 'Productos', severity: 'error', summary: 'Placa duplicada', detail });
       },
     });
   }
@@ -1829,11 +1932,14 @@ export class ProductosComponent implements OnInit, OnDestroy {
       this.productoService.crearProducto(productoData).subscribe({
         next: (res: any) => {
           const itemsGenerados = res?.data?.items_generados ?? res?.items_generados ?? [];
-          this.notification.add({ module: 'Productos', severity: 'success', summary: 'Éxito', detail: `Producto creado — ${itemsGenerados.length} ítem(s) generado(s)` });
           this.displayDialog = false;
-          if (itemsGenerados.length > 0) {
+          if (itemsGenerados.length > 0 && !this.esGastronomia) {
+            this.notification.add({ module: 'Productos', severity: 'success', summary: 'Producto creado', detail: `${itemsGenerados.length} ítem(s) generado(s). Ahora registra las placas SENA.` });
             this.abrirDialogoPlacas(itemsGenerados);
           } else {
+            this.notification.add({ module: 'Productos', severity: 'success', summary: 'Producto creado', detail: itemsGenerados.length > 0
+              ? `${itemsGenerados.length} ítem(s) generado(s). Los productos de gastronomía no requieren placa SENA — si deseas, puedes asignarla después desde la vista de ítems.`
+              : 'Producto creado correctamente.' });
             this.cargarDatos();
           }
         },

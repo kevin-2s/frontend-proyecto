@@ -299,11 +299,19 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
           </button>
           <button 
             type="button"
-            [class]="currentView === 'permisos' ? 'px-4 py-2 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl flex items-center gap-2 cursor-pointer outline-none border-none h-[40px] transition-colors' : 'px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer outline-none h-[40px] transition-colors'"
-            (click)="setView('permisos')"
+            [class]="currentView === 'permisos-rol' ? 'px-4 py-2 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl flex items-center gap-2 cursor-pointer outline-none border-none h-[40px] transition-colors' : 'px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer outline-none h-[40px] transition-colors'"
+            (click)="setView('permisos-rol')"
           >
-            <i class="pi pi-lock"></i>
-            Permisos
+            <i class="pi pi-shield"></i>
+            Permisos por Rol
+          </button>
+          <button 
+            type="button"
+            [class]="currentView === 'permisos-usuario' ? 'px-4 py-2 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl flex items-center gap-2 cursor-pointer outline-none border-none h-[40px] transition-colors' : 'px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer outline-none h-[40px] transition-colors'"
+            (click)="setView('permisos-usuario')"
+          >
+            <i class="pi pi-key"></i>
+            Permisos por Usuario
           </button>
         </div>
       </div>
@@ -364,8 +372,8 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
         </div>
       </div>
 
-      <!-- PERMISOS VIEW -->
-      <div *ngIf="currentView === 'permisos'" class="view-content flex flex-col gap-6">
+      <!-- PERMISOS POR USUARIO VIEW -->
+      <div *ngIf="currentView === 'permisos-usuario'" class="view-content flex flex-col gap-6">
 
         <!-- Tabla de Usuarios -->
         <div class="data-table-wrapper">
@@ -570,6 +578,189 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
           </div>
         </div>
       </div>
+
+      <!-- PERMISOS POR ROL VIEW -->
+      <div *ngIf="currentView === 'permisos-rol'" class="view-content flex flex-col gap-6">
+        <!-- Tabla de Roles -->
+        <div class="data-table-wrapper">
+          <p-table
+            [value]="roles"
+            [paginator]="true"
+            [rows]="15"
+            styleClass="modern-table"
+            [rowHover]="true"
+            [loading]="loading"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th style="width: 100px">ID</th>
+                <th>Nombre del Rol</th>
+                <th style="width: 100px; text-align: center">Acciones</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-r>
+              <tr [class.bg-[#39A900]/5]="rolSeleccionado?.id_rol === r.id_rol">
+                <td><span class="id-badge">#{{ r.id_rol }}</span></td>
+                <td><span class="font-bold text-slate-800">{{ r.nombre }}</span></td>
+                <td>
+                  <div class="action-buttons justify-center">
+                    <button
+                      pButton
+                      icon="pi pi-pencil"
+                      class="btn-table-action btn-editor"
+                      (click)="seleccionarRol(r)"
+                    ></button>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="3" class="empty-message">
+                  <i class="pi pi-shield"></i>
+                  <p>No hay roles registrados para mostrar</p>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- Inline Card: Permisos del rol seleccionado -->
+        <div *ngIf="rolSeleccionado" class="w-full bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
+          <!-- Card Header -->
+          <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
+                <i class="pi pi-shield text-[#39A900] text-xl"></i>
+              </div>
+              <div>
+                <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">
+                  Permisos de {{ rolSeleccionado.nombre }}
+                </h4>
+                <p class="text-xs text-slate-500 m-0 mt-0.5">
+                  Gestionar permisos base para todos los usuarios asignados a este rol
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl cursor-pointer transition-all outline-none flex items-center gap-2"
+                (click)="rolSeleccionado = null; permisosRolIds = []"
+              >
+                <i class="pi pi-times"></i>
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+          <!-- Card Body: Permisos agrupados por módulo del sistema -->
+          <div class="p-6">
+            <div *ngIf="loadingPermisosRol" class="flex flex-col items-center justify-center py-16">
+              <i class="pi pi-spin pi-spinner text-3xl text-[#39A900]"></i>
+              <span class="text-xs text-slate-400 mt-2 font-semibold">Cargando mapa de accesos del rol...</span>
+            </div>
+
+            <div *ngIf="!loadingPermisosRol" class="max-h-[600px] overflow-y-auto pr-3 custom-scrollbar flex flex-col gap-8">
+              
+              <!-- Recorrer módulos -->
+              <ng-container *ngFor="let m of frontendModules">
+                <div *ngIf="hasPermissionsForModuleRol(m)" class="bg-slate-50/40 border border-slate-100 rounded-2xl p-5 shadow-sm">
+                  <h5 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-5 flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                    <i [class]="'pi ' + m.icon + ' text-[#39A900] text-sm'"></i>
+                    {{ m.title }}
+                  </h5>
+                  
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
+                    <ng-container *ngFor="let sub of m.submodules">
+                      <div *ngIf="permisosTodos[sub.key] && permisosTodos[sub.key].length > 0">
+                        <div class="perm-group-header">
+                          <span class="perm-group-dot"></span>
+                          <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest">{{ sub.label }}</span>
+                          <span class="ml-auto text-[10px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+                            {{ permisosTodos[sub.key].length }} permisos
+                          </span>
+                        </div>
+
+                        <div class="flex flex-col">
+                          <div *ngFor="let p of permisosTodos[sub.key]"
+                               class="flex items-center py-3 border-b border-slate-100 last:border-0 transition-opacity"
+                               [class.opacity-60]="!isPermisoRolActive(p.id_permiso)">
+                            <div class="flex flex-col min-w-0 w-1/2 pr-4">
+                              <span class="font-bold text-slate-800 text-sm leading-tight truncate" [title]="getFriendlyPermissionDescription(p.nombre, p.descripcion)">
+                                {{ getFriendlyPermissionDescription(p.nombre, p.descripcion) }}
+                              </span>
+                              <span class="text-[10.5px] text-slate-400 truncate font-mono" [title]="p.nombre">{{ p.nombre }}</span>
+                            </div>
+                            <div class="flex items-center gap-3 flex-shrink-0">
+                              <button
+                                type="button"
+                                class="perm-pill-btn"
+                                [class.on]="isPermisoRolActive(p.id_permiso)"
+                                [class.off]="!isPermisoRolActive(p.id_permiso)"
+                                (click)="togglePermisoRol(p, !isPermisoRolActive(p.id_permiso))"
+                              >
+                                <i [class]="isPermisoRolActive(p.id_permiso) ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                                {{ isPermisoRolActive(p.id_permiso) ? 'Activo' : 'Inactivo' }}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </ng-container>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- Sección "Otros" para Roles -->
+              <div *ngIf="getOtrosSubmodulesRol().length > 0" class="bg-slate-50/40 border border-slate-100 rounded-2xl p-5 shadow-sm">
+                <h5 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-5 flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                  <i class="pi pi-question-circle text-[#39A900] text-sm"></i>
+                  Otros Módulos
+                </h5>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
+                  <div *ngFor="let key of getOtrosSubmodulesRol()">
+                    <div class="perm-group-header">
+                      <span class="perm-group-dot"></span>
+                      <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest">{{ formatPermisoName(key) }}</span>
+                      <span class="ml-auto text-[10px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-full">
+                        {{ permisosTodos[key].length }} permisos
+                      </span>
+                    </div>
+
+                    <div class="flex flex-col">
+                      <div *ngFor="let p of permisosTodos[key]"
+                           class="flex items-center py-3 border-b border-slate-100 last:border-0 transition-opacity"
+                           [class.opacity-60]="!isPermisoRolActive(p.id_permiso)">
+                        <div class="flex flex-col min-w-0 w-1/2 pr-4">
+                          <span class="font-bold text-slate-800 text-sm leading-tight truncate" [title]="getFriendlyPermissionDescription(p.nombre, p.descripcion)">
+                            {{ getFriendlyPermissionDescription(p.nombre, p.descripcion) }}
+                          </span>
+                          <span class="text-[10.5px] text-slate-400 truncate font-mono" [title]="p.nombre">{{ p.nombre }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                          <button
+                            type="button"
+                            class="perm-pill-btn"
+                            [class.on]="isPermisoRolActive(p.id_permiso)"
+                            [class.off]="!isPermisoRolActive(p.id_permiso)"
+                            (click)="togglePermisoRol(p, !isPermisoRolActive(p.id_permiso))"
+                          >
+                            <i [class]="isPermisoRolActive(p.id_permiso) ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                            {{ isPermisoRolActive(p.id_permiso) ? 'Activo' : 'Inactivo' }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
 
@@ -584,7 +775,7 @@ export class RolesComponent implements OnInit {
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
-  currentView: 'usuarios' | 'permisos' = 'usuarios';
+  currentView: 'usuarios' | 'permisos-rol' | 'permisos-usuario' = 'usuarios';
   
   roles: Rol[] = [];
   filtro = '';
@@ -614,6 +805,12 @@ export class RolesComponent implements OnInit {
   loadingPermisos = false;
   displayRolDialog = false;
   showRolForm = false;
+
+  // Permisos Granulares por Rol State
+  rolSeleccionado: any = null;
+  permisosTodos: any = {};
+  permisosRolIds: number[] = [];
+  loadingPermisosRol = false;
 
   frontendModules = [
     {
@@ -763,12 +960,19 @@ export class RolesComponent implements OnInit {
     this.showUserForm = false;
   }
 
-  setView(view: 'usuarios' | 'permisos') {
+  setView(view: 'usuarios' | 'permisos-rol' | 'permisos-usuario') {
     this.currentView = view;
     this.showUserForm = false;
     this.showRolForm = false;
-    if (this.usuarios.length === 0) {
-      this.cargarUsuarios();
+    if (view === 'usuarios' || view === 'permisos-usuario') {
+      if (this.usuarios.length === 0) {
+        this.cargarUsuarios();
+      }
+    }
+    if (view === 'permisos-rol') {
+      if (this.roles.length === 0) {
+        this.cargarRoles();
+      }
     }
   }
 
@@ -1031,6 +1235,90 @@ export class RolesComponent implements OnInit {
         }
       });
     }
+  }
+
+  seleccionarRol(r: any) {
+    this.rolSeleccionado = r;
+    this.cargarPermisosRol(r.id_rol);
+  }
+
+  cargarPermisosRol(idRol: number) {
+    this.loadingPermisosRol = true;
+    if (Object.keys(this.permisosTodos).length === 0) {
+      this.rolService.getTodosLosPermisos().subscribe({
+        next: (res: any) => {
+          this.permisosTodos = res.data || res || {};
+          this.fetchPermisosDeRol(idRol);
+        },
+        error: () => {
+          this.loadingPermisosRol = false;
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los permisos del sistema' });
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.fetchPermisosDeRol(idRol);
+    }
+  }
+
+  private fetchPermisosDeRol(idRol: number) {
+    this.rolService.getPermisos(idRol).subscribe({
+      next: (res: any) => {
+        const data = res.data || res || [];
+        this.permisosRolIds = data.map((p: any) => p.id_permiso);
+        this.loadingPermisosRol = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingPermisosRol = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los permisos del rol' });
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  togglePermisoRol(p: any, active: boolean) {
+    if (!this.rolSeleccionado) return;
+    
+    let nuevosPermisosIds = [...this.permisosRolIds];
+    if (active) {
+      if (!nuevosPermisosIds.includes(p.id_permiso)) {
+        nuevosPermisosIds.push(p.id_permiso);
+      }
+    } else {
+      nuevosPermisosIds = nuevosPermisosIds.filter(id => id !== p.id_permiso);
+    }
+
+    this.rolService.asignarPermisos(this.rolSeleccionado.id_rol, nuevosPermisosIds).subscribe({
+      next: () => {
+        this.permisosRolIds = nuevosPermisosIds;
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Permisos del rol actualizados correctamente' });
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron actualizar los permisos del rol' });
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  hasPermissionsForModuleRol(module: any): boolean {
+    if (!this.permisosTodos) return false;
+    return module.submodules.some((sub: any) => this.permisosTodos[sub.key] && this.permisosTodos[sub.key].length > 0);
+  }
+
+  isPermisoRolActive(idPermiso: number): boolean {
+    return this.permisosRolIds.includes(idPermiso);
+  }
+
+  getOtrosSubmodulesRol(): string[] {
+    const mappedKeys = new Set<string>();
+    this.frontendModules.forEach(m => {
+      m.submodules.forEach(sub => mappedKeys.add(sub.key));
+    });
+    return Object.keys(this.permisosTodos).filter(
+      key => !mappedKeys.has(key) && this.permisosTodos[key] && this.permisosTodos[key].length > 0
+    );
   }
 
   seleccionarUsuario(u: any) {

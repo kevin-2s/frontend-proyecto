@@ -16,14 +16,14 @@ interface ChatMessage {
   imports: [CommonModule, FormsModule],
   template: `
     <!-- ====================================================== -->
-    <!-- BOTÓN ROBOT — Abre el chat del sistema (Asistente SGM) -->
+    <!-- BOTÓN ROBOT — Abre el chat del sistema (Asistente SARA) -->
     <!-- Posicionado encima del botón de WhatsApp               -->
     <!-- ====================================================== -->
     <div class="fixed bottom-24 right-6 z-[999] flex items-center gap-3 group">
       <!-- Tooltip on hover -->
       <div *ngIf="!isOpen()"
            class="bg-white text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-[0_6px_25px_rgba(79,70,229,0.15)] border border-indigo-50 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 pointer-events-none transition-all duration-300 origin-right whitespace-nowrap">
-        💬 Asistente SGM
+        💬 Pregúntale a SARA
       </div>
 
       <!-- Trigger Button -->
@@ -61,7 +61,7 @@ interface ChatMessage {
             </svg>
           </div>
           <div class="flex flex-col">
-            <span class="font-bold text-sm leading-tight">Asistente SGM</span>
+            <span class="font-bold text-sm leading-tight">SARA - Asistente SGM</span>
             <span class="text-[11px] text-indigo-200 font-medium leading-none mt-0.5">Sistema de Gestión de Materiales</span>
             <span class="flex items-center gap-1 text-[10px] text-indigo-200 mt-1 font-semibold">
               <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
@@ -163,7 +163,7 @@ export class WhatsappChatComponent implements OnInit, AfterViewChecked {
 
   messages = signal<ChatMessage[]>([
     {
-      text: '¡Hola! Soy el asistente virtual del Sistema de Gestión de Materiales (SGM). ¿En qué puedo ayudarte hoy?\n\nPuedes preguntarme por:\n• Productos\n• Préstamos\n• Bodegas\n• Novedades',
+      text: '¡Hola! Soy el asistente virtual de **LogiMat**, el Sistema de Gestión de Materiales de Formación del SENA.\n\nMi único propósito es guiarte e informarte sobre cómo usar el sistema. Puedes consultarme acerca de:\n• **Estructura**: Centros, Sedes, Áreas, Programas y Fichas.\n• **Administración**: Usuarios y Roles.\n• **Inventario**: Productos, Categorías, Bodegas, Solicitudes, Asignar y Novedades.\n• **Dashboard** (Panel de Control) y **Trazabilidad**.\n\n¿En qué puedo orientarte hoy?',
       isBot: true,
       time: new Date()
     }

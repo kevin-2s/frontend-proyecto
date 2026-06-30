@@ -25,6 +25,8 @@ export class AuthService implements OnDestroy {
   private readonly PERMISSIONS_KEY = 'userPermissions';
 
   permissions = signal<string[]>([]);
+  userAvatar = signal<string | null>(null);
+  currentUser = signal<any>(null);
 
   constructor() {
     const savedPermissions = localStorage.getItem(this.PERMISSIONS_KEY);
@@ -38,6 +40,7 @@ export class AuthService implements OnDestroy {
       const remaining = this.getTokenRemainingSeconds(token);
       if (remaining > 0) {
         this.scheduleTokenRefresh(remaining);
+        this.loadUserProfile();
       } else {
         this.logout();
       }
@@ -86,6 +89,7 @@ export class AuthService implements OnDestroy {
             localStorage.setItem(this.REFRESH_TOKEN_KEY, res.data.refreshToken);
           }
           this.scheduleTokenRefresh(res.data.expiresIn);
+          this.loadUserProfile();
         }
       }),
       switchMap(res => {
@@ -147,6 +151,8 @@ export class AuthService implements OnDestroy {
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.PERMISSIONS_KEY);
     this.permissions.set([]);
+    this.userAvatar.set(null);
+    this.currentUser.set(null);
     this.router.navigate(['/auth/login']);
   }
 
@@ -215,6 +221,45 @@ export class AuthService implements OnDestroy {
     if (this.refreshTimerId !== null) {
       clearTimeout(this.refreshTimerId);
       this.refreshTimerId = null;
+    }
+  }
+
+  loadStoredAvatar(): void {
+    const userId = this.getUserId();
+    if (userId) {
+      this.userAvatar.set(localStorage.getItem(`user_avatar_${userId}`));
+    } else {
+      this.userAvatar.set(null);
+    }
+  }
+
+  loadUserProfile(): void {
+    const userId = this.getUserId();
+    if (userId) {
+      this.apiService.get<any>(`/usuarios/${userId}`).subscribe({
+        next: (res: any) => {
+          const user = res?.data || res;
+          this.currentUser.set(user);
+          this.loadStoredAvatar();
+        },
+        error: () => {
+          this.currentUser.set(null);
+        }
+      });
+    } else {
+      this.currentUser.set(null);
+    }
+  }
+
+  updateAvatar(base64: string | null): void {
+    const userId = this.getUserId();
+    if (userId) {
+      if (base64) {
+        localStorage.setItem(`user_avatar_${userId}`, base64);
+      } else {
+        localStorage.removeItem(`user_avatar_${userId}`);
+      }
+      this.userAvatar.set(base64);
     }
   }
 }

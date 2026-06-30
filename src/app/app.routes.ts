@@ -119,6 +119,10 @@ export const routes: Routes = [
       {
         path: 'qr',
         loadComponent: () => import('./presentation/qr-scanner/qr-scanner.component').then(m => m.QrScannerComponent)
+      },
+      {
+        path: 'perfil',
+        loadComponent: () => import('./presentation/perfil/perfil.component').then(m => m.PerfilComponent)
       }
     ]
   },

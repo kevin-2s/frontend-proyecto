@@ -155,28 +155,21 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
                class="mb-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-[60] transition-all">
             <!-- Profile Summary Header -->
             <div class="px-4 py-2 border-b border-gray-50 flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full bg-emerald-100 text-[#39A900] flex items-center justify-center font-bold text-xs">
-                {{ getUserInitials() }}
+              <div class="w-9 h-9 rounded-full bg-emerald-100 text-[#39A900] flex items-center justify-center font-bold text-xs overflow-hidden flex-shrink-0">
+                <img *ngIf="getAvatar()" [src]="getAvatar()" class="w-full h-full object-cover" />
+                <span *ngIf="!getAvatar()">{{ getUserInitials() }}</span>
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-bold text-slate-800">{{ getUserRoleName() }}</span>
-                <span class="text-[10px] text-slate-400 truncate">Sesión activa</span>
+                <span class="text-xs font-bold text-slate-800 truncate">{{ currentUser()?.nombre ?? 'Cargando...' }}</span>
+                <span class="text-[10px] text-slate-400 truncate">{{ getUserRoleName() }}</span>
               </div>
             </div>
             
             <!-- Menu Items for Admin Profile -->
             <div class="px-1.5 py-1">
-              <a href="javascript:void(0)" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-[#39A900] transition-colors">
+              <a [routerLink]="['/perfil']" (click)="isProfileMenuOpen.set(false)" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-[#39A900] transition-colors">
                 <i class="pi pi-user text-slate-400"></i>
                 Mi Perfil
-              </a>
-              <a href="javascript:void(0)" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-[#39A900] transition-colors">
-                <i class="pi pi-cog text-slate-400"></i>
-                Configuración
-              </a>
-              <a href="javascript:void(0)" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-[#39A900] transition-colors">
-                <i class="pi pi-shield text-slate-400"></i>
-                Seguridad
               </a>
             </div>
             
@@ -192,20 +185,36 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
             </div>
           </div>
 
-          <!-- Clickable Profile Block -->
+          <!-- Clickable Profile Block (Bubble Style) -->
           <div (click)="toggleProfileMenu()" 
                [attr.title]="getUserRoleName()"
-               class="flex items-center justify-between p-2 rounded-xl hover:bg-white/60 cursor-pointer transition-colors">
+               class="flex items-center justify-between p-2.5 rounded-2xl bg-white/80 hover:bg-white border border-slate-200/50 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300">
             <div class="flex items-center gap-3 min-w-0" [class.justify-center]="sidebarCollapsed()">
-              <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-slate-700 font-bold text-xs border border-slate-300/20">
-                {{ getUserInitials() }}
+              <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs border border-slate-300/20 overflow-hidden flex-shrink-0 shadow-inner">
+                <img *ngIf="getAvatar()" [src]="getAvatar()" class="w-full h-full object-cover" />
+                <span *ngIf="!getAvatar()">{{ getUserInitials() }}</span>
               </div>
               <div *ngIf="!sidebarCollapsed()" class="flex flex-col min-w-0">
-                <span class="text-[12px] font-bold text-slate-800 truncate">{{ getUserRoleName() }}</span>
-                <span class="text-[10px] text-slate-500 truncate">Sesión activa</span>
+                <!-- User Name -->
+                <span class="text-xs font-black text-slate-800 truncate leading-tight">
+                  {{ currentUser()?.nombre ?? 'Cargando...' }}
+                </span>
+                <!-- Role Name -->
+                <span class="text-[10px] font-bold text-[#39A900] mt-0.5 leading-none">
+                  {{ getUserRoleName() }}
+                </span>
+                <!-- Status -->
+                <span class="text-[9px] text-slate-400 mt-0.5 flex items-center gap-1 leading-none">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                  Sesión activa
+                </span>
               </div>
             </div>
-            <i *ngIf="!sidebarCollapsed()" class="pi pi-chevron-up text-slate-600 text-xs transition-transform duration-200" [class.rotate-180]="isProfileMenuOpen()"></i>
+            <!-- Arrow icon -->
+            <i *ngIf="!sidebarCollapsed()" 
+               class="pi text-[9px] text-slate-400 transition-transform duration-200"
+               [class.pi-chevron-up]="isProfileMenuOpen()"
+               [class.pi-chevron-down]="!isProfileMenuOpen()"></i>
           </div>
         </div>
       </aside>
@@ -545,5 +554,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
   getUserRoleName(): string {
     const role = this.authService.getUserRole() || 'Usuario';
     return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+  }
+
+  getAvatar(): string | null {
+    return this.authService.userAvatar();
+  }
+
+  currentUser() {
+    return this.authService.currentUser();
   }
 }

@@ -37,6 +37,7 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
     OnlyLettersDirective,
     OnlyNumbersDirective
   ],
+  encapsulation: ViewEncapsulation.None,
   providers: [MessageService],
   styles: [`
     /* ── Pill Toggle Button ── */
@@ -217,15 +218,7 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
                 <div class="form-field">
                   <label for="documento">Documento de Identidad <span class="text-red-500">*</span></label>
                   <div class="input-with-button">
-                    <select [(ngModel)]="usuarioForm.tipo_documento" 
-                            style="width: 80px; height: 52px; border: 2px solid #cbd5e1; border-radius: 14px; padding: 0 10px; font-size: 0.95rem; font-weight: 700; color: #1e293b; background: #f8fafc; outline: none;">
-                      <option value="C.C.">C.C.</option>
-                      <option value="T.I.">T.I.</option>
-                      <option value="C.E.">C.E.</option>
-                      <option value="P.E.P.">P.E.P.</option>
-                      <option value="P.P.T.">P.P.T.</option>
-                      <option value="P.A.S.">P.A.S.</option>
-                    </select>
+                    <p-select [options]="tipoDocumentoOpciones" [(ngModel)]="usuarioForm.tipo_documento" placeholder="Tipo" styleClass="w-[96px]" appendTo="body"></p-select>
                     <input 
                       pInputText 
                       id="documento" 
@@ -823,6 +816,7 @@ export class RolesComponent implements OnInit {
     { label: 'Activo', value: true },
     { label: 'Inactivo', value: false }
   ];
+  tipoDocumentoOpciones = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.'];
   
   loading = false;
   saving = false;

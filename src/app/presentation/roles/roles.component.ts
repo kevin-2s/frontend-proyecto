@@ -728,67 +728,30 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
         </div>
       </div>
       <!-- Modal Registrar Nuevo Rol (PrimeNG Dialog appended to body) -->
-      <p-dialog 
-        [(visible)]="showRolForm" 
-        [modal]="true" 
-        [draggable]="false" 
-        [resizable]="false"
-        [style]="{ width: '400px', borderRadius: '24px', overflow: 'hidden' }"
-        styleClass="custom-role-dialog"
-        appendTo="body"
-        [showHeader]="false"
-      >
-        <div class="p-6">
-          <!-- Header (macOS style) -->
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-5">
-            <div class="flex items-center gap-1.5 flex-shrink-0">
-              <button (click)="showRolForm = false; rol = { nombre: '' }" 
-                      class="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E] cursor-pointer hover:opacity-80 transition outline-none p-0 flex items-center justify-center"
-                      title="Cerrar">
-              </button>
-              <span class="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123] block"></span>
-              <span class="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29] block"></span>
-            </div>
-            <h4 class="text-sm font-black text-slate-700 m-0 select-none tracking-tight">
-              ✨ Registrar Nuevo Rol
-            </h4>
-            <div class="w-14"></div>
-          </div>
-
-          <!-- Body -->
-          <div class="py-2">
-            <div class="form-field">
-              <label for="rol-nombre-modal">Nombre del Rol *</label>
-              <input
-                pInputText
-                id="rol-nombre-modal"
-                [(ngModel)]="rol.nombre"
-                onlyLetters
-                placeholder="Ej: INSTRUCTOR"
-                class="w-full"
-              />
-            </div>
-          </div>
-
-          <!-- Footer / Actions -->
-          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold text-xs rounded-xl transition cursor-pointer outline-none bg-white"
-              (click)="showRolForm = false; rol = { nombre: '' }"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              class="px-5 py-2 bg-[#39A900] text-white hover:bg-green-700 font-bold text-xs rounded-xl transition border-none cursor-pointer shadow-sm outline-none disabled:opacity-60"
-              (click)="guardar()"
-              [disabled]="saving || !rol.nombre?.trim()"
-            >
-              {{ saving ? 'Guardando...' : 'Guardar' }}
-            </button>
+      <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+        header="✨ Registrar Nuevo Rol" [(visible)]="showRolForm"
+        [modal]="true" [style]="{width:'90vw',maxWidth:'400px'}"
+        [draggable]="true" [resizable]="false"
+        styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
+        <div class="form-grid mt-2">
+          <div class="form-field">
+            <label for="rol-nombre-modal">Nombre del Rol *</label>
+            <input
+              pInputText
+              id="rol-nombre-modal"
+              [(ngModel)]="rol.nombre"
+              onlyLetters
+              placeholder="Ej: INSTRUCTOR"
+              class="w-full"
+            />
           </div>
         </div>
+        <ng-template pTemplate="footer">
+          <div class="dialog-footer">
+            <button pButton label="Cancelar" class="btn-cancelar" (click)="showRolForm = false; rol = { nombre: '' }"></button>
+            <button pButton [label]="saving ? 'Guardando...' : 'Guardar'" class="btn-guardar" [disabled]="saving || !rol.nombre?.trim()" (click)="guardar()"></button>
+          </div>
+        </ng-template>
       </p-dialog>
     </div>
 

@@ -175,49 +175,50 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
             </div>
           </div>
           
-          <div class="p-6 flex flex-col gap-5">
-            <div class="flex flex-col gap-5 pt-2">
-              <!-- Primera Fila: Nombres y Apellidos -->
-              <div class="flex flex-col sm:flex-row gap-5">
-                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.nombre && usuarioForm.nombre.trim() !== ''">
-                  <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" onlyLetters placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+          <div class="p-6 flex flex-col gap-6">
+            <div class="form-grid p-0">
+              
+              <!-- Nombres y Apellidos -->
+              <div class="product-form-row">
+                <div class="form-field">
                   <label for="nombre">Nombres <span class="text-red-500">*</span></label>
+                  <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" onlyLetters placeholder="Ej: Juan Carlos" />
                 </div>
-                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.apellidos && usuarioForm.apellidos.trim() !== ''">
-                  <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" onlyLetters placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+                <div class="form-field">
                   <label for="apellidos">Apellidos <span class="text-red-500">*</span></label>
+                  <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" onlyLetters placeholder="Ej: Pérez Gómez" />
                 </div>
               </div>
 
-              <!-- Segunda Fila: Correo y Rol -->
-              <div class="flex flex-col sm:flex-row gap-5">
-                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.correo && usuarioForm.correo.trim() !== ''">
-                  <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+              <!-- Correo y Rol -->
+              <div class="product-form-row">
+                <div class="form-field">
                   <label for="correo">Correo Electrónico <span class="text-red-500">*</span></label>
+                  <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder="Ej: juan.perez@sena.edu.co" />
                 </div>
-                <div class="flex gap-2 items-center flex-1">
-                  <div class="floating-label-group flex-1" [class.floating]="usuarioForm.id_rol !== undefined && usuarioForm.id_rol !== null">
-                    <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body"></p-select>
-                    <label>Rol <span class="text-red-500">*</span></label>
+                <div class="form-field">
+                  <label>Rol <span class="text-red-500">*</span></label>
+                  <div class="input-with-button">
+                    <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Seleccione un rol" styleClass="w-full flex items-center" appendTo="body"></p-select>
+                    <button pButton type="button" icon="pi pi-plus" class="btn-inline-add" (click)="openNewRolDialog()"></button>
                   </div>
-                  <button type="button" class="h-[50px] w-[50px] flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-[#39A900] bg-transparent border-none cursor-pointer transition-colors outline-none btn-open-form" (click)="openNewRolDialog()">
-                    <i class="pi pi-plus font-bold text-lg"></i>
-                  </button>
                 </div>
               </div>
 
-              <!-- Tercera Fila: Teléfono y Documento Combinado -->
-              <div class="flex flex-col sm:flex-row gap-5">
+              <!-- Teléfono y Documento -->
+              <div class="product-form-row">
                 <!-- Teléfono -->
-                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.telefono && usuarioForm.telefono.trim() !== ''">
-                  <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" onlyNumbers placeholder=" " class="w-full text-sm text-slate-800 outline-none" />
+                <div class="form-field">
                   <label for="telefono">Teléfono</label>
+                  <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" onlyNumbers placeholder="Ej: 3123456789" />
                 </div>
                 
                 <!-- Documento Combinado (Selector + Número) -->
-                <div class="document-input-group flex-1" [class.floating]="usuarioForm.numero_documento && usuarioForm.numero_documento.trim() !== ''">
-                  <div class="document-input-container">
-                    <select [(ngModel)]="usuarioForm.tipo_documento" class="document-input-select">
+                <div class="form-field">
+                  <label for="documento">Documento de Identidad <span class="text-red-500">*</span></label>
+                  <div class="input-with-button">
+                    <select [(ngModel)]="usuarioForm.tipo_documento" 
+                            style="width: 80px; height: 52px; border: 2px solid #cbd5e1; border-radius: 14px; padding: 0 10px; font-size: 0.95rem; font-weight: 700; color: #1e293b; background: #f8fafc; outline: none;">
                       <option value="C.C.">C.C.</option>
                       <option value="T.I.">T.I.</option>
                       <option value="C.E.">C.E.</option>
@@ -230,29 +231,27 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
                       id="documento" 
                       [(ngModel)]="usuarioForm.numero_documento" 
                       onlyNumbers
-                      placeholder=" " 
-                      class="document-input-field" 
+                      placeholder="Ej: 1098765432" 
+                      style="flex: 1;"
                     />
                   </div>
-                  <label for="documento">Número de Documento <span class="text-red-500">*</span></label>
                 </div>
               </div>
 
-              <!-- Cuarta Fila: Contraseña + Estado -->
-              <div class="flex flex-col sm:flex-row gap-5">
-                <div class="floating-label-group flex-1" [class.floating]="usuarioForm.password && usuarioForm.password.trim() !== ''" *ngIf="esNuevoUsuario">
-                  <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full text-sm text-slate-800 outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
+              <!-- Contraseña + Estado -->
+              <div class="product-form-row">
+                <!-- Contraseña -->
+                <div class="form-field" *ngIf="esNuevoUsuario">
                   <label>Contraseña <span class="text-red-500">*</span></label>
+                  <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full" [toggleMask]="true" appendTo="body" placeholder="••••••••"></p-password>
                 </div>
-                <!-- Estado del usuario -->
-                <div class="flex gap-2 items-center flex-1">
-                  <div class="floating-label-group flex-1" [class.floating]="usuarioForm.estado !== undefined && usuarioForm.estado !== null">
-                    <p-select [options]="estadoOpciones" [(ngModel)]="usuarioForm.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full flex items-center" appendTo="body"></p-select>
-                    <label>Estado <span class="text-red-500">*</span></label>
-                  </div>
-                  <div class="h-[50px] w-[50px] flex-shrink-0"></div>
+                <!-- Estado -->
+                <div class="form-field">
+                  <label>Estado <span class="text-red-500">*</span></label>
+                  <p-select [options]="estadoOpciones" [(ngModel)]="usuarioForm.estado" optionLabel="label" optionValue="value" placeholder="Seleccione estado" styleClass="w-full flex items-center" appendTo="body"></p-select>
                 </div>
               </div>
+
             </div>
 
             <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">

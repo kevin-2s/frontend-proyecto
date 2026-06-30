@@ -90,34 +90,51 @@ interface Usuario {
     <p-confirmDialog></p-confirmDialog>
 
     <!-- Mini-diálogo: Crear Rol rápido -->
-    <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
+    <p-dialog 
       [(visible)]="showRolDialog"
       [modal]="true"
-      [draggable]="true"
+      [draggable]="false"
       [resizable]="false"
-      styleClass="quick-rol-dialog shadow-2xl border border-slate-200"
-      [style]="{width: '380px'}"
+      styleClass="custom-role-dialog shadow-2xl border border-slate-200"
+      [style]="{width: '400px', borderRadius: '24px', overflow: 'hidden'}"
       appendTo="body"
+      [showHeader]="false"
     >
-      <ng-template pTemplate="header">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-[#39A900]/10 flex items-center justify-center">
-            <i class="pi pi-shield text-[#39A900] text-base"></i>
-          </div>
-          <div>
-            <p class="font-bold text-slate-800 text-base m-0 leading-tight">Nuevo Rol</p>
-            <p class="text-xs text-slate-400 m-0">Crear un rol rápidamente</p>
+      <div class="p-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-5">
+          <h4 class="text-sm font-black text-slate-800 m-0 flex items-center gap-2">
+            <span>✨</span> Registrar Nuevo Rol
+          </h4>
+          <button (click)="showRolDialog = false" 
+                  class="w-6 h-6 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition border-none cursor-pointer outline-none">
+            <i class="pi pi-times text-[10px]"></i>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="py-2">
+          <div class="form-field">
+            <label for="nuevo-rol-nombre-modal">Nombre del Rol *</label>
+            <input pInputText id="nuevo-rol-nombre-modal" [(ngModel)]="nuevoRolNombre" onlyLetters placeholder="Ej: INSTRUCTOR" class="w-full" />
           </div>
         </div>
-      </ng-template>
-      <div class="flex flex-col gap-4">
-        <div class="form-field">
-          <input pInputText id="nuevo-rol-nombre" [(ngModel)]="nuevoRolNombre" onlyLetters placeholder="Nombre del rol" class="w-full" />
-          <label for="nuevo-rol-nombre">Nombre del rol</label>
-        </div>
-        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
-          <button type="button" class="btn-cancelar" (click)="showRolDialog = false">Cancelar</button>
-          <button type="button" class="btn-guardar" (click)="crearRolRapido()" [disabled]="savingRol || !nuevoRolNombre.trim()">
+
+        <!-- Footer / Actions -->
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+          <button
+            type="button"
+            class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold text-xs rounded-xl transition cursor-pointer outline-none bg-white"
+            (click)="showRolDialog = false"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="px-5 py-2 bg-[#39A900] text-white hover:bg-green-700 font-bold text-xs rounded-xl transition border-none cursor-pointer shadow-sm outline-none disabled:opacity-60"
+            (click)="crearRolRapido()"
+            [disabled]="savingRol || !nuevoRolNombre.trim()"
+          >
             {{ savingRol ? 'Creando...' : 'Crear Rol' }}
           </button>
         </div>
@@ -175,49 +192,52 @@ interface Usuario {
           </div>
         </div>
         
-        <div class="p-6 flex flex-col gap-5">
-          <div class="flex flex-col gap-5 pt-2">
+        <div class="p-6 flex flex-col gap-6">
+          <div class="form-grid p-0">
+            
             <!-- Primera Fila: Nombres y Apellidos -->
-            <div class="flex flex-col sm:flex-row gap-5">
-              <div class="floating-label-group flex-1" [class.floating]="usuario.nombre && usuario.nombre.trim() !== ''">
-                <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" onlyLetters placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+            <div class="product-form-row">
+              <div class="form-field">
                 <label for="u-nombre">Nombres <span class="text-red-500">*</span></label>
+                <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" onlyLetters placeholder="Ej: Juan Carlos" />
               </div>
-              <div class="floating-label-group flex-1" [class.floating]="usuario.apellidos && usuario.apellidos.trim() !== ''">
-                <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" onlyLetters placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+              <div class="form-field">
                 <label for="u-apellidos">Apellidos <span class="text-red-500">*</span></label>
+                <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" onlyLetters placeholder="Ej: Pérez Gómez" />
               </div>
             </div>
 
             <!-- Segunda Fila: Correo y Rol -->
-            <div class="flex flex-col sm:flex-row gap-5">
-              <div class="floating-label-group flex-1" [class.floating]="usuario.correo && usuario.correo.trim() !== ''">
-                <input pInputText id="u-correo" [(ngModel)]="usuario.correo" type="email" placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+            <div class="product-form-row">
+              <div class="form-field">
                 <label for="u-correo">Correo Electrónico <span class="text-red-500">*</span></label>
+                <input pInputText id="u-correo" [(ngModel)]="usuario.correo" type="email" placeholder="Ej: juan.perez@sena.edu.co" />
               </div>
-              <div class="flex gap-2 items-center flex-1">
-                <div class="floating-label-group flex-1" [class.floating]="usuario.id_rol !== undefined && usuario.id_rol !== null">
-                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                  <label>Rol <span class="text-red-500">*</span></label>
+              <div class="form-field">
+                <label>Rol <span class="text-red-500">*</span></label>
+                <div class="input-with-button">
+                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Seleccione un rol" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                  <button type="button" class="btn-inline-add flex items-center justify-center cursor-pointer outline-none" (click)="openRolDialog()">
+                    <i class="pi pi-plus font-bold text-lg"></i>
+                  </button>
                 </div>
-                <button type="button" class="h-[50px] w-[50px] flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-[#39A900] bg-transparent border-none cursor-pointer transition-colors outline-none btn-open-form" (click)="openRolDialog()">
-                  <i class="pi pi-plus font-bold text-lg"></i>
-                </button>
               </div>
             </div>
 
             <!-- Tercera Fila: Teléfono y Documento Combinado -->
-            <div class="flex flex-col sm:flex-row gap-5">
+            <div class="product-form-row">
               <!-- Teléfono -->
-              <div class="floating-label-group flex-1" [class.floating]="usuario.telefono && usuario.telefono.trim() !== ''">
-                <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" onlyNumbers placeholder=" " class="w-full px-4 py-3 text-sm text-slate-800 rounded-xl outline-none" />
+              <div class="form-field">
                 <label for="u-telefono">Teléfono</label>
+                <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" onlyNumbers placeholder="Ej: 3123456789" />
               </div>
               
               <!-- Documento Combinado (Selector + Número) -->
-              <div class="document-input-group flex-1" [class.floating]="usuario.numero_documento && usuario.numero_documento.trim() !== ''">
-                <div class="document-input-container">
-                  <select [(ngModel)]="usuario.tipo_documento" class="document-input-select">
+              <div class="form-field">
+                <label for="u-documento">Número de Documento <span class="text-red-500">*</span></label>
+                <div class="input-with-button">
+                  <select [(ngModel)]="usuario.tipo_documento" 
+                          style="width: 80px; height: 52px; border: 2px solid #cbd5e1; border-radius: 14px; padding: 0 10px; font-size: 0.95rem; font-weight: 700; color: #1e293b; background: #f8fafc; outline: none;">
                     <option value="C.C.">C.C.</option>
                     <option value="T.I.">T.I.</option>
                     <option value="C.E.">C.E.</option>
@@ -230,30 +250,29 @@ interface Usuario {
                     id="u-documento" 
                     [(ngModel)]="usuario.numero_documento" 
                     onlyNumbers
-                    placeholder=" " 
-                    class="document-input-field" 
+                    placeholder="Ej: 1098765432" 
+                    style="flex: 1;"
                   />
                 </div>
-                <label for="u-documento">Número de Documento <span class="text-red-500">*</span></label>
               </div>
             </div>
 
             <!-- Cuarta Fila: Contraseña + Estado -->
-            <div class="flex flex-col sm:flex-row gap-5">
-              <div class="floating-label-group flex-1" [class.floating]="usuario.password && usuario.password.trim() !== ''" *ngIf="esNuevo">
-                <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
+            <div class="product-form-row">
+              <!-- Contraseña -->
+              <div class="form-field" *ngIf="esNuevo">
                 <label>Contraseña <span class="text-red-500">*</span></label>
+                <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full" [toggleMask]="true" appendTo="body" placeholder="••••••••"></p-password>
               </div>
-              <!-- Estado del usuario -->
-              <div class="flex gap-2 items-center flex-1">
-                <div class="floating-label-group flex-1" [class.floating]="usuario.estado !== undefined && usuario.estado !== null">
-                  <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                  <label>Estado <span class="text-red-500">*</span></label>
-                </div>
-                <div class="h-[50px] w-[50px] flex-shrink-0"></div>
+              <!-- Estado -->
+              <div class="form-field">
+                <label>Estado <span class="text-red-500">*</span></label>
+                <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder="Seleccione estado" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
               </div>
             </div>
+
           </div>
+        </div>
 
           <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
             <button
@@ -269,7 +288,6 @@ interface Usuario {
             >{{ saving ? 'Guardando...' : 'Guardar' }}</button>
           </div>
         </div>
-      </div>
 
       <!-- [PrimeNG] p-table: La potencia de manejo de datos -->
       <div class="data-table-wrapper">

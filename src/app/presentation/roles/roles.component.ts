@@ -939,7 +939,7 @@ export class RolesComponent implements OnInit {
     const target = event.target as HTMLElement;
     const clickedInsideForm = target.closest('.inline-form-container');
     const clickedOpenButton = target.closest('.btn-open-form');
-    const clickedOverlay = target.closest('.p-overlaypanel, .p-select-overlay, .p-dropdown-panel, .p-datepicker-panel, .p-toast, .p-tooltip');
+    const clickedOverlay = target.closest('.p-overlaypanel, .p-select-overlay, .p-dropdown-panel, .p-datepicker-panel, .p-toast, .p-tooltip, .p-dialog, .p-dialog-mask, .p-component-overlay');
 
     if (!clickedInsideForm && !clickedOpenButton && !clickedOverlay) {
       this.showUserForm = false;
@@ -950,7 +950,6 @@ export class RolesComponent implements OnInit {
   openNewRolDialog() {
     this.rol = { nombre: '' };
     this.showRolForm = true;
-    this.showUserForm = false;
   }
 
   setView(view: 'usuarios' | 'permisos-rol' | 'permisos-usuario') {

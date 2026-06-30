@@ -40,6 +40,17 @@ export class AuthService implements OnDestroy {
       const remaining = this.getTokenRemainingSeconds(token);
       if (remaining > 0) {
         this.scheduleTokenRefresh(remaining);
+        
+        // Cargar inmediatamente del localStorage el perfil guardado para evitar delay
+        const userId = this.getUserId();
+        if (userId) {
+          const cachedUser = localStorage.getItem(`current_user_profile_${userId}`);
+          if (cachedUser) {
+            this.currentUser.set(JSON.parse(cachedUser));
+          }
+          this.loadStoredAvatar();
+        }
+        
         this.loadUserProfile();
       } else {
         this.logout();
@@ -146,10 +157,14 @@ export class AuthService implements OnDestroy {
   }
 
   logout(): void {
+    const userId = this.getUserId();
     this.clearRefreshTimer();
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.PERMISSIONS_KEY);
+    if (userId) {
+      localStorage.removeItem(`current_user_profile_${userId}`);
+    }
     this.permissions.set([]);
     this.userAvatar.set(null);
     this.currentUser.set(null);
@@ -236,14 +251,19 @@ export class AuthService implements OnDestroy {
   loadUserProfile(): void {
     const userId = this.getUserId();
     if (userId) {
+      this.loadStoredAvatar();
+      
       this.apiService.get<any>(`/usuarios/${userId}`).subscribe({
         next: (res: any) => {
           const user = res?.data || res;
           this.currentUser.set(user);
-          this.loadStoredAvatar();
+          localStorage.setItem(`current_user_profile_${userId}`, JSON.stringify(user));
         },
         error: () => {
-          this.currentUser.set(null);
+          // Si falla y no hay nada cargado, lo limpiamos, de lo contrario dejamos la cache
+          if (!this.currentUser()) {
+            this.currentUser.set(null);
+          }
         }
       });
     } else {

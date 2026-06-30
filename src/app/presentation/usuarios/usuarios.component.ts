@@ -230,9 +230,7 @@ interface Usuario {
                 <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder="Seleccione estado" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
               </div>
             </div>
-
           </div>
-        </div>
 
           <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
             <button
@@ -248,6 +246,7 @@ interface Usuario {
             >{{ saving ? 'Guardando...' : 'Guardar' }}</button>
           </div>
         </div>
+      </div>
 
       <!-- [PrimeNG] p-table: La potencia de manejo de datos -->
       <div class="data-table-wrapper">

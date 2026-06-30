@@ -739,29 +739,34 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
         [showHeader]="false"
       >
         <div class="p-6">
-          <!-- Header -->
+          <!-- Header (macOS style) -->
           <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-5">
-            <h4 class="text-sm font-black text-slate-800 m-0 flex items-center gap-2">
-              <span>✨</span> Registrar Nuevo Rol
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button (click)="showRolForm = false; rol = { nombre: '' }" 
+                      class="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E] cursor-pointer hover:opacity-80 transition outline-none p-0 flex items-center justify-center"
+                      title="Cerrar">
+              </button>
+              <span class="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123] block"></span>
+              <span class="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29] block"></span>
+            </div>
+            <h4 class="text-sm font-black text-slate-700 m-0 select-none tracking-tight">
+              ✨ Registrar Nuevo Rol
             </h4>
-            <button (click)="showRolForm = false; rol = { nombre: '' }" 
-                    class="w-6 h-6 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition border-none cursor-pointer outline-none">
-              <i class="pi pi-times text-[10px]"></i>
-            </button>
+            <div class="w-14"></div>
           </div>
 
           <!-- Body -->
           <div class="py-2">
-            <div class="floating-label-group" [class.floating]="rol.nombre && rol.nombre.trim() !== ''">
+            <div class="form-field">
+              <label for="rol-nombre-modal">Nombre del Rol *</label>
               <input
                 pInputText
                 id="rol-nombre-modal"
                 [(ngModel)]="rol.nombre"
                 onlyLetters
-                placeholder=" "
-                class="w-full text-sm text-slate-800 outline-none"
+                placeholder="Ej: INSTRUCTOR"
+                class="w-full"
               />
-              <label for="rol-nombre-modal">Nombre del Rol <span class="text-red-500">*</span></label>
             </div>
           </div>
 

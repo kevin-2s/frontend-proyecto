@@ -97,6 +97,19 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+    /* Custom Role Dialog styles */
+    ::ng-deep .custom-role-dialog .p-dialog-content {
+      padding: 0 !important;
+      background: white !important;
+      border-radius: 24px !important;
+    }
+    ::ng-deep .custom-role-dialog {
+      border: none !important;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+      border-radius: 24px !important;
+      overflow: hidden !important;
+    }
   `],
   template: `
     <p-toast></p-toast>
@@ -115,15 +128,17 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
               <input pInputText type="text" [(ngModel)]="filtro" (input)="filtrarGlobal()" placeholder="Buscar..." class="search-input" />
             </div>
 
+            <!-- Botón Crear Rol (en pestaña de Roles) -->
             <button
-              *ngIf="currentView === 'usuarios' && showRolForm"
+              *ngIf="currentView === 'permisos-rol'"
               type="button"
-              class="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl transition-all flex items-center gap-2 cursor-pointer outline-none"
-              (click)="showRolForm = false"
+              class="btn-add btn-open-form"
+              (click)="openNewRolDialog()"
             >
-              <i class="pi pi-times"></i>
-              Cerrar
+              <i class="pi pi-plus-circle"></i>
+              Crear Rol
             </button>
+
             <!-- Botón Crear Usuario -->
             <button
               *ngIf="currentView === 'usuarios' && !showUserForm"
@@ -146,48 +161,7 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
           </div>
         </div>
 
-        <!-- INLINE FORM FOR ROL -->
-        <div *ngIf="showRolForm" class="inline-form-container w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-4 overflow-hidden">
-          <div class="bg-slate-50/50 border-b border-slate-100 px-6 py-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-[#39A900]/10 flex items-center justify-center">
-              <i class="pi pi-shield text-[#39A900] text-xl"></i>
-            </div>
-            <div>
-              <h4 class="text-lg font-bold text-slate-800 m-0 leading-tight">Registrar Nuevo Rol</h4>
-              <p class="text-xs text-slate-500 m-0 mt-0.5">Crea un nuevo rol de acceso para asignar a los usuarios del sistema</p>
-            </div>
-          </div>
-          
-          <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-              <!-- Nombre del Rol -->
-              <div class="form-field">
-                <input
-                  pInputText
-                  id="rol-nombre"
-                  [(ngModel)]="rol.nombre"
-                  onlyLetters
-                  placeholder="Ej: INSTRUCTOR, GESTOR"
-                />
-                <label for="rol-nombre">Nombre del Rol *</label>
-              </div>
-            </div>
 
-            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
-              <button
-                type="button"
-                class="btn-cancelar"
-                (click)="showRolForm = false; rol = { nombre: '' }"
-              >Cancelar</button>
-              <button
-                type="button"
-                class="btn-guardar"
-                (click)="guardar()"
-                [disabled]="saving || !rol.nombre?.trim()"
-              >{{ saving ? 'Guardando...' : 'Guardar Rol' }}</button>
-            </div>
-          </div>
-        </div>
 
         <!-- INLINE FORM FOR USER -->
         <div *ngIf="showUserForm" class="inline-form-container w-full bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
@@ -761,6 +735,64 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
           </div>
         </div>
       </div>
+      <!-- Modal Registrar Nuevo Rol (PrimeNG Dialog appended to body) -->
+      <p-dialog 
+        [(visible)]="showRolForm" 
+        [modal]="true" 
+        [draggable]="false" 
+        [resizable]="false"
+        [style]="{ width: '400px', borderRadius: '24px', overflow: 'hidden' }"
+        styleClass="custom-role-dialog"
+        appendTo="body"
+        [showHeader]="false"
+      >
+        <div class="p-6">
+          <!-- Header -->
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-5">
+            <h4 class="text-sm font-black text-slate-800 m-0 flex items-center gap-2">
+              <span>✨</span> Registrar Nuevo Rol
+            </h4>
+            <button (click)="showRolForm = false; rol = { nombre: '' }" 
+                    class="w-6 h-6 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition border-none cursor-pointer outline-none">
+              <i class="pi pi-times text-[10px]"></i>
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="py-2">
+            <div class="floating-label-group" [class.floating]="rol.nombre && rol.nombre.trim() !== ''">
+              <input
+                pInputText
+                id="rol-nombre-modal"
+                [(ngModel)]="rol.nombre"
+                onlyLetters
+                placeholder=" "
+                class="w-full text-sm text-slate-800 outline-none"
+              />
+              <label for="rol-nombre-modal">Nombre del Rol <span class="text-red-500">*</span></label>
+            </div>
+          </div>
+
+          <!-- Footer / Actions -->
+          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold text-xs rounded-xl transition cursor-pointer outline-none bg-white"
+              (click)="showRolForm = false; rol = { nombre: '' }"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="px-5 py-2 bg-[#39A900] text-white hover:bg-green-700 font-bold text-xs rounded-xl transition border-none cursor-pointer shadow-sm outline-none disabled:opacity-60"
+              (click)="guardar()"
+              [disabled]="saving || !rol.nombre?.trim()"
+            >
+              {{ saving ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+        </div>
+      </p-dialog>
     </div>
 
 

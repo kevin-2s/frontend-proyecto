@@ -101,10 +101,6 @@ export const routes: Routes = [
         canActivate: [permissionGuard('ver_sedes')]
       },
       {
-        path: 'movimientos',
-        loadComponent: () => import('./presentation/movimientos/movimientos.component').then(m => m.MovimientosComponent)
-      },
-      {
         path: 'prestamos',
         loadComponent: () => import('./presentation/prestamos/prestamos').then(m => m.PrestamosComponent)
       },

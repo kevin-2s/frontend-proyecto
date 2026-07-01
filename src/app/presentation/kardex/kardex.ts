@@ -1,8 +1,14 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+
+// PrimeNG
+import { TableModule } from 'primeng/table';
+import { SelectModule } from 'primeng/select';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
 
 interface KardexEntry {
   id_kardex: number;
@@ -20,7 +26,14 @@ interface KardexEntry {
 @Component({
   selector: 'app-kardex',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule,
+    TableModule,
+    SelectModule,
+    InputTextModule,
+    ButtonModule
+  ],
   template: `
     <div class="module-container">
       <!-- Header -->
@@ -33,22 +46,23 @@ interface KardexEntry {
           </div>
         </div>
 
-        <div class="header-actions">
+        <div class="header-actions flex items-center gap-3 flex-wrap">
+          <!-- Búsqueda General -->
           <div class="search-wrapper">
             <i class="pi pi-search"></i>
-            <input type="text" [(ngModel)]="busqueda" placeholder="Buscar por item o tipo..." class="search-input" />
+            <input pInputText type="text" [(ngModel)]="busqueda" placeholder="Buscar por ítem, SKU, observación..." class="search-input" />
           </div>
-          <div>
-            <select [(ngModel)]="filtroTipo"
-              class="px-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none text-slate-700 bg-white cursor-pointer h-[40px]">
-              <option value="">Todos los tipos</option>
-              <option value="ENTRADA">ENTRADA</option>
-              <option value="SALIDA">SALIDA</option>
-            </select>
-          </div>
-          <button (click)="filtrarPorItem()" class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition h-[40px] cursor-pointer font-bold outline-none">
-            <i class="pi pi-filter"></i> Filtrar por Item
-          </button>
+          
+          <!-- Filtro Tipo -->
+          <p-select 
+            [options]="tipoOpciones" 
+            [(ngModel)]="filtroTipo" 
+            optionLabel="label" 
+            optionValue="value" 
+            styleClass="w-[160px] h-[40px] flex items-center" 
+            placeholder="Todos los tipos" 
+            appendTo="body"
+          ></p-select>
         </div>
       </div>
 
@@ -83,65 +97,89 @@ interface KardexEntry {
         </div>
       </div>
 
-      <!-- Tabla -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
-          <h2 class="font-semibold text-gray-800">Historial de Movimientos</h2>
-          <span class="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">{{ kardexFiltrado().length }} registros</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                <th class="px-5 py-3 text-left font-semibold">ID</th>
-                <th class="px-5 py-3 text-left font-semibold">Item</th>
-                <th class="px-5 py-3 text-left font-semibold">Tipo</th>
-                <th class="px-5 py-3 text-left font-semibold">Cantidad</th>
-                <th class="px-5 py-3 text-left font-semibold">Saldo Anterior</th>
-                <th class="px-5 py-3 text-left font-semibold">Saldo Actual</th>
-                <th class="px-5 py-3 text-left font-semibold">Fecha</th>
-                <th class="px-5 py-3 text-left font-semibold">Observación</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let k of kardexFiltrado()" class="border-t border-gray-50 hover:bg-gray-50 transition-colors">
-                <td class="px-5 py-3 text-gray-500 font-mono text-xs">{{ k.id_kardex }}</td>
-                <td class="px-5 py-3 font-semibold text-gray-800">
-                  {{ k.item?.producto?.nombre ?? ('Item #' + k.id_item) }}
-                </td>
-                <td class="px-5 py-3">
-                  <span [class]="k.tipo === 'ENTRADA' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'"
-                    class="px-3 py-1 rounded-full text-xs font-bold">
-                    {{ k.tipo }}
+      <!-- Tabla Premium PrimeNG -->
+      <div class="data-table-wrapper">
+        <p-table
+          [value]="kardexFiltrado()"
+          [paginator]="true"
+          [rows]="15"
+          styleClass="modern-table"
+          [rowHover]="true"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width:80px">ID</th>
+              <th>Ítem / Producto</th>
+              <th style="width:130px">Tipo</th>
+              <th style="width:120px">Cantidad</th>
+              <th style="width:140px">Saldo Anterior</th>
+              <th style="width:140px">Saldo Actual</th>
+              <th style="width:170px">Fecha</th>
+              <th>Observación</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-k>
+            <tr>
+              <td><span class="id-badge">#{{ k.id_kardex }}</span></td>
+              <td>
+                <div style="display:flex;flex-direction:column">
+                  <span class="nombre-cell" style="font-weight:600;">
+                    {{ k.item?.producto?.nombre ?? ('Ítem #' + k.id_item) }}
                   </span>
-                </td>
-                <td class="px-5 py-3 font-bold" [class.text-emerald-600]="k.tipo==='ENTRADA'" [class.text-red-600]="k.tipo==='SALIDA'">
+                  <span style="font-size:11px;color:#94a3b8;margin-top:2px">SKU: {{ k.item?.codigo_sku ?? '—' }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="k.tipo === 'ENTRADA' ? 'status-aprobada' : 'status-rechazada'">
+                  {{ k.tipo }}
+                </span>
+              </td>
+              <td>
+                <span class="font-bold text-sm" [class.text-green-600]="k.tipo==='ENTRADA'" [class.text-red-600]="k.tipo==='SALIDA'">
                   {{ k.tipo === 'ENTRADA' ? '+' : '-' }}{{ k.cantidad }}
-                </td>
-                <td class="px-5 py-3 text-gray-500">{{ k.saldo_anterior }}</td>
-                <td class="px-5 py-3 font-semibold text-gray-800">{{ k.saldo_actual }}</td>
-                <td class="px-5 py-3 text-gray-500 text-xs">{{ k.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
-                <td class="px-5 py-3 text-gray-500 text-xs max-w-[200px] truncate">{{ k.observacion ?? '—' }}</td>
-              </tr>
-              <tr *ngIf="kardexFiltrado().length === 0">
-                <td colspan="8" class="px-5 py-10 text-center text-gray-400">
-                  <i class="pi pi-inbox text-3xl mb-2 block"></i>
-                  No hay registros en el kardex
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </span>
+              </td>
+              <td>
+                <span style="color:#6b7280">{{ k.saldo_anterior }}</span>
+              </td>
+              <td>
+                <span style="font-weight:700;color:#1e293b">{{ k.saldo_actual }}</span>
+              </td>
+              <td>
+                <span class="fecha-cell">{{ k.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+              </td>
+              <td>
+                <span style="font-size:12px;color:#6b7280;max-width:200px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" [title]="k.observacion ?? ''">
+                  {{ k.observacion ?? '—' }}
+                </span>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="8" class="empty-message py-20 text-center">
+                <i class="pi pi-history text-5xl text-slate-300 opacity-50 mb-3 block"></i>
+                <p class="text-slate-400 font-bold text-lg">No hay registros en el kardex</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
       </div>
     </div>
   `,
 })
 export class Kardex implements OnInit {
+  private readonly http = inject(HttpClient);
+
   kardex = signal<KardexEntry[]>([]);
   busqueda = '';
   filtroTipo = '';
 
-  constructor(private http: HttpClient) {}
+  tipoOpciones = [
+    { label: 'Todos los tipos', value: '' },
+    { label: 'ENTRADA', value: 'ENTRADA' },
+    { label: 'SALIDA', value: 'SALIDA' }
+  ];
 
   ngOnInit() {
     this.cargar();
@@ -156,24 +194,19 @@ export class Kardex implements OnInit {
 
   kardexFiltrado(): KardexEntry[] {
     return this.kardex().filter(k => {
-      const termino = this.busqueda.toLowerCase();
+      const termino = this.busqueda.trim().toLowerCase();
       const coincideBusqueda = !termino ||
-        k.tipo.toLowerCase().includes(termino) ||
         (k.item?.producto?.nombre ?? '').toLowerCase().includes(termino) ||
+        (k.observacion ?? '').toLowerCase().includes(termino) ||
         String(k.id_item).includes(termino);
+
       const coincideTipo = !this.filtroTipo || k.tipo === this.filtroTipo;
+
       return coincideBusqueda && coincideTipo;
     });
   }
 
   contarTipo(tipo: string): number {
     return this.kardex().filter(k => k.tipo === tipo).length;
-  }
-
-  filtrarPorItem() {
-    const id = prompt('Ingresa el ID del item a filtrar:');
-    if (id) {
-      this.busqueda = id;
-    }
   }
 }

@@ -1,12 +1,27 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PrestamosService, Prestamo, CreatePrestamoDto } from '../../services/prestamos/prestamos.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+
+// PrimeNG
+import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-prestamos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule,
+    DialogModule,
+    SelectModule,
+    InputTextModule,
+    ButtonModule
+  ],
   template: `
     <div class="module-container">
       <!-- Header -->
@@ -19,28 +34,24 @@ import { PrestamosService, Prestamo, CreatePrestamoDto } from '../../services/pr
           </div>
         </div>
         <div class="header-actions">
-          <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
-            <button (click)="vistaActual.set('todos')"
-              [class.bg-[#39A900]]="vistaActual() === 'todos'"
-              [class.text-white]="vistaActual() === 'todos'"
-              [class.bg-transparent]="vistaActual() !== 'todos'"
-              [class.text-slate-600]="vistaActual() !== 'todos'"
-              class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all border-none outline-none cursor-pointer">
+          <div class="flex gap-2">
+            <button 
+              type="button"
+              (click)="vistaActual.set('todos')"
+              [class]="vistaActual() === 'todos' ? 'px-4 py-2 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl flex items-center gap-2 cursor-pointer outline-none border-none h-[40px] transition-colors' : 'px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer outline-none h-[40px] transition-colors'"
+            >
               Todos
             </button>
-            <button (click)="vistaActual.set('activos')"
-              [class.bg-[#39A900]]="vistaActual() === 'activos'"
-              [class.text-white]="vistaActual() === 'activos'"
-              [class.bg-transparent]="vistaActual() !== 'activos'"
-              [class.text-slate-600]="vistaActual() !== 'activos'"
-              class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all border-none outline-none cursor-pointer">
+            <button 
+              type="button"
+              (click)="vistaActual.set('activos')"
+              [class]="vistaActual() === 'activos' ? 'px-4 py-2 text-sm font-bold text-white bg-[#39A900] hover:bg-green-700 rounded-xl flex items-center gap-2 cursor-pointer outline-none border-none h-[40px] transition-colors' : 'px-4 py-2 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer outline-none h-[40px] transition-colors'"
+            >
               Activos
             </button>
           </div>
-          <button (click)="abrirModal()"
-            class="flex items-center gap-2 bg-[#39A900] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-md border-none outline-none h-[40px] cursor-pointer text-sm">
-            <i class="pi pi-plus"></i> Nuevo Préstamo
-          </button>
+          <button pButton label="Nuevo Préstamo" icon="pi pi-plus"
+            class="btn-agregar" (click)="abrirModal()"></button>
         </div>
       </div>
 
@@ -100,64 +111,120 @@ import { PrestamosService, Prestamo, CreatePrestamoDto } from '../../services/pr
         </div>
       </div>
 
-      <!-- Modal Nuevo Préstamo -->
-      <div *ngIf="mostrarModal()" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-          <div class="p-6 border-b border-gray-100">
-            <h3 class="text-lg font-bold text-gray-900">Registrar Nuevo Préstamo</h3>
-            <p class="text-gray-500 text-sm mt-1">Ingresa la información del equipo a prestar</p>
+      <!-- Modal Nuevo Préstamo (Estilo Formulario de Productos) -->
+      <p-dialog
+        maskStyleClass="transparent-mask"
+        [dismissableMask]="true"
+        header="✨ Registrar Nuevo Préstamo"
+        [(visible)]="mostrarModal"
+        [modal]="true"
+        [style]="{ width: '94vw', maxWidth: '660px' }"
+        [draggable]="true"
+        [resizable]="false"
+        styleClass="form-dialog shadow-2xl border border-slate-200"
+        appendTo="body"
+      >
+        <div class="form-grid mt-2" *ngIf="mostrarModal">
+          <!-- Ítem -->
+          <div class="form-field">
+            <label>Ítem <span class="text-red-500">*</span></label>
+            <p-select 
+              [options]="items" 
+              [(ngModel)]="nuevoDto.id_item" 
+              optionLabel="displayLabel" 
+              optionValue="id_item" 
+              placeholder="Seleccione un ítem" 
+              [filter]="true" 
+              filterPlaceholder="Buscar ítem..." 
+              styleClass="w-full flex items-center" 
+              appendTo="body"
+              [style]="{'width':'100%'}"
+            ></p-select>
           </div>
-          <div class="p-6 space-y-4">
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1.5">ID del Item *</label>
-              <input type="number" [(ngModel)]="nuevoDto.id_item"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
-                placeholder="Ingresa el ID del item">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1.5">ID Usuario Solicitante *</label>
-              <input type="number" [(ngModel)]="nuevoDto.id_usuario_solicitante"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
-                placeholder="ID del usuario">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1.5">ID Usuario Responsable *</label>
-              <input type="number" [(ngModel)]="nuevoDto.id_usuario_responsable"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
-                placeholder="ID del responsable">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1.5">Fecha Devolución Esperada *</label>
-              <input type="date" [(ngModel)]="nuevoDto.fecha_devolucion_esperada"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1.5">Observación</label>
-              <textarea [(ngModel)]="nuevoDto.observacion" rows="2"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900] resize-none"
-                placeholder="Observaciones opcionales..."></textarea>
-            </div>
+
+          <!-- Usuario Solicitante -->
+          <div class="form-field">
+            <label>Usuario Solicitante <span class="text-red-500">*</span></label>
+            <p-select 
+              [options]="usuarios" 
+              [(ngModel)]="nuevoDto.id_usuario_solicitante" 
+              optionLabel="displayLabel" 
+              optionValue="id_usuario" 
+              placeholder="Seleccione usuario solicitante" 
+              [filter]="true" 
+              filterPlaceholder="Buscar usuario..." 
+              styleClass="w-full flex items-center" 
+              appendTo="body"
+              [style]="{'width':'100%'}"
+            ></p-select>
           </div>
-          <div class="p-6 border-t border-gray-100 flex gap-3 justify-end">
-            <button (click)="cerrarModal()"
-              class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 transition-colors text-sm">
-              Cancelar
-            </button>
-            <button (click)="guardarPrestamo()" [disabled]="guardando()"
-              class="px-5 py-2.5 rounded-xl bg-[#39A900] text-white font-semibold hover:bg-[#2e8a00] transition-colors text-sm disabled:opacity-60">
-              {{ guardando() ? 'Guardando...' : 'Registrar Préstamo' }}
-            </button>
+
+          <!-- Usuario Responsable -->
+          <div class="form-field">
+            <label>Usuario Responsable <span class="text-red-500">*</span></label>
+            <p-select 
+              [options]="usuarios" 
+              [(ngModel)]="nuevoDto.id_usuario_responsable" 
+              optionLabel="displayLabel" 
+              optionValue="id_usuario" 
+              placeholder="Seleccione usuario responsable" 
+              [filter]="true" 
+              filterPlaceholder="Buscar usuario..." 
+              styleClass="w-full flex items-center" 
+              appendTo="body"
+              [style]="{'width':'100%'}"
+            ></p-select>
+          </div>
+
+          <!-- Fecha Devolución Esperada -->
+          <div class="form-field">
+            <label for="fecha-dev">Fecha Devolución Esperada <span class="text-red-500">*</span></label>
+            <input 
+              pInputText 
+              id="fecha-dev" 
+              type="date" 
+              [(ngModel)]="nuevoDto.fecha_devolucion_esperada"
+              class="w-full"
+            />
+          </div>
+
+          <!-- Observación -->
+          <div class="form-field">
+            <label for="observacion">Observación</label>
+            <textarea 
+              pInputText
+              id="observacion"
+              [(ngModel)]="nuevoDto.observacion" 
+              rows="3"
+              placeholder="Observaciones opcionales..."
+              class="w-full" 
+              style="resize:vertical; min-height:68px; width:100%; border:2px solid #1e293b; border-radius:8px; padding:8px 10px; font-size:0.875rem; background:#fff; color:#1e293b; outline:none; box-sizing:border-box;"
+            ></textarea>
           </div>
         </div>
-      </div>
+
+        <ng-template pTemplate="footer">
+          <div class="dialog-footer">
+            <button pButton label="Cancelar" class="btn-cancelar" (click)="cerrarModal()"></button>
+            <button pButton label="Registrar Préstamo" class="btn-guardar"
+              [disabled]="!nuevoDto.id_item || !nuevoDto.id_usuario_solicitante || !nuevoDto.id_usuario_responsable || !nuevoDto.fecha_devolucion_esperada || guardando"
+              (click)="guardarPrestamo()"></button>
+          </div>
+        </ng-template>
+      </p-dialog>
     </div>
   `,
 })
 export class PrestamosComponent implements OnInit {
+  private readonly http = inject(HttpClient);
+
   prestamos = signal<Prestamo[]>([]);
   vistaActual = signal<'todos' | 'activos'>('todos');
-  mostrarModal = signal(false);
-  guardando = signal(false);
+  mostrarModal = false;
+  guardando = false;
+
+  items: any[] = [];
+  usuarios: any[] = [];
 
   nuevoDto: CreatePrestamoDto = {
     id_item: 0,
@@ -171,6 +238,34 @@ export class PrestamosComponent implements OnInit {
 
   ngOnInit() {
     this.cargarPrestamos();
+    this.cargarItems();
+    this.cargarUsuarios();
+  }
+
+  cargarItems() {
+    this.http.get<any>(`${environment.apiUrl}/items`).subscribe({
+      next: (res: any) => {
+        const rawItems = res?.data || res || [];
+        this.items = rawItems.map((item: any) => ({
+          ...item,
+          displayLabel: `${item.producto?.nombre ?? 'Ítem'} — SKU: ${item.codigo_sku} (${item.estado})`
+        }));
+      },
+      error: () => { this.items = []; }
+    });
+  }
+
+  cargarUsuarios() {
+    this.http.get<any>(`${environment.apiUrl}/usuarios`).subscribe({
+      next: (res: any) => {
+        const rawUsers = res?.data || res || [];
+        this.usuarios = rawUsers.map((user: any) => ({
+          ...user,
+          displayLabel: `${user.nombre} ${user.apellidos || ''} (${user.correo})`
+        }));
+      },
+      error: () => { this.usuarios = []; }
+    });
   }
 
   cargarPrestamos() {
@@ -198,30 +293,30 @@ export class PrestamosComponent implements OnInit {
 
   abrirModal() {
     this.nuevoDto = {
-      id_item: 0,
-      id_usuario_solicitante: 0,
-      id_usuario_responsable: 0,
+      id_item: null as any,
+      id_usuario_solicitante: null as any,
+      id_usuario_responsable: null as any,
       fecha_devolucion_esperada: '',
       observacion: '',
     };
-    this.mostrarModal.set(true);
+    this.mostrarModal = true;
   }
 
   cerrarModal() {
-    this.mostrarModal.set(false);
+    this.mostrarModal = false;
   }
 
   guardarPrestamo() {
-    if (!this.nuevoDto.id_item || !this.nuevoDto.fecha_devolucion_esperada) return;
-    this.guardando.set(true);
+    if (!this.nuevoDto.id_item || !this.nuevoDto.id_usuario_solicitante || !this.nuevoDto.id_usuario_responsable || !this.nuevoDto.fecha_devolucion_esperada) return;
+    this.guardando = true;
     this.svc.create(this.nuevoDto).subscribe({
       next: (res) => {
         this.cargarPrestamos();
         this.cerrarModal();
-        this.guardando.set(false);
+        this.guardando = false;
       },
       error: () => {
-        this.guardando.set(false);
+        this.guardando = false;
         alert('Error al registrar el préstamo');
       },
     });

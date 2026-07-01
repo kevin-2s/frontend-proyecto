@@ -25,3 +25,21 @@
     border-width: 2px !important;
   }
 }
+
+.documento-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+
+  .p-select {
+    flex: 0 0 96px;
+    width: 96px;
+    min-width: 96px;
+  }
+
+  input {
+    flex: 1;
+  }
+}
+

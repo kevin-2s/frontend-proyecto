@@ -369,7 +369,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
       title: 'MOVIMIENTOS',
       expanded: true,
       items: [
-        { title: 'Movimientos', path: 'movimientos', icon: 'pi-arrows-h', requiredPermission: 'ver_movimientos' },
         { title: 'Préstamos', path: 'prestamos', icon: 'pi-send', requiredPermission: 'ver_devoluciones' },
         { title: 'Kardex', path: 'kardex', icon: 'pi-history', requiredPermission: 'ver_movimientos' }
       ]
@@ -385,7 +384,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       title: 'UTILIDADES',
       expanded: true,
       items: [
-        { title: 'Escáner QR', path: 'qr', icon: 'pi-qrcode', requiredPermission: 'ver_dashboard' }
+        { title: 'Lector de Barras', path: 'qr', icon: 'pi-barcode', requiredPermission: 'ver_dashboard' }
       ]
     }
   ];
@@ -524,7 +523,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       const instructorPaths = [
         'sedes', 'sitios', 'areas', 'programas', 'fichas',
         'inventario/productos', 'inventario/categoria', 'inventario/bodega', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades', 'inventario/traslados',
-        'movimientos', 'home',
+        'home',
         'kardex', 'reportes', 'qr'
       ];
       return instructorPaths.includes(path);

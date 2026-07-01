@@ -161,75 +161,74 @@ interface Usuario {
         </div>
         
         <div class="p-6 flex flex-col gap-6">
-          <div class="form-grid p-0">
+          <div class="product-form-row p-0">
             
-            <!-- Primera Fila: Nombres y Apellidos -->
-            <div class="product-form-row">
-              <div class="form-field">
-                <label for="u-nombre">Nombres <span class="text-red-500">*</span></label>
-                <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" onlyLetters placeholder="Ej: Juan Carlos" />
-              </div>
-              <div class="form-field">
-                <label for="u-apellidos">Apellidos <span class="text-red-500">*</span></label>
-                <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" onlyLetters placeholder="Ej: Pérez Gómez" />
+            <!-- Nombres -->
+            <div class="form-field">
+              <label for="u-nombre">Nombres <span class="text-red-500">*</span></label>
+              <input pInputText id="u-nombre" [(ngModel)]="usuario.nombre" onlyLetters placeholder="Ej: Juan Carlos" />
+            </div>
+
+            <!-- Apellidos -->
+            <div class="form-field">
+              <label for="u-apellidos">Apellidos <span class="text-red-500">*</span></label>
+              <input pInputText id="u-apellidos" [(ngModel)]="usuario.apellidos" onlyLetters placeholder="Ej: Pérez Gómez" />
+            </div>
+
+            <!-- Correo Electrónico -->
+            <div class="form-field">
+              <label for="u-correo">Correo Electrónico <span class="text-red-500">*</span></label>
+              <input pInputText id="u-correo" [(ngModel)]="usuario.correo" type="email" placeholder="Ej: juan.perez@sena.edu.co" />
+            </div>
+
+            <!-- Rol -->
+            <div class="form-field">
+              <label>Rol <span class="text-red-500">*</span></label>
+              <div class="input-with-button">
+                <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Seleccione un rol" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                <button type="button" class="btn-inline-add flex items-center justify-center cursor-pointer outline-none" (click)="openRolDialog()">
+                  <i class="pi pi-plus font-bold text-lg"></i>
+                </button>
               </div>
             </div>
 
-            <!-- Segunda Fila: Correo y Rol -->
-            <div class="product-form-row">
-              <div class="form-field">
-                <label for="u-correo">Correo Electrónico <span class="text-red-500">*</span></label>
-                <input pInputText id="u-correo" [(ngModel)]="usuario.correo" type="email" placeholder="Ej: juan.perez@sena.edu.co" />
-              </div>
-              <div class="form-field">
-                <label>Rol <span class="text-red-500">*</span></label>
-                <div class="input-with-button">
-                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Seleccione un rol" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                  <button type="button" class="btn-inline-add flex items-center justify-center cursor-pointer outline-none" (click)="openRolDialog()">
-                    <i class="pi pi-plus font-bold text-lg"></i>
-                  </button>
-                </div>
-              </div>
+            <!-- Tipo de Documento -->
+            <div class="form-field">
+              <label>Tipo de Documento <span class="text-red-500">*</span></label>
+              <p-select [options]="tipoDocumentoOpciones" [(ngModel)]="usuario.tipo_documento" placeholder="Seleccione tipo" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
             </div>
 
-            <!-- Tercera Fila: Teléfono y Documento Combinado -->
-            <div class="product-form-row">
-              <!-- Teléfono -->
-              <div class="form-field">
-                <label for="u-telefono">Teléfono</label>
-                <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" onlyNumbers placeholder="Ej: 3123456789" />
-              </div>
-              
-              <!-- Documento Combinado (Selector + Número) -->
-              <div class="form-field">
-                <label for="u-documento">Número de Documento <span class="text-red-500">*</span></label>
-                <div class="input-with-button">
-                  <p-select [options]="tipoDocumentoOpciones" [(ngModel)]="usuario.tipo_documento" placeholder="Tipo" styleClass="w-[96px]" appendTo="body"></p-select>
-                  <input 
-                    pInputText 
-                    id="u-documento" 
-                    [(ngModel)]="usuario.numero_documento" 
-                    onlyNumbers
-                    placeholder="Ej: 1098765432" 
-                    style="flex: 1;"
-                  />
-                </div>
-              </div>
+            <!-- Número de Documento (Solo si se selecciona Tipo de Documento) -->
+            <div class="form-field" *ngIf="usuario.tipo_documento">
+              <label for="u-documento">Número de Documento <span class="text-red-500">*</span></label>
+              <input 
+                pInputText 
+                id="u-documento" 
+                [(ngModel)]="usuario.numero_documento" 
+                onlyNumbers
+                placeholder="Ej: 1098765432" 
+                class="w-full"
+              />
             </div>
 
-            <!-- Cuarta Fila: Contraseña + Estado -->
-            <div class="product-form-row">
-              <!-- Contraseña -->
-              <div class="form-field" *ngIf="esNuevo">
-                <label>Contraseña <span class="text-red-500">*</span></label>
-                <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full" [toggleMask]="true" appendTo="body" placeholder="••••••••"></p-password>
-              </div>
-              <!-- Estado -->
-              <div class="form-field">
-                <label>Estado <span class="text-red-500">*</span></label>
-                <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder="Seleccione estado" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-              </div>
+            <!-- Teléfono -->
+            <div class="form-field">
+              <label for="u-telefono">Teléfono</label>
+              <input pInputText id="u-telefono" [(ngModel)]="usuario.telefono" onlyNumbers placeholder="Ej: 3123456789" class="w-full" />
             </div>
+
+            <!-- Estado -->
+            <div class="form-field">
+              <label>Estado <span class="text-red-500">*</span></label>
+              <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder="Seleccione estado" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+            </div>
+
+            <!-- Contraseña (Solo si es nuevo) -->
+            <div class="form-field" *ngIf="esNuevo">
+              <label>Contraseña <span class="text-red-500">*</span></label>
+              <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full" [toggleMask]="true" appendTo="body" placeholder="••••••••"></p-password>
+            </div>
+
           </div>
 
           <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
@@ -481,7 +480,7 @@ export class UsuariosComponent implements OnInit {
       apellidos: '',
       correo: '',
       telefono: '',
-      tipo_documento: 'C.C.',
+      tipo_documento: '',
       numero_documento: '',
       documento: '',
       password: '',
@@ -500,17 +499,22 @@ export class UsuariosComponent implements OnInit {
     this.esNuevo = false;
 
     // Separar tipo de documento y número de documento
-    let tipo_documento = 'C.C.';
+    let tipo_documento = '';
     let numero_documento = u.documento || '';
     if (u.documento) {
       const docClean = u.documento.trim();
       const tipos = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.', 'CC', 'TI', 'CE', 'PEP', 'PPT', 'PAS'];
+      let found = false;
       for (const t of tipos) {
         if (docClean.toUpperCase().startsWith(t.toUpperCase())) {
           tipo_documento = t.includes('.') ? t : t.split('').join('.') + '.';
           numero_documento = docClean.substring(t.length).trim();
+          found = true;
           break;
         }
+      }
+      if (!found) {
+        tipo_documento = 'C.C.';
       }
     }
 
@@ -546,7 +550,7 @@ export class UsuariosComponent implements OnInit {
 
   guardar() {
     // Validaciones basicas
-    if (!this.usuario.nombre || !this.usuario.correo || !this.usuario.id_rol || !this.usuario.numero_documento) {
+    if (!this.usuario.nombre || !this.usuario.correo || !this.usuario.id_rol || !this.usuario.numero_documento || !this.usuario.tipo_documento) {
       this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Por favor complete todos los campos requeridos' });
       return;
     }

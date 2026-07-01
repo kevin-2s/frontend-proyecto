@@ -177,72 +177,70 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
           </div>
           
           <div class="p-6 flex flex-col gap-6">
-            <div class="form-grid p-0">
+            <div class="product-form-row p-0">
               
-              <!-- Nombres y Apellidos -->
-              <div class="product-form-row">
-                <div class="form-field">
-                  <label for="nombre">Nombres <span class="text-red-500">*</span></label>
-                  <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" onlyLetters placeholder="Ej: Juan Carlos" />
-                </div>
-                <div class="form-field">
-                  <label for="apellidos">Apellidos <span class="text-red-500">*</span></label>
-                  <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" onlyLetters placeholder="Ej: Pérez Gómez" />
+              <!-- Nombres -->
+              <div class="form-field">
+                <label for="nombre">Nombres <span class="text-red-500">*</span></label>
+                <input pInputText id="nombre" [(ngModel)]="usuarioForm.nombre" onlyLetters placeholder="Ej: Juan Carlos" />
+              </div>
+
+              <!-- Apellidos -->
+              <div class="form-field">
+                <label for="apellidos">Apellidos <span class="text-red-500">*</span></label>
+                <input pInputText id="apellidos" [(ngModel)]="usuarioForm.apellidos" onlyLetters placeholder="Ej: Pérez Gómez" />
+              </div>
+
+              <!-- Correo Electrónico -->
+              <div class="form-field">
+                <label for="correo">Correo Electrónico <span class="text-red-500">*</span></label>
+                <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder="Ej: juan.perez@sena.edu.co" />
+              </div>
+
+              <!-- Rol -->
+              <div class="form-field">
+                <label>Rol <span class="text-red-500">*</span></label>
+                <div class="input-with-button">
+                  <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Seleccione un rol" styleClass="w-full flex items-center" appendTo="body"></p-select>
+                  <button pButton type="button" icon="pi pi-plus" class="btn-inline-add" (click)="openNewRolDialog()"></button>
                 </div>
               </div>
 
-              <!-- Correo y Rol -->
-              <div class="product-form-row">
-                <div class="form-field">
-                  <label for="correo">Correo Electrónico <span class="text-red-500">*</span></label>
-                  <input pInputText type="email" id="correo" [(ngModel)]="usuarioForm.correo" placeholder="Ej: juan.perez@sena.edu.co" />
-                </div>
-                <div class="form-field">
-                  <label>Rol <span class="text-red-500">*</span></label>
-                  <div class="input-with-button">
-                    <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Seleccione un rol" styleClass="w-full flex items-center" appendTo="body"></p-select>
-                    <button pButton type="button" icon="pi pi-plus" class="btn-inline-add" (click)="openNewRolDialog()"></button>
-                  </div>
-                </div>
+              <!-- Tipo de Documento -->
+              <div class="form-field">
+                <label>Tipo de Documento <span class="text-red-500">*</span></label>
+                <p-select [options]="tipoDocumentoOpciones" [(ngModel)]="usuarioForm.tipo_documento" placeholder="Seleccione tipo" styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
               </div>
 
-              <!-- Teléfono y Documento -->
-              <div class="product-form-row">
-                <!-- Teléfono -->
-                <div class="form-field">
-                  <label for="telefono">Teléfono</label>
-                  <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" onlyNumbers placeholder="Ej: 3123456789" />
-                </div>
-                
-                <!-- Documento Combinado (Selector + Número) -->
-                <div class="form-field">
-                  <label for="documento">Documento de Identidad <span class="text-red-500">*</span></label>
-                  <div class="input-with-button">
-                    <p-select [options]="tipoDocumentoOpciones" [(ngModel)]="usuarioForm.tipo_documento" placeholder="Tipo" styleClass="w-[96px]" appendTo="body"></p-select>
-                    <input 
-                      pInputText 
-                      id="documento" 
-                      [(ngModel)]="usuarioForm.numero_documento" 
-                      onlyNumbers
-                      placeholder="Ej: 1098765432" 
-                      style="flex: 1;"
-                    />
-                  </div>
-                </div>
+              <!-- Número de Documento (Solo si se selecciona Tipo de Documento) -->
+              <div class="form-field" *ngIf="usuarioForm.tipo_documento">
+                <label for="documento">Número de Documento <span class="text-red-500">*</span></label>
+                <input 
+                  pInputText 
+                  id="documento" 
+                  [(ngModel)]="usuarioForm.numero_documento" 
+                  onlyNumbers
+                  placeholder="Ej: 1098765432" 
+                  class="w-full"
+                />
               </div>
 
-              <!-- Contraseña + Estado -->
-              <div class="product-form-row">
-                <!-- Contraseña -->
-                <div class="form-field" *ngIf="esNuevoUsuario">
-                  <label>Contraseña <span class="text-red-500">*</span></label>
-                  <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full" [toggleMask]="true" appendTo="body" placeholder="••••••••"></p-password>
-                </div>
-                <!-- Estado -->
-                <div class="form-field">
-                  <label>Estado <span class="text-red-500">*</span></label>
-                  <p-select [options]="estadoOpciones" [(ngModel)]="usuarioForm.estado" optionLabel="label" optionValue="value" placeholder="Seleccione estado" styleClass="w-full flex items-center" appendTo="body"></p-select>
-                </div>
+              <!-- Teléfono -->
+              <div class="form-field">
+                <label for="telefono">Teléfono</label>
+                <input pInputText id="telefono" [(ngModel)]="usuarioForm.telefono" onlyNumbers placeholder="Ej: 3123456789" class="w-full" />
+              </div>
+
+              <!-- Estado -->
+              <div class="form-field">
+                <label>Estado <span class="text-red-500">*</span></label>
+                <p-select [options]="estadoOpciones" [(ngModel)]="usuarioForm.estado" optionLabel="label" optionValue="value" placeholder="Seleccione estado" styleClass="w-full flex items-center" appendTo="body"></p-select>
+              </div>
+
+              <!-- Contraseña (Solo si es nuevo) -->
+              <div class="form-field" *ngIf="esNuevoUsuario">
+                <label>Contraseña <span class="text-red-500">*</span></label>
+                <p-password [(ngModel)]="usuarioForm.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full" [toggleMask]="true" appendTo="body" placeholder="••••••••"></p-password>
               </div>
 
             </div>
@@ -1045,7 +1043,7 @@ export class RolesComponent implements OnInit {
       apellidos: '',
       correo: '',
       telefono: '',
-      tipo_documento: 'C.C.',
+      tipo_documento: '',
       numero_documento: '',
       documento: '',
       password: '',
@@ -1064,17 +1062,22 @@ export class RolesComponent implements OnInit {
     this.esNuevoUsuario = false;
 
     // Separar tipo de documento y número de documento
-    let tipo_documento = 'C.C.';
+    let tipo_documento = '';
     let numero_documento = u.documento || '';
     if (u.documento) {
       const docClean = u.documento.trim();
       const tipos = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.', 'CC', 'TI', 'CE', 'PEP', 'PPT', 'PAS'];
+      let found = false;
       for (const t of tipos) {
         if (docClean.toUpperCase().startsWith(t.toUpperCase())) {
           tipo_documento = t.includes('.') ? t : t.split('').join('.') + '.';
           numero_documento = docClean.substring(t.length).trim();
+          found = true;
           break;
         }
+      }
+      if (!found) {
+        tipo_documento = 'C.C.';
       }
     }
 
@@ -1102,7 +1105,7 @@ export class RolesComponent implements OnInit {
 
   guardarUsuario() {
     // Validaciones basicas
-    if (!this.usuarioForm.nombre || !this.usuarioForm.correo || !this.usuarioForm.id_rol || !this.usuarioForm.numero_documento) {
+    if (!this.usuarioForm.nombre || !this.usuarioForm.correo || !this.usuarioForm.id_rol || !this.usuarioForm.numero_documento || !this.usuarioForm.tipo_documento) {
       this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Por favor complete todos los campos requeridos' });
       return;
     }

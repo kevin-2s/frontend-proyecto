@@ -272,7 +272,7 @@ interface Bodega {
             </ng-template>
           </p-select>
           <small class="text-slate-400 text-xs mt-1 block">
-            Solo usuarios con rol Responsable o Administrador
+            Administrador, Responsable de Bodega o Instructor
           </small>
         </div>
       </div>
@@ -354,7 +354,14 @@ export class BodegaComponent implements OnInit, OnDestroy {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
         const all: any[] = res?.data || res || [];
-        this.bodegas = all.filter(s => this.TIPOS_VALIDOS.includes(s.tipo));
+        let filtered = all.filter(s => this.TIPOS_VALIDOS.includes(s.tipo));
+        if (!this.authService.isAdmin()) {
+          const userId = this.authService.getUserId();
+          filtered = filtered.filter(b =>
+            b.id_responsable === userId || b.responsable?.id_usuario === userId
+          );
+        }
+        this.bodegas = filtered;
         this.bodegasFiltradas = [...this.bodegas];
         this.cdr.markForCheck();
       },
@@ -369,10 +376,11 @@ export class BodegaComponent implements OnInit, OnDestroy {
     this.usuarioService.getAll().subscribe({
       next: (res: any) => {
         const todos: any[] = res?.data || res || [];
-        // Filtrar usuarios con rol Responsable o Administrador
+        // Pueden ser responsables: Administrador, Responsable de Bodega e Instructor
+        const rolesPermitidos = ['administrador', 'responsable', 'instructor'];
         const filtrados = todos.filter((u: any) => {
           const rol = (u.rolNombre || u.rol?.nombre || '').toLowerCase();
-          return rol.includes('responsable') || rol.includes('administrador');
+          return rolesPermitidos.some(r => rol.includes(r));
         });
         this.usuariosResponsables = (filtrados.length > 0 ? filtrados : todos).map((u: any) => ({
           ...u,

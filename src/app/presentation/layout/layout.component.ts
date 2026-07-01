@@ -366,14 +366,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
       ]
     },
     {
-      title: 'MOVIMIENTOS',
-      expanded: true,
-      items: [
-        { title: 'Préstamos', path: 'prestamos', icon: 'pi-send', requiredPermission: 'ver_devoluciones' },
-        { title: 'Kardex', path: 'kardex', icon: 'pi-history', requiredPermission: 'ver_movimientos' }
-      ]
-    },
-    {
       title: 'REPORTES',
       expanded: true,
       items: [

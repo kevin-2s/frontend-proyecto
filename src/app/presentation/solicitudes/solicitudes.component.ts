@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -107,6 +107,18 @@ interface Solicitud {
           </div>
           <p style="font-size:24px;font-weight:800;color:#ef4444;margin:0">{{ contarEstado('RECHAZADA') }}</p>
         </div>
+        <!-- Badge de pendientes para aprobar (solo visible para quien puede aprobar) -->
+        <div *ngIf="pendientesParaAprobar > 0"
+          style="background:#fffbeb;border-radius:16px;padding:1.25rem;border:2px solid #fbbf24;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <span style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Tu aprobación</span>
+            <div style="width:32px;height:32px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center">
+              <i class="pi pi-bell" style="color:#d97706;font-size:14px"></i>
+            </div>
+          </div>
+          <p style="font-size:24px;font-weight:800;color:#d97706;margin:0">{{ pendientesParaAprobar }}</p>
+          <div style="font-size:11px;color:#92400e;margin-top:2px">esperando tu respuesta</div>
+        </div>
       </div>
 
       <div class="data-table-wrapper">
@@ -117,7 +129,7 @@ interface Solicitud {
             <tr>
               <th style="width:80px">Folio</th>
               <th style="min-width:180px">Producto</th>
-              <th style="min-width:140px">Bodega</th>
+              <th style="min-width:140px">Bodega / Responsable</th>
               <th style="width:90px" class="text-center">Cant.</th>
               <th style="min-width:180px">Justificación</th>
               <th style="min-width:130px">Solicitante</th>
@@ -127,8 +139,14 @@ interface Solicitud {
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-sol>
-            <tr>
-              <td><span class="id-badge">#{{ sol.id_solicitud }}</span></td>
+            <tr [style.background]="esPendienteParaMi(sol) ? '#fffbeb' : ''">
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="id-badge">#{{ sol.id_solicitud }}</span>
+                  <i *ngIf="esPendienteParaMi(sol)" class="pi pi-bell"
+                    style="color:#d97706;font-size:12px" pTooltip="Requiere tu aprobación" tooltipPosition="top"></i>
+                </div>
+              </td>
               <td>
                 <div>
                   <span style="font-size:13px;font-weight:600;color:#1e293b">
@@ -143,7 +161,11 @@ interface Solicitud {
                 <span style="font-size:13px;color:#374151;display:block">
                   {{ getBodegaNombre(sol) }}
                 </span>
-                <span *ngIf="getBodegaTipoLabel(sol)" style="font-size:11px;color:#94a3b8">{{ getBodegaTipoLabel(sol) }}</span>
+                <span *ngIf="getBodegaResponsable(sol)" style="font-size:11px;color:#6366f1;font-weight:600">
+                  <i class="pi pi-user" style="font-size:10px;margin-right:3px"></i>{{ getBodegaResponsable(sol) }}
+                </span>
+                <span *ngIf="!getBodegaResponsable(sol) && getBodegaNombre(sol) !== '—'"
+                  style="font-size:11px;color:#94a3b8">Sin responsable</span>
               </td>
               <td class="text-center">
                 <span style="font-weight:700;color:#1e293b;font-size:15px">{{ sol.cantidad ?? 1 }}</span>
@@ -157,6 +179,8 @@ interface Solicitud {
                 <span style="font-size:13px;color:#374151">
                   {{ sol.usuario?.nombre ?? ('Usuario #' + sol.id_usuario) }}
                 </span>
+                <div *ngIf="sol.id_usuario === currentUserId"
+                  style="font-size:10px;color:#6366f1;font-weight:700">TÚ</div>
               </td>
               <td><span class="fecha-cell">{{ sol.fecha | date:'dd/MM/yyyy' }}</span></td>
               <td>
@@ -164,21 +188,21 @@ interface Solicitud {
               </td>
               <td>
                 <div class="action-buttons justify-center">
-                  <button *ngIf="sol.estado === 'PENDIENTE' && esAdmin()"
+                  <button *ngIf="sol.estado === 'PENDIENTE' && puedeAprobarSolicitud(sol)"
                     pButton icon="pi pi-check"
                     class="p-button-text text-green-600 hover:bg-green-50"
-                    (click)="aprobar(sol)" pTooltip="Aprobar solicitud"></button>
-                  <button *ngIf="sol.estado === 'PENDIENTE' && esAdmin()"
+                    (click)="aprobar(sol)" pTooltip="Aprobar solicitud" tooltipPosition="top"></button>
+                  <button *ngIf="sol.estado === 'PENDIENTE' && puedeAprobarSolicitud(sol)"
                     pButton icon="pi pi-times"
                     class="p-button-text text-red-600 hover:bg-red-50"
-                    (click)="rechazar(sol)" pTooltip="Rechazar solicitud"></button>
-                  <button *ngIf="sol.estado === 'APROBADA' && esAdmin()"
+                    (click)="rechazar(sol)" pTooltip="Rechazar solicitud" tooltipPosition="top"></button>
+                  <button *ngIf="sol.estado === 'APROBADA' && puedeAprobarSolicitud(sol)"
                     pButton icon="pi pi-send"
                     class="p-button-text text-emerald-600 hover:bg-emerald-50"
-                    (click)="entregar(sol)" pTooltip="Marcar como entregada"></button>
+                    (click)="entregar(sol)" pTooltip="Marcar como entregada" tooltipPosition="top"></button>
                   <button pButton icon="pi pi-eye"
                     class="p-button-text text-slate-500 hover:bg-slate-50"
-                    (click)="ver(sol)" pTooltip="Ver detalles"></button>
+                    (click)="ver(sol)" pTooltip="Ver detalles" tooltipPosition="top"></button>
                 </div>
               </td>
             </tr>
@@ -217,7 +241,12 @@ interface Solicitud {
         </div>
         <div class="detail-row">
           <span class="detail-label">Bodega:</span>
-          <span class="detail-value">{{ getBodegaNombre(solicitudView) }}<span *ngIf="getBodegaTipoLabel(solicitudView)" class="text-slate-400"> ({{ getBodegaTipoLabel(solicitudView) }})</span></span>
+          <span class="detail-value">
+            {{ getBodegaNombre(solicitudView) }}
+            <span *ngIf="getBodegaResponsable(solicitudView)" style="color:#6366f1;font-size:12px;margin-left:6px">
+              (Resp: {{ getBodegaResponsable(solicitudView) }})
+            </span>
+          </span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Cantidad:</span>
@@ -356,8 +385,13 @@ interface Solicitud {
           <div style="display:flex;align-items:center;gap:8px">
             <i class="pi pi-info-circle" style="color:#3b82f6;font-size:14px"></i>
             <span style="font-size:12px;color:#1d4ed8">
-              El responsable de la bodega <strong>{{ bodegaSeleccionada.nombre }}</strong>
-              recibirá una notificación de esta solicitud.
+              <span *ngIf="bodegaSeleccionada.responsable">
+                <strong>{{ bodegaSeleccionada.responsable.nombre }}</strong> recibirá una notificación como responsable de
+                <strong>{{ bodegaSeleccionada.nombre }}</strong>.
+              </span>
+              <span *ngIf="!bodegaSeleccionada.responsable && !bodegaSeleccionada.id_responsable">
+                La bodega <strong>{{ bodegaSeleccionada.nombre }}</strong> no tiene responsable asignado. El Administrador gestionará la solicitud.
+              </span>
             </span>
           </div>
         </div>
@@ -398,21 +432,86 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
   todosLosProductos: any[] = [];
   productosOpciones: { label: string; value: number }[] = [];
 
+  // Evita que los botones de aprobar/rechazar aparezcan antes de cargar las bodegas
+  bodegasCargadas = false;
+
   selectedProductoId: number | null = null;
   stockSol = { disponibles: 0, total: 0, cargando: false };
 
   nuevaSolicitud: { id_bodega: number | null; id_producto: number | null; cantidad: number; observacion: string } =
     { id_bodega: null, id_producto: null, cantidad: 1, observacion: '' };
 
-  esAdmin(): boolean {
-    const role = this.authService.getUserRole()?.toUpperCase() ?? '';
-    return role === 'ADMINISTRADOR' || role === 'RESPONSABLE';
+  get currentUserId(): number {
+    return Number(this.authService.getUserId()) || 0;
+  }
+
+  private get currentRole(): string {
+    return this.authService.getUserRole()?.toUpperCase() ?? '';
+  }
+
+  get pendientesParaAprobar(): number {
+    if (!this.bodegasCargadas) return 0;
+    return this.solicitudes.filter(s => s.estado === 'PENDIENTE' && this.puedeAprobarSolicitud(s)).length;
+  }
+
+  /**
+   * Determina si el usuario actual puede aprobar/rechazar/entregar esta solicitud.
+   *
+   * Reglas (independientes del nombre del rol):
+   *  - Nunca puede aprobar su propia solicitud.
+   *  - Si el usuario ES el responsable asignado de esa bodega → puede aprobar (sin importar el rol).
+   *  - Si la bodega NO tiene responsable asignado y el usuario es Administrador → puede aprobar.
+   *  - Cualquier otro caso → no puede aprobar.
+   *  - Si las bodegas aún no cargaron → false (evita race condition).
+   */
+  puedeAprobarSolicitud(sol: Solicitud): boolean {
+    if (!this.bodegasCargadas) return false;
+
+    const userId = this.currentUserId;
+    if (!userId || sol.id_usuario === userId) return false;
+
+    const idSitio = sol.producto?.id_sitio;
+    const bodega = idSitio ? this.bodegas.find(b => b.id_sitio === idSitio) : null;
+    const idResponsable: number | null = bodega?.id_responsable ?? bodega?.responsable?.id_usuario ?? null;
+
+    // El usuario es el responsable asignado de esta bodega (cualquier rol)
+    if (idResponsable && idResponsable === userId) return true;
+
+    // Bodega sin responsable: solo el Administrador puede aprobar
+    if (!idResponsable && this.currentRole === 'ADMINISTRADOR') return true;
+
+    return false;
+  }
+
+  esPendienteParaMi(sol: Solicitud): boolean {
+    return sol.estado === 'PENDIENTE' && this.puedeAprobarSolicitud(sol);
   }
 
   ngOnInit() {
-    this.cargarSolicitudes();
-    this.cargarBodegas();
-    this.cargarProductos();
+    // Cargar bodegas y productos en paralelo, luego cargar solicitudes
+    forkJoin({
+      sitios: this.sitioService.getSitios(),
+      productos: this.productoService.getProductos(),
+    }).subscribe({
+      next: ({ sitios, productos }) => {
+        const sitioData = sitios?.data ?? sitios ?? [];
+        this.bodegas = sitioData.filter((s: any) => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo) && s.estado !== false);
+        this.bodegasOpciones = this.bodegas.map((b: any) => ({
+          label: `${b.nombre} (${this.getTipoLabelDeSitio(b)})` + (b.responsable ? ` — ${b.responsable.nombre}` : ''),
+          value: b.id_sitio,
+        }));
+        this.todosLosProductos = productos?.data ?? productos ?? [];
+        this.bodegasCargadas = true;
+        this.cargarSolicitudes();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.bodegasCargadas = true;
+        this.cargarSolicitudes();
+        this.cdr.markForCheck();
+      },
+    });
+
     this.changesSub = this.apiService.changes.subscribe(() => this.cargarSolicitudes());
   }
 
@@ -437,34 +536,9 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     BODEGA: 'Bodega', AMBIENTE: 'Ambiente', LABORATORIO: 'Laboratorio', OTRO: 'Otro',
   };
 
-  cargarBodegas() {
-    this.sitioService.getSitios().subscribe({
-      next: (res: any) => {
-        const sitios = res?.data ?? res ?? [];
-        this.bodegas = sitios.filter((s: any) => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo) && s.estado !== false);
-        this.bodegasOpciones = this.bodegas.map((b: any) => ({
-          label: `${b.nombre} (${this.getTipoLabelDeSitio(b)})` + (b.responsable ? ` — ${b.responsable.nombre}` : ''),
-          value: b.id_sitio,
-        }));
-        this.cdr.markForCheck();
-      },
-      error: () => { this.bodegas = []; this.bodegasOpciones = []; this.cdr.markForCheck(); },
-    });
-  }
-
   private getTipoLabelDeSitio(b: any): string {
     const tipo = b.tipo === 'OTRO' ? (b.tipo_personalizado || 'Otro') : (this.TIPOS_LUGAR_LABELS[b.tipo] || b.tipo || '');
     return b.codigo_lugar ? `${tipo} · ${b.codigo_lugar}` : tipo;
-  }
-
-  cargarProductos() {
-    this.productoService.getProductos().subscribe({
-      next: (res: any) => {
-        this.todosLosProductos = res?.data ?? res ?? [];
-        this.cdr.markForCheck();
-      },
-      error: () => { this.todosLosProductos = []; this.cdr.markForCheck(); },
-    });
   }
 
   onBodegaChange(id: number | null) {
@@ -474,10 +548,7 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     this.stockSol = { disponibles: 0, total: 0, cargando: false };
     this.bodegaSeleccionada = id ? (this.bodegas.find(b => b.id_sitio === id) ?? null) : null;
 
-    if (!id) {
-      this.productosOpciones = [];
-      return;
-    }
+    if (!id) { this.productosOpciones = []; return; }
 
     const filtrados = this.todosLosProductos.filter((p: any) => p.id_sitio === id);
     this.productosOpciones = filtrados.map((p: any) => ({
@@ -490,10 +561,7 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     this.selectedProductoId = id;
     this.nuevaSolicitud.id_producto = id;
     this.nuevaSolicitud.cantidad = 1;
-    if (!id) {
-      this.stockSol = { disponibles: 0, total: 0, cargando: false };
-      return;
-    }
+    if (!id) { this.stockSol = { disponibles: 0, total: 0, cargando: false }; return; }
     this.stockSol = { disponibles: 0, total: 0, cargando: true };
     this.inventarioService.getStockByProducto(id).subscribe({
       next: (res: any) => {
@@ -511,10 +579,10 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     return bodega?.nombre ?? `Bodega #${sol.producto.id_sitio}`;
   }
 
-  getBodegaTipoLabel(sol: Solicitud): string {
-    if (!sol.producto?.id_sitio) return '';
+  getBodegaResponsable(sol: Solicitud): string | null {
+    if (!sol.producto?.id_sitio) return null;
     const bodega = this.bodegas.find(b => b.id_sitio === sol.producto.id_sitio);
-    return bodega ? this.getTipoLabelDeSitio(bodega) : '';
+    return bodega?.responsable?.nombre ?? null;
   }
 
   filtrar() {
@@ -564,13 +632,12 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
       this.notification.add({ module: 'Solicitudes', severity: 'warn', summary: 'Cantidad excedida', detail: `Solo hay ${this.stockSol.disponibles} unidad(es) disponible(s).` });
       return;
     }
-    const userId = Number(this.authService.getUserId()) || 1;
+    // id_usuario lo inyecta el backend desde el JWT
     this.solicitudService.crearSolicitud({
       tipo: 'PRESTAMO',
       id_producto: idProducto,
       cantidad: this.nuevaSolicitud.cantidad,
       observacion: this.nuevaSolicitud.observacion?.trim() || undefined,
-      id_usuario: userId,
     }).subscribe({
       next: () => {
         this.notification.add({ module: 'Solicitudes', severity: 'success', summary: 'Solicitud enviada', detail: 'Tu solicitud fue registrada. El responsable de la bodega recibirá una notificación.' });
@@ -589,13 +656,15 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
       header: 'Confirmar aprobación',
       icon: 'pi pi-check-circle',
       accept: () => {
-        const adminId = Number(this.authService.getUserId()) || 1;
-        this.solicitudService.actualizarEstado(sol.id_solicitud!, { estadoSol: 'APROBADA', id_usuario_aprueba: adminId }).subscribe({
+        this.solicitudService.aprobar(sol.id_solicitud!).subscribe({
           next: () => {
             this.notification.add({ module: 'Solicitudes', severity: 'success', summary: 'Aprobada', detail: 'Solicitud aprobada correctamente' });
             this.cargarSolicitudes();
           },
-          error: () => this.notification.add({ module: 'Solicitudes', severity: 'error', summary: 'Error', detail: 'No se pudo aprobar' }),
+          error: (err: any) => this.notification.add({
+            module: 'Solicitudes', severity: 'error', summary: 'Sin permiso',
+            detail: err?.error?.message || 'No se pudo aprobar la solicitud',
+          }),
         });
       },
     });
@@ -608,13 +677,15 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
       icon: 'pi pi-times-circle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        const adminId = Number(this.authService.getUserId()) || 1;
-        this.solicitudService.actualizarEstado(sol.id_solicitud!, { estadoSol: 'RECHAZADA', id_usuario_aprueba: adminId }).subscribe({
+        this.solicitudService.rechazar(sol.id_solicitud!).subscribe({
           next: () => {
             this.notification.add({ module: 'Solicitudes', severity: 'warn', summary: 'Rechazada', detail: 'Solicitud rechazada' });
             this.cargarSolicitudes();
           },
-          error: () => this.notification.add({ module: 'Solicitudes', severity: 'error', summary: 'Error', detail: 'No se pudo rechazar' }),
+          error: (err: any) => this.notification.add({
+            module: 'Solicitudes', severity: 'error', summary: 'Sin permiso',
+            detail: err?.error?.message || 'No se pudo rechazar la solicitud',
+          }),
         });
       },
     });
@@ -626,7 +697,7 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
       header: 'Confirmar entrega',
       icon: 'pi pi-send',
       accept: () => {
-        this.solicitudService.actualizarEstado(sol.id_solicitud!, { estadoSol: 'ENTREGADA' }).subscribe({
+        this.solicitudService.entregar(sol.id_solicitud!).subscribe({
           next: () => {
             this.notification.add({ module: 'Solicitudes', severity: 'success', summary: 'Entregada', detail: 'Solicitud marcada como entregada' });
             this.cargarSolicitudes();

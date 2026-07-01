@@ -10,6 +10,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmationService } from 'primeng/api';
+import { SelectModule } from 'primeng/select';
 import { CentroService } from '../../infrastructure/services/centro.service';
 
 interface Centro {
@@ -32,6 +33,7 @@ interface Centro {
     ToastModule,
     ConfirmDialogModule,
     TooltipModule,
+    SelectModule,
   ],
   encapsulation: ViewEncapsulation.None,
   providers: [ConfirmationService],
@@ -86,10 +88,10 @@ interface Centro {
                 <div class="action-buttons justify-center">
                   <button
                     pButton
-                    icon="pi pi-trash"
-                    class="btn-table-action btn-eliminar"
-                    (click)="eliminar(centro)"
-                    pTooltip="Eliminar centro"
+                    icon="pi pi-pencil"
+                    class="btn-table-action btn-editor"
+                    (click)="editar(centro)"
+                    pTooltip="Editar centro"
                   ></button>
                 </div>
               </td>
@@ -108,63 +110,88 @@ interface Centro {
     </div>
 
     <p-dialog [dismissableMask]="true"
-      header="Registrar Nuevo Centro"
       [(visible)]="displayDialog"
       [modal]="true"
       [style]="{ width: '90vw', maxWidth: '550px' }"
-      [draggable]="true"
+      [draggable]="false"
       [resizable]="false"
-      styleClass="form-dialog shadow-2xl border border-slate-200"
+      styleClass="form-dialog shadow-2xl border border-slate-200 rounded-2xl"
       maskStyleClass="transparent-mask"
       appendTo="body"
     >
-      <div class="form-grid mt-2 flex flex-col gap-4">
-        <div class="form-field">
-          <label for="nombre">Nombre del Centro *</label>
-          <input
-            pInputText
-            id="nombre"
-            [(ngModel)]="centro.nombre"
-            placeholder="Ej: Centro De Gestion Y Desarrollo Sostenible Sur Colombiano"
-            class="w-full"
-          />
+      <ng-template pTemplate="header">
+        <div class="flex flex-col mt-2 ml-2">
+          <h2 class="text-2xl font-bold text-slate-800">{{ centro.id_centro ? 'Editar' : 'Nuevo' }} Centro de Formación</h2>
+          <p class="text-sm text-slate-500 mt-1.5">Completa la ubicación y los datos del centro.</p>
         </div>
-        <div class="form-field">
-          <label for="codigo">Código del Centro *</label>
-          <input
-            pInputText
-            id="codigo"
-            [(ngModel)]="centro.codigo"
-            placeholder="Ej: 9201"
-            class="w-full"
-          />
-        </div>
-        <div class="form-field">
-          <label for="regional">Regional *</label>
-          <input
-            pInputText
-            id="regional"
-            [(ngModel)]="centro.regional"
-            placeholder="Ej: Distrito Capital"
-            class="w-full"
-          />
-        </div>
-      </div>
+      </ng-template>
 
-      <div class="dialog-footer">
-        <button
-          pButton
-          label="Cancelar"
-          class="btn-cancelar"
-          (click)="displayDialog = false"
-        ></button>
-        <button
-          pButton
-          [label]="saving ? 'Guardando...' : 'Guardar Centro'"
-          class="btn-guardar"
-          (click)="guardar()"
-          [disabled]="saving"
-        ></button>
+      <div class="flex flex-col gap-6 pt-2 pb-4 px-2">
+        <!-- Ubicación section -->
+        <div>
+          <span class="text-[12px] font-bold text-slate-500 tracking-wider uppercase mb-3 block">Ubicación</span>
+          <div class="flex flex-col sm:flex-row gap-4">
+            <div class="form-field flex-1">
+              <label class="text-sm font-semibold text-slate-700 mb-1.5 block">Departamento <span class="text-red-500">*</span></label>
+              <p-select 
+                [options]="departamentos"
+                [(ngModel)]="centro.regional"
+                (onChange)="onDepartamentoChange()"
+                placeholder="Seleccionar..."
+                [appendTo]="'body'"
+                [style]="{'width':'100%'}"
+                styleClass="w-full bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-[#00a650] focus:ring-1 focus:ring-[#00a650] transition-colors"
+                [scrollHeight]="'250px'"
+              ></p-select>
+            </div>
+            <div class="form-field flex-1">
+              <label class="text-sm font-semibold text-slate-700 mb-1.5 block">Ciudad / Municipio <span class="text-red-500">*</span></label>
+              <p-select 
+                [options]="municipios"
+                [(ngModel)]="municipioSeleccionado"
+                [disabled]="!centro.regional"
+                placeholder="Primero elige departamento"
+                [appendTo]="'body'"
+                [style]="{'width':'100%'}"
+                styleClass="w-full bg-white border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-[#00a650] focus:ring-1 focus:ring-[#00a650] transition-colors"
+              ></p-select>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <!-- Left side: Name -->
+          <div class="form-field flex-[1.2]">
+            <label class="text-sm font-semibold text-slate-700 mb-1.5 block">Nombre del Centro <span class="text-red-500">*</span></label>
+            <input
+              type="text"
+              [(ngModel)]="centro.nombre"
+              class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#00a650] focus:ring-1 focus:ring-[#00a650]"
+              placeholder="Ej: Centro de Formación..."
+            />
+          </div>
+
+          <!-- Right side: Code and Button -->
+          <div class="form-field flex-1 flex flex-col justify-between h-full">
+            <div class="mb-4">
+              <label class="text-sm font-semibold text-slate-700 mb-1.5 block">Código <span class="text-red-500">*</span></label>
+              <input
+                type="text"
+                [(ngModel)]="centro.codigo"
+                placeholder="Mín. 5 caracteres"
+                class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#00a650] focus:ring-1 focus:ring-[#00a650]"
+              />
+            </div>
+            
+            <button
+              class="w-full py-3 mt-auto rounded-lg font-bold text-white bg-[#00a650] hover:bg-[#008f45] transition-colors shadow-sm disabled:opacity-50"
+              (click)="guardar()"
+              [disabled]="saving"
+            >
+              {{ saving ? 'Guardando...' : (centro.id_centro ? 'Actualizar Centro' : 'Crear Centro') }}
+            </button>
+          </div>
+        </div>
       </div>
     </p-dialog>
   `
@@ -182,6 +209,62 @@ export class CentrosComponent implements OnInit {
   saving = false;
   centro: Centro = this.getNuevoCentro();
 
+  municipioSeleccionado = '';
+  departamentos = [
+    'Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bolívar', 'Boyacá', 
+    'Caldas', 'Caquetá', 'Casanare', 'Cauca', 'Cesar', 'Chocó', 'Córdoba', 
+    'Cundinamarca', 'Guainía', 'Guaviare', 'Huila', 'La Guajira', 'Magdalena', 
+    'Meta', 'Nariño', 'Norte de Santander', 'Putumayo', 'Quindío', 'Risaralda', 
+    'San Andrés y Providencia', 'Santander', 'Sucre', 'Tolima', 'Valle del Cauca', 
+    'Vaupés', 'Vichada'
+  ];
+
+  municipios: string[] = [];
+
+  // Mapa de ciudades con presencia destacada del SENA por departamento
+  ciudadesPorDepartamento: Record<string, string[]> = {
+    'Amazonas': ['Leticia'],
+    'Antioquia': ['Medellín', 'Bello', 'Rionegro', 'Apartadó', 'Caucasia', 'Itagüí', 'Caldas', 'Sabaneta', 'Puerto Berrío', 'Santa Fe de Antioquia'],
+    'Arauca': ['Arauca'],
+    'Atlántico': ['Barranquilla', 'Soledad', 'Malambo', 'Sabanalarga'],
+    'Bolívar': ['Cartagena', 'Turbaco', 'El Carmen de Bolívar', 'Magangué'],
+    'Boyacá': ['Tunja', 'Duitama', 'Sogamoso', 'Chiquinquirá', 'Puerto Boyacá'],
+    'Caldas': ['Manizales', 'Chinchiná', 'La Dorada', 'Riosucio'],
+    'Caquetá': ['Florencia'],
+    'Casanare': ['Yopal', 'Paz de Ariporo'],
+    'Cauca': ['Popayán', 'Santander de Quilichao', 'Puerto Tejada'],
+    'Cesar': ['Valledupar', 'Aguachica', 'Bosconia'],
+    'Chocó': ['Quibdó', 'Istmina'],
+    'Córdoba': ['Montería', 'Lorica', 'Sahagún'],
+    'Cundinamarca': ['Bogotá', 'Soacha', 'Girardot', 'Facatativá', 'Fusagasugá', 'Mosquera', 'Chía', 'Villeta'],
+    'Guainía': ['Inírida'],
+    'Guaviare': ['San José del Guaviare'],
+    'Huila': ['Neiva', 'Pitalito', 'Garzón', 'La Plata'],
+    'La Guajira': ['Riohacha', 'Maicao', 'Fonseca'],
+    'Magdalena': ['Santa Marta', 'Ciénaga', 'Fundación'],
+    'Meta': ['Villavicencio', 'Acacías', 'Granada'],
+    'Nariño': ['Pasto', 'Ipiales', 'Tumaco'],
+    'Norte de Santander': ['Cúcuta', 'Ocaña', 'Pamplona'],
+    'Putumayo': ['Mocoa', 'Puerto Asís'],
+    'Quindío': ['Armenia', 'Calarcá'],
+    'Risaralda': ['Pereira', 'Dosquebradas', 'Santa Rosa de Cabal'],
+    'San Andrés y Providencia': ['San Andrés'],
+    'Santander': ['Bucaramanga', 'Floridablanca', 'Barrancabermeja', 'Piedecuesta', 'San Gil', 'Málaga', 'Vélez'],
+    'Sucre': ['Sincelejo', 'Corozal'],
+    'Tolima': ['Ibagué', 'Espinal', 'Melgar', 'Honda'],
+    'Valle del Cauca': ['Cali', 'Palmira', 'Buenaventura', 'Buga', 'Tuluá', 'Cartago', 'Yumbo', 'Jamundí'],
+    'Vaupés': ['Mitú'],
+    'Vichada': ['Puerto Carreño']
+  };
+
+  onDepartamentoChange() {
+    this.municipioSeleccionado = '';
+    if (this.centro.regional && this.ciudadesPorDepartamento[this.centro.regional]) {
+      this.municipios = [...this.ciudadesPorDepartamento[this.centro.regional]].sort();
+    } else {
+      this.municipios = [];
+    }
+  }
 
   ngOnInit() {
     this.cargarCentros();
@@ -191,14 +274,18 @@ export class CentrosComponent implements OnInit {
     this.centroService.getCentros().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.centros = d;
-        this.centrosFiltrados = d;
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.centros = d;
+          this.centrosFiltrados = d;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.centros = [];
-        this.centrosFiltrados = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.centros = [];
+          this.centrosFiltrados = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }
@@ -216,6 +303,14 @@ export class CentrosComponent implements OnInit {
 
   openNew() {
     this.centro = this.getNuevoCentro();
+    this.municipioSeleccionado = '';
+    this.displayDialog = true;
+  }
+
+  editar(c: Centro) {
+    this.centro = { ...c };
+    this.municipioSeleccionado = ''; // O se podría cargar la ciudad si se guardara aparte
+    this.onDepartamentoChange();
     this.displayDialog = true;
   }
 
@@ -239,57 +334,53 @@ export class CentrosComponent implements OnInit {
 
     this.saving = true;
 
-    this.centroService.crearCentro(payload).subscribe({
-      next: () => {
-        this.notification.add({
-          module: 'Centros',
-          severity: 'success',
-          summary: 'Éxito',
-          detail: 'Centro registrado correctamente',
-        });
-        this.displayDialog = false;
-        this.saving = false;
-        this.cargarCentros();
-      },
-      error: () => {
-        this.saving = false;
-        this.notification.add({
-          module: 'Centros',
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo registrar el centro',
-        });
-      },
-    });
+    if (this.centro.id_centro) {
+      this.centroService.actualizarCentro(this.centro.id_centro, payload).subscribe({
+        next: () => {
+          this.notification.add({
+            module: 'Centros',
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Centro actualizado correctamente',
+          });
+          this.displayDialog = false;
+          this.saving = false;
+          this.cargarCentros();
+        },
+        error: () => {
+          this.saving = false;
+          this.notification.add({
+            module: 'Centros',
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar el centro',
+          });
+        },
+      });
+    } else {
+      this.centroService.crearCentro(payload).subscribe({
+        next: () => {
+          this.notification.add({
+            module: 'Centros',
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Centro registrado correctamente',
+          });
+          this.displayDialog = false;
+          this.saving = false;
+          this.cargarCentros();
+        },
+        error: () => {
+          this.saving = false;
+          this.notification.add({
+            module: 'Centros',
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo registrar el centro',
+          });
+        },
+      });
+    }
   }
 
-  eliminar(c: Centro) {
-    this.confirmationService.confirm({
-      message: '¿Está seguro de eliminar el centro ' + c.nombre + '?',
-      header: 'Confirmar Eliminación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      accept: () => {
-        this.centroService.eliminarCentro(c.id_centro!).subscribe({
-          next: () => {
-            this.notification.add({
-              module: 'Centros',
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Centro eliminado correctamente',
-            });
-            this.cargarCentros();
-          },
-          error: () => {
-            this.notification.add({
-              module: 'Centros',
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo eliminar el centro (puede tener dependencias)',
-            });
-          },
-        });
-      },
-    });
-  }
 }

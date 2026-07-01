@@ -189,7 +189,12 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.authService.login(correo, contrasena).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/home']);
+        const role = this.authService.getUserRole()?.toUpperCase() || '';
+        if (role === 'SUPER ADMINISTRADOR') {
+          this.router.navigate(['/centros']);
+        } else {
+          this.router.navigate(['/home']);
+        }
       },
       error: (err) => {
         this.isLoading.set(false);

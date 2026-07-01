@@ -206,14 +206,18 @@ export class SitiosComponent implements OnInit {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.sitios = d;
-        this.sitiosFiltrados = d;
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.sitios = d;
+          this.sitiosFiltrados = d;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.sitios = [];
-        this.sitiosFiltrados = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.sitios = [];
+          this.sitiosFiltrados = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }
@@ -222,12 +226,16 @@ export class SitiosComponent implements OnInit {
     this.centroService.getCentros().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.centros = d;
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.centros = d;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.centros = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.centros = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }

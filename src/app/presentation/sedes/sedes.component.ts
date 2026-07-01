@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -16,6 +16,7 @@ import { SedeService } from '../../infrastructure/services/sede.service';
 import { CentroService } from '../../infrastructure/services/centro.service';
 import { Sede } from '../../domain/models/sede.model';
 import { Centro } from '../../domain/models/centro.model';
+import { UsuarioService } from '../../infrastructure/services/usuario.service';
 
 @Component({
   selector: 'app-sedes',
@@ -35,6 +36,7 @@ import { Centro } from '../../domain/models/centro.model';
     SelectModule,
   ],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MessageService, ConfirmationService],
   template: `
     <p-toast position="bottom-right"></p-toast>
@@ -131,17 +133,22 @@ import { Centro } from '../../domain/models/centro.model';
               <label for="s-centro">Centro de Formación *</label>
             </div>
 
-            <!-- Estado Switch -->
+            <!-- Administrador de la Sede -->
             <div class="form-field">
-              <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200/80 h-[46px]">
-                <p-toggleSwitch [(ngModel)]="sede.estado"></p-toggleSwitch>
-                <span class="font-bold text-sm"
-                  [class.text-green-600]="sede.estado !== false"
-                  [class.text-red-600]="sede.estado === false">
-                  {{ sede.estado !== false ? 'ACTIVA' : 'INACTIVA' }}
-                </span>
-              </div>
-              <label>Estado</label>
+              <p-select
+                id="s-admin"
+                [(ngModel)]="sede.id_administrador"
+                [options]="administradores"
+                optionLabel="nombreCompleto"
+                optionValue="id_usuario"
+                placeholder=" "
+                [filter]="true"
+                filterBy="nombreCompleto"
+                styleClass="w-full"
+                appendTo="body"
+                emptyMessage="No hay administradores disponibles"
+              ></p-select>
+              <label for="s-admin">Administrador de la Sede *</label>
             </div>
           </div>
 
@@ -171,7 +178,7 @@ import { Centro } from '../../domain/models/centro.model';
               <th>Nombre de la Sede</th>
               <th>Dirección</th>
               <th>Centro de Formación</th>
-              <th style="width:120px">Estado</th>
+              <th>Administrador</th>
               <th style="width:150px" class="text-center">Acciones</th>
             </tr>
           </ng-template>
@@ -189,11 +196,10 @@ import { Centro } from '../../domain/models/centro.model';
                 </span>
               </td>
               <td>
-                <p-tag
-                  [value]="sede.estado !== false ? 'ACTIVO' : 'INACTIVO'"
-                  [severity]="sede.estado !== false ? 'success' : 'danger'"
-                  styleClass="px-3 py-1 font-bold rounded-lg"
-                ></p-tag>
+                <span class="text-slate-700 text-sm">
+                  <i class="pi pi-user mr-1 text-[#39A900]"></i>
+                  {{ sede.administrador?.nombre || 'No asignado' }}
+                </span>
               </td>
               <td>
                 <div class="action-buttons justify-center">
@@ -203,13 +209,6 @@ import { Centro } from '../../domain/models/centro.model';
                     class="btn-table-action btn-editor"
                     (click)="editar(sede)"
                     pTooltip="Editar sede"
-                  ></button>
-                  <button
-                    pButton
-                    icon="pi pi-trash"
-                    class="btn-table-action btn-eliminar"
-                    (click)="eliminar(sede)"
-                    pTooltip="Eliminar sede"
                   ></button>
                 </div>
               </td>
@@ -235,10 +234,12 @@ export class SedesComponent implements OnInit {
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
+  private usuarioService = inject(UsuarioService);
 
   sedes: Sede[] = [];
   sedesFiltradas: Sede[] = [];
   centros: Centro[] = [];
+  administradores: any[] = [];
   filtro = '';
   displayDialog = false;
   esNuevo = true;
@@ -248,6 +249,7 @@ export class SedesComponent implements OnInit {
   ngOnInit() {
     this.cargar();
     this.cargarCentros();
+    this.cargarAdministradores();
   }
 
   cargar() {
@@ -256,12 +258,12 @@ export class SedesComponent implements OnInit {
         const d = res?.data || res || [];
         this.sedes = d;
         this.sedesFiltradas = d;
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
       error: () => {
         this.sedes = [];
         this.sedesFiltradas = [];
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       }
     });
   }
@@ -270,9 +272,36 @@ export class SedesComponent implements OnInit {
     this.centroService.getCentros().subscribe({
       next: (res: any) => {
         this.centros = res?.data || res || [];
-        setTimeout(() => this.cdr.detectChanges());
+        this.cdr.markForCheck();
       },
-      error: () => { this.centros = []; }
+      error: () => { 
+        this.centros = []; 
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  cargarAdministradores() {
+    this.usuarioService.getAll().subscribe({
+      next: (res: any) => {
+        const users = res?.data || res || [];
+        this.administradores = users.filter((u: any) => {
+          const rol = u.rol?.nombreRol || u.rol?.nombre || '';
+          return rol.toUpperCase() === 'ADMINISTRADOR';
+        }).map((u: any) => {
+          const nombre = u.nombre || u.nombres || '';
+          const doc = u.documento || u.numero_documento || '';
+          return {
+            id_usuario: u.id_usuario || u.id,
+            nombreCompleto: `${nombre} ${doc ? '- ' + doc : ''}`.trim()
+          };
+        });
+        this.cdr.markForCheck();
+      },
+      error: () => { 
+        this.administradores = []; 
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -287,7 +316,7 @@ export class SedesComponent implements OnInit {
   }
 
   getNuevo(): Sede {
-    return { nombre: '', direccion: '', id_centro: null as any, estado: true };
+    return { nombre: '', direccion: '', id_centro: null as any, id_administrador: null as any };
   }
 
   openNew() {
@@ -303,7 +332,7 @@ export class SedesComponent implements OnInit {
   }
 
   guardar() {
-    if (!this.sede.nombre || !this.sede.direccion || !this.sede.id_centro) {
+    if (!this.sede.nombre || !this.sede.direccion || !this.sede.id_centro || !this.sede.id_administrador) {
       this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'Todos los campos (*) son requeridos' });
       return;
     }
@@ -312,7 +341,7 @@ export class SedesComponent implements OnInit {
       nombre: this.sede.nombre.trim(),
       direccion: this.sede.direccion.trim(),
       id_centro: Number(this.sede.id_centro),
-      estado: this.sede.estado !== false
+      id_administrador: Number(this.sede.id_administrador)
     };
 
     this.saving = true;
@@ -323,6 +352,7 @@ export class SedesComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Sede creada correctamente' });
           this.displayDialog = false;
           this.saving = false;
+          this.cdr.markForCheck();
           this.cargar();
         },
         error: () => {
@@ -336,6 +366,7 @@ export class SedesComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Sede actualizada correctamente' });
           this.displayDialog = false;
           this.saving = false;
+          this.cdr.markForCheck();
           this.cargar();
         },
         error: () => {
@@ -346,23 +377,4 @@ export class SedesComponent implements OnInit {
     }
   }
 
-  eliminar(s: Sede) {
-    this.confirmationService.confirm({
-      message: `¿Está seguro de eliminar la sede "${s.nombre}"?`,
-      header: 'Confirmar Eliminación',
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      accept: () => {
-        this.sedeService.eliminarSede(s.id_sede!).subscribe({
-          next: () => {
-            this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Sede eliminada correctamente' });
-            this.cargar();
-          },
-          error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la sede' });
-          }
-        });
-      }
-    });
-  }
 }

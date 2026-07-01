@@ -5,6 +5,7 @@ export interface Sede {
   nombre: string;
   direccion: string;
   id_centro: number;
+  id_administrador?: number;
   centro?: Centro;
   estado?: boolean;
 }

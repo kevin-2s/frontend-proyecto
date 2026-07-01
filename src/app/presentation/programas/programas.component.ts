@@ -236,14 +236,18 @@ export class ProgramasComponent implements OnInit {
     this.programaService.getProgramas().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.programas = d;
-        this.programasFiltrados = d;
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.programas = d;
+          this.programasFiltrados = d;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.programas = [];
-        this.programasFiltrados = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.programas = [];
+          this.programasFiltrados = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }
@@ -252,12 +256,16 @@ export class ProgramasComponent implements OnInit {
     this.areaService.getAreas().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.areas = d;
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.areas = d;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.areas = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.areas = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }

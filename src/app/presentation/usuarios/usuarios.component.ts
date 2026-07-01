@@ -14,9 +14,10 @@ import { PasswordModule } from 'primeng/password';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService } from '../../infrastructure/services/rol.service';
+import { SedeService } from '../../infrastructure/services/sede.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { Rol } from '../../domain/models/rol.model';
 import { OnlyLettersDirective } from '../directives/only-letters.directive';
@@ -34,6 +35,7 @@ interface Usuario {
   password?: string;
   estado: boolean;
   id_rol: number;
+  tenant_id?: string;
   rolNombre?: string;
 }
 
@@ -84,6 +86,17 @@ interface Usuario {
       border-radius: 0 0 16px 16px !important;
       padding: 1.5rem !important;
     }
+    :host ::ng-deep .password-field-wrapper .p-password input {
+      padding-left: 2.5rem !important;
+      background-color: white !important;
+    }
+    :host ::ng-deep .password-field-wrapper .pi-lock {
+      z-index: 30 !important;
+    }
+    :host ::ng-deep .password-field-wrapper label {
+      z-index: 40 !important;
+      background-color: white !important;
+    }
   `],
   template: `
     <p-toast position="bottom-right"></p-toast>
@@ -131,7 +144,7 @@ interface Usuario {
       <div class="module-header">
         <div class="flex items-center gap-3">
           <i class="pi pi-users text-[#39A900] text-3xl"></i>
-          <h3 class="page-title m-0">Usuarios</h3>
+          <h3 class="page-title m-0">{{ isSuperAdmin ? 'Administradores SD' : 'Usuarios' }}</h3>
         </div>
 
         <div class="header-actions">
@@ -200,9 +213,6 @@ interface Usuario {
                   <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
                   <label>Rol <span class="text-red-500">*</span></label>
                 </div>
-                <button type="button" class="h-[50px] w-[50px] flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-[#39A900] bg-transparent border-none cursor-pointer transition-colors outline-none btn-open-form" (click)="openRolDialog()">
-                  <i class="pi pi-plus font-bold text-lg"></i>
-                </button>
               </div>
             </div>
 
@@ -238,19 +248,20 @@ interface Usuario {
               </div>
             </div>
 
-            <!-- Cuarta Fila: Contraseña + Estado -->
+            <!-- Cuarta Fila: Contraseña y Estado -->
             <div class="flex flex-col sm:flex-row gap-5">
-              <div class="floating-label-group flex-1" [class.floating]="usuario.password && usuario.password.trim() !== ''" *ngIf="esNuevo">
-                <p-password [(ngModel)]="usuario.password" [feedback]="false" styleClass="w-full" [inputStyle]="{'width':'100%'}" inputStyleClass="w-full pl-4 pr-10 py-3 text-sm text-slate-800 rounded-xl outline-none" [toggleMask]="true" appendTo="body" placeholder=" "></p-password>
-                <label>Contraseña <span class="text-red-500">*</span></label>
+              <div class="floating-label-group password-field-wrapper flex-1" [class.floating]="usuario.password || pwdFocused">
+                <p-password [(ngModel)]="usuario.password" [toggleMask]="true" [feedback]="false" placeholder=" " styleClass="w-full" inputStyleClass="w-full h-[50px] border-slate-300 rounded-xl hover:border-[#39A900] focus:border-[#39A900] focus:ring-1 focus:ring-[#39A900] transition-colors" (onFocus)="pwdFocused = true" (onBlur)="pwdFocused = false"></p-password>
+                <i class="pi pi-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                <label>Contraseña <span *ngIf="usuario.id_usuario" class="text-slate-400 text-xs font-normal">(Opcional al editar)</span> <span *ngIf="!usuario.id_usuario" class="text-red-500">*</span></label>
               </div>
-              <!-- Estado del usuario -->
-              <div class="flex gap-2 items-center flex-1">
-                <div class="floating-label-group flex-1" [class.floating]="usuario.estado !== undefined && usuario.estado !== null">
-                  <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
-                  <label>Estado <span class="text-red-500">*</span></label>
-                </div>
-                <div class="h-[50px] w-[50px] flex-shrink-0"></div>
+
+              <div class="floating-label-group flex-1 flex items-center gap-3" [class.floating]="usuario.estado !== undefined">
+                <p-select [options]="estadoOpciones" [(ngModel)]="usuario.estado" optionLabel="label" optionValue="value" placeholder=" " styleClass="w-full flex items-center h-11 bg-slate-50 border-slate-200 rounded-xl hover:border-[#39A900] focus:border-[#39A900] transition-colors" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                <label>Estado <span class="text-red-500">*</span></label>
+                
+                <!-- Spacer for Add Rol button alignment -->
+                <div class="h-[50px] w-[50px] flex-shrink-0 hidden"></div>
               </div>
             </div>
           </div>
@@ -360,14 +371,17 @@ interface Usuario {
 export class UsuariosComponent implements OnInit {
   private usuarioService = inject(UsuarioService);
   private rolService = inject(RolService);
+  private sedeService = inject(SedeService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
+  // Estados
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
   roles: Rol[] = [];
+  sedes: any[] = [];
   estadoOpciones = [
     { label: 'Activo', value: true },
     { label: 'Inactivo', value: false }
@@ -379,16 +393,19 @@ export class UsuariosComponent implements OnInit {
   loading = false;
   saving = false;
   isAdmin = false;
+  isSuperAdmin = false;
   stats = { total: 0, activos: 0, inactivos: 0, admins: 0 };
   hidePassword = true;
   showRolDialog = false;
   nuevoRolNombre = '';
   savingRol = false;
+  pwdFocused = false;
 
   usuario: Usuario = this.getNuevoUsuario();
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
+    this.isSuperAdmin = this.authService.isSuperAdmin();
     this.cargarDatos();
   }
 
@@ -424,19 +441,32 @@ export class UsuariosComponent implements OnInit {
     this.loading = true;
     forkJoin({
       roles: this.rolService.getAll(),
-      usuarios: this.usuarioService.getAll()
+      usuarios: this.usuarioService.getAll(),
+      sedes: this.isSuperAdmin ? this.sedeService.getSedes() : of({ data: [] })
     }).subscribe({
-      next: ({ roles, usuarios }) => {
+      next: ({ roles, usuarios, sedes }) => {
+        const sedesData = Array.isArray(sedes) ? sedes : (sedes as any).data || [];
+        this.sedes = sedesData;
         // Mapear Roles
         const rolesData = Array.isArray(roles) ? roles : (roles as any).data || [];
-        this.roles = rolesData;
+        if (this.isSuperAdmin) {
+          this.roles = rolesData.filter((r: any) => {
+            const n = (r.nombreRol || r.nombre)?.toUpperCase();
+            return n === 'ADMINISTRADOR';
+          });
+        } else {
+          this.roles = rolesData.filter((r: any) => {
+            const n = (r.nombreRol || r.nombre)?.toUpperCase();
+            return n !== 'SUPER ADMINISTRADOR' && n !== 'ADMINISTRADOR';
+          });
+        }
 
         // Mapear Usuarios
         const usuariosData = Array.isArray(usuarios) ? usuarios : (usuarios as any).data || [];
         this.usuarios = usuariosData.map((u: any) => {
           const mappedRolId = Number(u.rolId || u.id_rol || (u.rol ? u.rol.id : 0));
           const rolObj = rolesData.find((r: any) => Number(r.id_rol || r.id) === mappedRolId);
-          
+
           // Separar nombre y apellidos si vienen juntos desde la base de datos
           let nombre = u.nombre || '';
           let apellidos = u.apellidos || '';
@@ -459,6 +489,10 @@ export class UsuariosComponent implements OnInit {
             rolNombre: rolObj ? (rolObj.nombreRol || rolObj.nombre) : 'Sin rol'
           };
         });
+
+        if (this.isSuperAdmin) {
+          this.usuarios = this.usuarios.filter((u: any) => u.rolNombre.toUpperCase() === 'ADMINISTRADOR');
+        }
 
         this.usuariosFiltrados = this.usuarios;
         this.calcularEstadisticas();
@@ -509,6 +543,7 @@ export class UsuariosComponent implements OnInit {
       password: '',
       estado: true,
       id_rol: 0,
+      tenant_id: undefined
     };
   }
 
@@ -536,12 +571,13 @@ export class UsuariosComponent implements OnInit {
       }
     }
 
-    this.usuario = { 
-      ...u, 
+    this.usuario = {
+      ...u,
       nombre: u.nombre,
       apellidos: u.apellidos,
       tipo_documento,
       numero_documento,
+      tenant_id: u.tenant_id,
       password: '' // Limpiar el campo de contraseña al editar por seguridad
     };
     this.displayDialog = true;
@@ -642,7 +678,9 @@ export class UsuariosComponent implements OnInit {
       if (docCompleto) {
         datosEnvio.documento = docCompleto;
       }
+      if (this.usuario.tenant_id) datosEnvio.tenant_id = this.usuario.tenant_id;
 
+      this.saving = true;
       this.usuarioService.create(datosEnvio).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario creado correctamente' });
@@ -662,7 +700,7 @@ export class UsuariosComponent implements OnInit {
         id_rol: Number(this.usuario.id_rol),
         estado: this.usuario.estado !== false
       };
-      
+
       if (this.usuario.telefono && this.usuario.telefono.trim()) {
         updateData.telefono = this.usuario.telefono.trim();
       } else {
@@ -679,6 +717,9 @@ export class UsuariosComponent implements OnInit {
         updateData.password = this.usuario.password;
       }
 
+      if (this.usuario.tenant_id) updateData.tenant_id = this.usuario.tenant_id;
+
+      this.saving = true;
       this.usuarioService.update(this.usuario.id_usuario!, updateData).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario actualizado correctamente' });

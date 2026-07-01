@@ -70,8 +70,13 @@ export class AuthService implements OnDestroy {
 
   hasPermission(permission: string): boolean {
     // Los administradores tienen acceso total siempre
-    if (this.getUserRole()?.toUpperCase() === 'ADMINISTRADOR') return true;
+    const role = this.getUserRole()?.toUpperCase();
+    if (role === 'ADMINISTRADOR' || role === 'SUPER ADMINISTRADOR') return true;
     return this.permissions().includes(permission);
+  }
+
+  isSuperAdmin(): boolean {
+    return this.getUserRole()?.toUpperCase() === 'SUPER ADMINISTRADOR';
   }
 
   private refreshTimerId: ReturnType<typeof setTimeout> | null = null;

@@ -665,9 +665,11 @@ export class InventarioComponent implements OnInit {
             } else if (newCat?.id_categoria) {
               this.nuevoProducto.id_categoria = newCat.id_categoria;
             }
-            this.displayAddCategoria = false;
-            this.nuevoNombreCategoria = '';
-            setTimeout(() => this.cdr.detectChanges());
+            setTimeout(() => {
+              this.displayAddCategoria = false;
+              this.nuevoNombreCategoria = '';
+              this.cdr.detectChanges();
+            });
           },
           error: () => {
             this.displayAddCategoria = false;

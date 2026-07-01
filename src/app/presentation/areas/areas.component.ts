@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import { AuthService } from '../../infrastructure/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -158,7 +159,7 @@ interface Area {
           />
         </div>
 
-        <div class="form-field">
+        <div class="form-field" *ngIf="!hasSede()">
           <label for="id_sede">Sede (Ubicación) *</label>
           <p-select
             id="id_sede"
@@ -209,6 +210,7 @@ export class AreasComponent implements OnInit {
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
 
   areas: Area[] = [];
   areasFiltrados: Area[] = [];
@@ -219,6 +221,11 @@ export class AreasComponent implements OnInit {
   saving = false;
   area: Area = this.getNuevoArea();
 
+  hasSede(): boolean {
+    const user = this.authService.currentUser();
+    return !!user?.tenant_id;
+  }
+
   ngOnInit() {
     this.cargarAreas();
     this.cargarSedes();
@@ -228,14 +235,18 @@ export class AreasComponent implements OnInit {
     this.areaService.getAreas().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.areas = d;
-        this.areasFiltrados = d;
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.areas = d;
+          this.areasFiltrados = d;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.areas = [];
-        this.areasFiltrados = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.areas = [];
+          this.areasFiltrados = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }
@@ -244,12 +255,16 @@ export class AreasComponent implements OnInit {
     this.sedeService.getSedes().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.sedes = d;
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.sedes = d;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.sedes = [];
-        setTimeout(() => this.cdr.detectChanges());
+        setTimeout(() => {
+          this.sedes = [];
+          this.cdr.detectChanges();
+        });
       },
     });
   }
@@ -271,6 +286,13 @@ export class AreasComponent implements OnInit {
   openNew() {
     this.esNuevo = true;
     this.area = this.getNuevoArea();
+    
+    // Auto-asignar la sede si el usuario logueado ya pertenece a una (ej. Administrador de Sede)
+    const currentUser = this.authService.currentUser();
+    if (currentUser?.tenant_id) {
+      this.area.id_sede = Number(currentUser.tenant_id);
+    }
+    
     this.displayDialog = true;
   }
 

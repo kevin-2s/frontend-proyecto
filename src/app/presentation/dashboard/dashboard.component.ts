@@ -1,4 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from '../../infrastructure/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ChartModule } from 'primeng/chart';
@@ -255,6 +257,8 @@ import { map, catchError } from 'rxjs/operators';
 })
 export class DashboardComponent implements OnInit {
   private readonly apiService = inject(ApiService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   loading = signal<boolean>(true);
   ultimaActualizacion = '—';
@@ -357,7 +361,13 @@ export class DashboardComponent implements OnInit {
     { label: 'Solicitudes Pendientes', desc: 'Requieren atención inmediata', icon: 'pi-clock', bg: '#fffbeb', color: '#d97706', value: this.solicitudesPendientes },
   ];
 
-  ngOnInit() { this.cargarDatos(); }
+  ngOnInit() { 
+    if (this.authService.isSuperAdmin()) {
+      this.router.navigate(['/centros'], { replaceUrl: true });
+      return;
+    }
+    this.cargarDatos(); 
+  }
 
   getBarWidth(val: number, limit: number): string {
     if (!val) return '0%';

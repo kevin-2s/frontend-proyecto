@@ -61,7 +61,7 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
              class="flex-1 py-3 px-4 custom-scrollbar">
           <ul class="space-y-1">
             <!-- Dashboard Link -->
-            <li>
+            <li *ngIf="hasAccess(dashboardItem)">
               <a [routerLink]="dashboardItem.path"
                  routerLinkActive="active"
                  #rlaDash="routerLinkActive"
@@ -124,13 +124,13 @@ import { WhatsappChatComponent } from './whatsapp-chat.component';
                              [class.text-white]="rla.isActive"
                              [class.text-slate-500]="!rla.isActive"></i>
                         </div>
-                        <span *ngIf="!sidebarCollapsed()">{{ item.title }}</span>
+                        <span *ngIf="!sidebarCollapsed()">{{ getItemTitle(item) }}</span>
 
                         <!-- Tooltip when collapsed -->
                         <div *ngIf="sidebarCollapsed()"
                              class="absolute top-1/2 -translate-y-1/2 left-full ml-3 px-3.5 py-2 bg-slate-900/95 text-white text-[12.5px] font-bold rounded-xl shadow-xl opacity-0 scale-95 -translate-x-2 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 transition-all duration-150 pointer-events-none whitespace-nowrap z-[100]">
                           <div class="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-slate-900/95"></div>
-                          {{ item.title }}
+                          {{ getItemTitle(item) }}
                         </div>
                       </a>
                     </li>
@@ -337,8 +337,8 @@ export class LayoutComponent implements OnInit, OnDestroy {
       title: 'ESTRUCTURA',
       expanded: true,
       items: [
-        { title: 'Centros', path: 'centros', icon: 'pi-briefcase', requiredPermission: 'ver_centros' },
-        { title: 'Sedes', path: 'sedes', icon: 'pi-map-marker', requiredPermission: 'ver_sedes' },
+        { title: 'Centros', path: 'centros', icon: 'pi-briefcase', requiredPermission: 'ver_centros', requiresSuperAdmin: true },
+        { title: 'Sedes', path: 'sedes', icon: 'pi-map-marker', requiredPermission: 'ver_sedes', requiresSuperAdmin: true },
         { title: 'Áreas', path: 'areas', icon: 'pi-clone', requiredPermission: 'ver_areas' },
         { title: 'Programas', path: 'programas', icon: 'pi-bookmark', requiredPermission: 'ver_fichas' },
         { title: 'Fichas', path: 'fichas', icon: 'pi-id-card', requiredPermission: 'ver_fichas' }
@@ -509,12 +509,22 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   hasAccess(item: any): boolean {
+    const role = this.authService.getUserRole()?.toUpperCase() || '';
+    
+    if (role === 'SUPER ADMINISTRADOR') {
+      const allowedPaths = ['centros', 'sedes', 'usuarios', 'perfil'];
+      return allowedPaths.includes(item.path);
+    }
+
+    if (item?.requiresSuperAdmin && !this.authService.isSuperAdmin()) {
+      return false;
+    }
+
     // Si el item tiene un permiso requerido y lo cumple, retornamos true
     if (item?.requiredPermission && this.authService.hasPermission(item.requiredPermission)) {
       return true;
     }
 
-    const role = this.authService.getUserRole()?.toUpperCase() || '';
     if (role === 'ADMINISTRADOR') {
       return true;
     }
@@ -543,6 +553,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   hasSectionAccess(section: any): boolean {
     return section.items.some((item: any) => this.hasAccess(item));
+  }
+
+  getItemTitle(item: any): string {
+    if (item.title === 'Usuarios' && this.authService.getUserRole()?.toUpperCase() === 'SUPER ADMINISTRADOR') {
+      return 'Administradores SD';
+    }
+    return item.title;
   }
 
   getUserInitials(): string {

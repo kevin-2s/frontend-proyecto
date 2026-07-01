@@ -160,11 +160,11 @@ interface Traslado {
               </td>
               <td>
                 <div class="action-buttons justify-center">
-                  <button *ngIf="t.estado === 'PENDIENTE' && esAdmin()"
+                  <button *ngIf="t.estado === 'PENDIENTE' && puedeAprobarTraslado(t)"
                     pButton icon="pi pi-check"
                     class="p-button-text text-green-600 hover:bg-green-50"
                     (click)="aprobar(t)" pTooltip="Aprobar traslado" tooltipPosition="top"></button>
-                  <button *ngIf="t.estado === 'PENDIENTE' && esAdmin()"
+                  <button *ngIf="t.estado === 'PENDIENTE' && puedeAprobarTraslado(t)"
                     pButton icon="pi pi-times"
                     class="p-button-text text-red-600 hover:bg-red-50"
                     (click)="rechazar(t)" pTooltip="Rechazar traslado" tooltipPosition="top"></button>
@@ -458,9 +458,30 @@ export class TrasladosComponent implements OnInit, OnDestroy {
     BODEGA: 'Bodega', AMBIENTE: 'Ambiente', LABORATORIO: 'Laboratorio', OTRO: 'Otro',
   };
 
+  private get currentUserId(): number {
+    return Number(this.authService.getUserId()) || 0;
+  }
+
+  private get currentRole(): string {
+    return this.authService.getUserRole()?.toUpperCase() ?? '';
+  }
+
   esAdmin(): boolean {
-    const role = this.authService.getUserRole()?.toUpperCase() ?? '';
-    return role === 'ADMINISTRADOR' || role === 'RESPONSABLE';
+    return this.currentRole === 'ADMINISTRADOR' || this.currentRole === 'RESPONSABLE DE BODEGA';
+  }
+
+  puedeAprobarTraslado(t: Traslado): boolean {
+    const userId = this.currentUserId;
+    if (t.id_usuario_solicita === userId) return false;
+
+    const idResponsable: number | null = t.sitio_origen?.id_responsable ?? t.sitio_origen?.responsable?.id_usuario ?? null;
+
+    if (this.currentRole === 'ADMINISTRADOR') {
+      return !idResponsable || idResponsable === userId;
+    }
+    // Cualquier usuario asignado como responsable del sitio origen puede aprobar
+    // (sin importar si su rol es Responsable de Bodega, Instructor, etc.)
+    return idResponsable === userId;
   }
 
   ngOnInit() {
@@ -476,9 +497,21 @@ export class TrasladosComponent implements OnInit, OnDestroy {
   cargarTraslados() {
     this.trasladoService.getTraslados().subscribe({
       next: (res: any) => {
-        const d = res?.data ?? res ?? [];
-        this.traslados = d;
-        this.trasladosFiltrados = d;
+        const all: any[] = res?.data ?? res ?? [];
+        let resultado = all;
+        if (!this.authService.isAdmin()) {
+          const userId = this.currentUserId;
+          resultado = all.filter((t: Traslado) => {
+            if (t.id_usuario_solicita === userId) return true;
+            const origenResp = t.sitio_origen?.id_responsable ?? t.sitio_origen?.responsable?.id_usuario ?? null;
+            if (origenResp === userId) return true;
+            const destinoResp = t.sitio_destino?.id_responsable ?? t.sitio_destino?.responsable?.id_usuario ?? null;
+            if (destinoResp === userId) return true;
+            return false;
+          });
+        }
+        this.traslados = resultado;
+        this.trasladosFiltrados = resultado;
         this.cdr.markForCheck();
       },
       error: () => { this.traslados = []; this.trasladosFiltrados = []; this.cdr.markForCheck(); },

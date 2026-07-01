@@ -1168,6 +1168,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
   fichasParaAsignar: { label: string; value: number }[] = [];
   fichaSeleccionadaAsignar: number | null = null;
   bodegasConLabel: { label: string; value: number }[] = [];
+  private misSitiosIds = new Set<number>();
   modoAsignacion: 'ficha' | 'bodega' = 'ficha';
   bodegaSeleccionadaAsignacion: number | null = null;
   asignandoABodega = false;
@@ -1587,9 +1588,8 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.cargarDatos();
     this.cargarCategorias();
-    this.cargarBodegas();
+    this.cargarBodegas(); // llama a cargarDatos() internamente después de cargar las bodegas
     this.cargarFichas();
     this.changesSub = this.apiService.changes.subscribe(() => this.cargarDatos());
 
@@ -1632,13 +1632,34 @@ export class ProductosComponent implements OnInit, OnDestroy {
     this.sitioService.getSitios().subscribe({
       next: (res: any) => {
         const all: any[] = res?.data || res || [];
+        // Guardamos TODOS los sitios para los lookups de nombres (getBodegaNombre)
         this.bodegas = all.filter(s => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo));
+
+        // Calcular qué sitios pertenecen al usuario actual
+        this.misSitiosIds.clear();
+        if (this.authService.isAdmin()) {
+          this.bodegas.forEach(b => this.misSitiosIds.add(b.id_sitio));
+        } else {
+          const userId = this.authService.getUserId();
+          this.bodegas
+            .filter(b => b.id_responsable === userId || b.responsable?.id_usuario === userId)
+            .forEach(b => this.misSitiosIds.add(b.id_sitio));
+        }
+
+        // El selector del formulario solo muestra las bodegas del usuario
+        const bodegasParaSelector = this.authService.isAdmin()
+          ? this.bodegas
+          : this.bodegas.filter(b => this.misSitiosIds.has(b.id_sitio));
+
         const orden: Record<string, number> = { BODEGA: 0, AMBIENTE: 1, LABORATORIO: 2, OTRO: 3 };
-        const sorted = [...this.bodegas].sort((a, b) => (orden[a.tipo] ?? 9) - (orden[b.tipo] ?? 9));
+        const sorted = [...bodegasParaSelector].sort((a, b) => (orden[a.tipo] ?? 9) - (orden[b.tipo] ?? 9));
         this.bodegasConLabel = sorted.map(s => ({
           label: `${s.nombre}${s.codigo_lugar ? '  ·  ' + s.codigo_lugar : ''}  [${this.TIPOS_LUGAR_LABELS[s.tipo] ?? s.tipo}]`,
           value: s.id_sitio,
         }));
+
+        // Cargar productos una vez que sabemos qué bodegas tiene el usuario
+        this.cargarDatos();
         this.cdr.markForCheck();
       },
       error: () => { this.bodegas = []; this.bodegasConLabel = []; },
@@ -1677,7 +1698,11 @@ export class ProductosComponent implements OnInit, OnDestroy {
   cargarDatos() {
     this.productoService.getProductos().subscribe({
       next: (res: any) => {
-        const prods = res?.data || res || [];
+        let prods: any[] = res?.data || res || [];
+        // Filtrar por bodega del usuario si no es admin
+        if (!this.authService.isAdmin() && this.misSitiosIds.size > 0) {
+          prods = prods.filter((p: any) => this.misSitiosIds.has(p.id_sitio));
+        }
         this.productoService.getAllItems().subscribe({
           next: (itemsRes: any) => {
             const items = itemsRes?.data || itemsRes || [];

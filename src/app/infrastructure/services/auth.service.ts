@@ -210,6 +210,10 @@ export class AuthService implements OnDestroy {
     }
   }
 
+  isAdmin(): boolean {
+    return this.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+  }
+
   // Devuelve los segundos restantes del token (0 si ya expiró o es inválido)
   private getTokenRemainingSeconds(token: string): number {
     try {

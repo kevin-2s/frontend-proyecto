@@ -195,7 +195,7 @@ interface Usuario {
               </div>
               <div class="flex gap-2 items-center flex-1">
                 <div class="floating-label-group flex-1" [class.floating]="usuario.id_rol !== undefined && usuario.id_rol !== null">
-                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}" [disabled]="!isSuperAdmin && esAdmin(usuario.id_rol)"></p-select>
                   <label>Rol <span class="text-red-500">*</span></label>
                 </div>
                 <button type="button" class="btn-inline-add flex items-center justify-center cursor-pointer outline-none" (click)="openRolDialog()">
@@ -369,6 +369,7 @@ export class UsuariosComponent implements OnInit {
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
   roles: Rol[] = [];
+  allRoles: Rol[] = [];
   sedes: any[] = [];
   estadoOpciones = [
     { label: 'Activo', value: true },
@@ -414,6 +415,7 @@ export class UsuariosComponent implements OnInit {
           nombre: nuevoRol.nombre || nuevoRol.nombreRol || nombre
         } as Rol;
         this.roles = [...this.roles, rolCreado];
+        this.allRoles = [...this.allRoles, rolCreado];
         this.usuario.id_rol = rolCreado.id_rol;
         this.showRolDialog = false;
         this.savingRol = false;
@@ -438,6 +440,7 @@ export class UsuariosComponent implements OnInit {
         this.sedes = sedesData;
         // Mapear Roles
         const rolesData = Array.isArray(roles) ? roles : (roles as any).data || [];
+        this.allRoles = rolesData;
         if (this.isSuperAdmin) {
           this.roles = rolesData.filter((r: any) => {
             const n = (r.nombreRol || r.nombre)?.toUpperCase();
@@ -730,8 +733,13 @@ export class UsuariosComponent implements OnInit {
   }
 
   getRolNombre(id_rol: any): string {
-    const rol = this.roles.find(r => Number(r.id_rol) === Number(id_rol));
+    const rol = this.allRoles.find(r => Number(r.id_rol) === Number(id_rol));
     return rol ? rol.nombre : 'Desconocido';
+  }
+
+  esAdmin(id_rol: any): boolean {
+    const nombre = this.getRolNombre(id_rol).toUpperCase();
+    return nombre.includes('ADMIN');
   }
 
   getRolSeverity(id_rol: number): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {

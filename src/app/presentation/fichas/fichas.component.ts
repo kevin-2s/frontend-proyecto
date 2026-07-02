@@ -15,6 +15,7 @@ import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService } from '../../infrastructure/services/rol.service';
 import { ProgramaService } from '../../infrastructure/services/programa.service';
 import { AsignacionService } from '../../infrastructure/services/asignacion.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
 import { forkJoin } from 'rxjs';
 
 interface Ficha {
@@ -174,61 +175,126 @@ interface Ficha {
 
     <!-- Diálogo detalle de asignaciones de la ficha -->
     <p-dialog maskStyleClass="transparent-mask" [dismissableMask]="true"
-      [header]="'📋 Asignaciones — Ficha ' + (fichaVista?.numero_ficha ?? '')"
+      [header]="'📋 Detalle de Ficha — ' + (fichaVista?.numero_ficha ?? '')"
       [(visible)]="displayAsignacionesDialog" [modal]="true"
-      [style]="{ width: '95vw', maxWidth: '760px' }"
+      [style]="{ width: '95vw', maxWidth: '780px' }"
       [draggable]="true" [resizable]="false"
       styleClass="form-dialog shadow-2xl border border-slate-200" appendTo="body">
 
-      <div *ngIf="asignacionesDeFichaVista.length === 0"
-        style="text-align:center;padding:2.5rem 0;color:#94a3b8">
-        <i class="pi pi-inbox" style="font-size:2.5rem;display:block;margin-bottom:0.75rem"></i>
-        <p style="font-weight:600">Esta ficha no tiene asignaciones registradas</p>
+      <!-- Selector de Pestañas (Tabs) -->
+      <div class="flex gap-2 border-b border-slate-100 pb-3 mb-4">
+        <button type="button" 
+                class="px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer outline-none border-none"
+                [class.bg-[#39A900]]="tabActiva === 'asignaciones'"
+                [class.text-white]="tabActiva === 'asignaciones'"
+                [class.bg-slate-100]="tabActiva !== 'asignaciones'"
+                [class.text-slate-600]="tabActiva !== 'asignaciones'"
+                (click)="tabActiva = 'asignaciones'">
+          <i class="pi pi-box mr-1.5"></i> Materiales Asignados ({{ asignacionesDeFichaVista.length }})
+        </button>
+        <button type="button" 
+                class="px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer outline-none border-none"
+                [class.bg-[#39A900]]="tabActiva === 'aprendices'"
+                [class.text-white]="tabActiva === 'aprendices'"
+                [class.bg-slate-100]="tabActiva !== 'aprendices'"
+                [class.text-slate-600]="tabActiva !== 'aprendices'"
+                (click)="tabActiva = 'aprendices'">
+          <i class="pi pi-users mr-1.5"></i> Aprendices Registrados ({{ aprendicesDeFichaVista.length }})
+        </button>
       </div>
 
-      <p-table *ngIf="asignacionesDeFichaVista.length > 0"
-        [value]="asignacionesDeFichaVista"
-        [paginator]="asignacionesDeFichaVista.length > 10" [rows]="10"
-        styleClass="modern-table" [rowHover]="true">
-        <ng-template pTemplate="header">
-          <tr>
-            <th style="width:70px">ID</th>
-            <th>Producto</th>
-            <th style="width:90px" class="text-center">Cantidad</th>
-            <th>Observación</th>
-            <th style="width:110px" class="text-center">Estado</th>
-            <th style="width:130px">Fecha</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-a>
-          <tr>
-            <td><span class="id-badge">#{{ a.id_asignacion }}</span></td>
-            <td>
-              <span style="font-weight:600;color:#1e293b;font-size:13px">{{ a.producto?.nombre || '—' }}</span>
-              <small *ngIf="a.producto?.SKU" style="display:block;font-family:monospace;color:#94a3b8;font-size:11px">
-                {{ a.producto.SKU }}
-              </small>
-            </td>
-            <td class="text-center">
-              <span style="font-weight:700;font-size:15px;color:#1d4ed8">{{ a.cantidad }}</span>
-            </td>
-            <td>
-              <span style="font-size:12px;color:#64748b">{{ a.observacion || '—' }}</span>
-            </td>
-            <td class="text-center">
-              <p-tag [value]="a.estado"
-                [severity]="getEstadoAsignacionSeverity(a.estado)"
-                styleClass="px-2 py-1 text-xs font-bold rounded-lg">
-              </p-tag>
-            </td>
-            <td>
-              <span style="font-size:12px;color:#64748b">
-                {{ a.fecha_asignacion ? (a.fecha_asignacion | date:'dd/MM/yyyy') : '—' }}
-              </span>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+      <!-- Pestaña: Materiales Asignados -->
+      <ng-container *ngIf="tabActiva === 'asignaciones'">
+        <div *ngIf="asignacionesDeFichaVista.length === 0"
+          style="text-align:center;padding:2.5rem 0;color:#94a3b8">
+          <i class="pi pi-inbox" style="font-size:2.5rem;display:block;margin-bottom:0.75rem"></i>
+          <p style="font-weight:600">Esta ficha no tiene asignaciones registradas</p>
+        </div>
+
+        <p-table *ngIf="asignacionesDeFichaVista.length > 0"
+          [value]="asignacionesDeFichaVista"
+          [paginator]="asignacionesDeFichaVista.length > 10" [rows]="10"
+          styleClass="modern-table" [rowHover]="true">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width:70px">ID</th>
+              <th>Producto</th>
+              <th style="width:90px" class="text-center">Cantidad</th>
+              <th>Observación</th>
+              <th style="width:110px" class="text-center">Estado</th>
+              <th style="width:130px">Fecha</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-a>
+            <tr>
+              <td><span class="id-badge">#{{ a.id_asignacion }}</span></td>
+              <td>
+                <span style="font-weight:600;color:#1e293b;font-size:13px">{{ a.producto?.nombre || '—' }}</span>
+                <small *ngIf="a.producto?.SKU" style="display:block;font-family:monospace;color:#94a3b8;font-size:11px">
+                  {{ a.producto.SKU }}
+                </small>
+              </td>
+              <td class="text-center">
+                <span style="font-weight:700;font-size:15px;color:#1d4ed8">{{ a.cantidad }}</span>
+              </td>
+              <td>
+                <span style="font-size:12px;color:#64748b">{{ a.observacion || '—' }}</span>
+              </td>
+              <td class="text-center">
+                <p-tag [value]="a.estado"
+                  [severity]="getEstadoAsignacionSeverity(a.estado)"
+                  styleClass="px-2 py-1 text-xs font-bold rounded-lg">
+                </p-tag>
+              </td>
+              <td>
+                <span style="font-size:12px;color:#64748b">
+                  {{ a.fecha_asignacion ? (a.fecha_asignacion | date:'dd/MM/yyyy') : '—' }}
+                </span>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </ng-container>
+
+      <!-- Pestaña: Aprendices Registrados -->
+      <ng-container *ngIf="tabActiva === 'aprendices'">
+        <div *ngIf="aprendicesDeFichaVista.length === 0"
+          style="text-align:center;padding:2.5rem 0;color:#94a3b8">
+          <i class="pi pi-users" style="font-size:2.5rem;display:block;margin-bottom:0.75rem"></i>
+          <p style="font-weight:600">No hay aprendices registrados en esta ficha</p>
+        </div>
+
+        <p-table *ngIf="aprendicesDeFichaVista.length > 0"
+          [value]="aprendicesDeFichaVista"
+          [paginator]="aprendicesDeFichaVista.length > 10" [rows]="10"
+          styleClass="modern-table" [rowHover]="true">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width:70px">ID</th>
+              <th>Nombre Completo</th>
+              <th>Documento</th>
+              <th>Información de Contacto</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-ap>
+            <tr>
+              <td><span class="id-badge">#{{ ap.id_usuario }}</span></td>
+              <td>
+                <span style="font-weight:700;color:#1e293b;font-size:13px">{{ ap.nombre }} {{ ap.apellidos || '' }}</span>
+              </td>
+              <td>
+                <span style="font-size:12px;color:#64748b;font-weight:600">{{ formatDocumento(ap.documento) }}</span>
+              </td>
+              <td>
+                <div class="flex flex-col text-xs text-slate-500">
+                  <span class="font-semibold text-slate-600">{{ ap.correo }}</span>
+                  <small class="text-[10px] text-slate-400 font-bold" *ngIf="ap.telefono">Tel: {{ ap.telefono }}</small>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </ng-container>
 
       <ng-template pTemplate="footer">
         <div class="dialog-footer">
@@ -334,6 +400,7 @@ export class FichasComponent implements OnInit {
   private rolService = inject(RolService);
   private programaService = inject(ProgramaService);
   private asignacionService = inject(AsignacionService);
+  private authService = inject(AuthService);
   private notification = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
 
@@ -345,6 +412,20 @@ export class FichasComponent implements OnInit {
   displayAsignacionesDialog = false;
   fichaVista: Ficha | null = null;
   asignacionesDeFichaVista: any[] = [];
+  aprendicesDeFichaVista: any[] = [];
+  tabActiva: 'asignaciones' | 'aprendices' = 'asignaciones';
+
+  formatDocumento(doc: string | undefined): string {
+    if (!doc) return '---';
+    const docClean = doc.trim();
+    const tipos = ['C.C.', 'T.I.', 'C.E.', 'P.E.P.', 'P.P.T.', 'P.A.S.', 'CC', 'TI', 'CE', 'PEP', 'PPT', 'PAS'];
+    for (const t of tipos) {
+      if (docClean.toUpperCase().startsWith(t.toUpperCase())) {
+        return docClean;
+      }
+    }
+    return `C.C. ${docClean}`;
+  }
   filtro = '';
   displayDialog = false;
   esEditando = false;
@@ -365,7 +446,17 @@ export class FichasComponent implements OnInit {
     this.fichaService.getFichas().subscribe({
       next: (res: any) => {
         const d = res?.data || res || [];
-        this.fichas = d.map((f: any) => ({ ...f, estado: f.estado !== false }));
+        let list = d.map((f: any) => ({ ...f, estado: f.estado !== false }));
+
+        const role = this.authService.getUserRole()?.toUpperCase() || '';
+        const currentUserId = Number(this.authService.getUserId());
+
+        if (role === 'INSTRUCTOR') {
+          // Filtrar para mostrar solo las fichas asignadas a este instructor
+          list = list.filter((f: any) => Number(f.id_responsable) === currentUserId || Number(f.responsable?.id_usuario) === currentUserId);
+        }
+
+        this.fichas = list;
         this.fichasFiltradas = [...this.fichas];
         this.loading = false;
         this.cdr.markForCheck();
@@ -380,6 +471,25 @@ export class FichasComponent implements OnInit {
   }
 
   cargarInstructores() {
+    const role = this.authService.getUserRole()?.toUpperCase();
+    const isSedeAdmin = role === 'ADMINISTRADOR';
+    const isSuperAdmin = role === 'SUPER ADMINISTRADOR';
+
+    if (!isSedeAdmin && !isSuperAdmin) {
+      const currentUser = this.authService.currentUser();
+      if (currentUser) {
+        this.instructores = [{
+          id_usuario: currentUser.id_usuario || currentUser.id,
+          nombre: currentUser.nombre,
+          apellidos: currentUser.apellidos || ''
+        }];
+      } else {
+        this.instructores = [];
+      }
+      this.cdr.markForCheck();
+      return;
+    }
+
     forkJoin({
       roles: this.rolService.getAll(),
       usuarios: this.usuarioService.getAll()
@@ -399,13 +509,19 @@ export class FichasComponent implements OnInit {
         }
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.usuarioService.getAll().subscribe({
-          next: (res: any) => {
-            this.instructores = Array.isArray(res) ? res : res.data || [];
-            this.cdr.markForCheck();
-          }
-        });
+      error: (err) => {
+        console.warn('No se pudieron cargar los usuarios/roles:', err);
+        const currentUser = this.authService.currentUser();
+        if (currentUser) {
+          this.instructores = [{
+            id_usuario: currentUser.id_usuario || currentUser.id,
+            nombre: currentUser.nombre,
+            apellidos: currentUser.apellidos || ''
+          }];
+        } else {
+          this.instructores = [];
+        }
+        this.cdr.markForCheck();
       }
     });
   }
@@ -443,8 +559,27 @@ export class FichasComponent implements OnInit {
 
   verAsignacionesFicha(f: Ficha) {
     this.fichaVista = f;
+    this.tabActiva = 'asignaciones';
     this.asignacionesDeFichaVista = this.todasLasAsignaciones
       .filter(a => a.id_ficha === f.id_ficha);
+    
+    // Obtener los aprendices pertenecientes a esta ficha
+    this.aprendicesDeFichaVista = [];
+    this.usuarioService.getAll().subscribe({
+      next: (res: any) => {
+        const usuarios = res?.data || res || [];
+        this.aprendicesDeFichaVista = usuarios.filter((u: any) => 
+          Number(u.id_ficha) === Number(f.id_ficha) && 
+          (u.rolNombre?.toUpperCase().includes('APRENDIZ') || u.rol?.nombre?.toUpperCase().includes('APRENDIZ'))
+        );
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.aprendicesDeFichaVista = [];
+        this.cdr.markForCheck();
+      }
+    });
+
     this.displayAsignacionesDialog = true;
   }
 

@@ -19,6 +19,7 @@ import { UsuarioService } from '../../infrastructure/services/usuario.service';
 import { RolService } from '../../infrastructure/services/rol.service';
 import { SedeService } from '../../infrastructure/services/sede.service';
 import { AuthService } from '../../infrastructure/services/auth.service';
+import { FichaService } from '../../infrastructure/services/ficha.service';
 import { Rol } from '../../domain/models/rol.model';
 import { OnlyLettersDirective } from '../directives/only-letters.directive';
 import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
@@ -37,6 +38,7 @@ interface Usuario {
   id_rol: number;
   tenant_id?: string;
   rolNombre?: string;
+  id_ficha?: number | null;
 }
 
 @Component({
@@ -195,7 +197,7 @@ interface Usuario {
               </div>
               <div class="flex gap-2 items-center flex-1">
                 <div class="floating-label-group flex-1" [class.floating]="usuario.id_rol !== undefined && usuario.id_rol !== null">
-                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}" [disabled]="!isSuperAdmin && esAdmin(usuario.id_rol)"></p-select>
+                  <p-select [options]="roles" [(ngModel)]="usuario.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}" [disabled]="!isSuperAdmin && !esNuevo && esAdmin(usuario.id_rol)"></p-select>
                   <label>Rol <span class="text-red-500">*</span></label>
                 </div>
                 <button type="button" class="btn-inline-add flex items-center justify-center cursor-pointer outline-none" (click)="openRolDialog()">
@@ -252,6 +254,15 @@ interface Usuario {
                 <div class="h-[50px] w-[50px] flex-shrink-0 hidden"></div>
               </div>
             </div>
+
+            <!-- Fila Condicional: Asignación de Ficha para Aprendices -->
+            <div *ngIf="getRolNombre(usuario.id_rol).toUpperCase().includes('APRENDIZ')" class="flex flex-col sm:flex-row gap-5">
+              <div class="floating-label-group flex-1" [class.floating]="usuario.id_ficha !== undefined && usuario.id_ficha !== null">
+                <p-select [options]="fichas" [(ngModel)]="usuario.id_ficha" optionLabel="numero_ficha" optionValue="id_ficha" placeholder=" " styleClass="w-full flex items-center" appendTo="body" [style]="{'width':'100%'}"></p-select>
+                <label>Ficha de Formación <span class="text-red-500">*</span></label>
+              </div>
+              <div class="flex-1 hidden sm:block"></div>
+            </div>
           </div>
 
           <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
@@ -296,7 +307,10 @@ interface Usuario {
                   </div>
                   <div class="flex flex-col">
                     <span class="font-bold text-slate-800 leading-tight">{{ u.nombre }} {{ u.apellidos }}</span>
-                    <span class="text-[11px] text-slate-400 font-medium">{{ formatDocumento(u.documento) }}</span>
+                    <span class="text-[11px] text-slate-400 font-medium">
+                      {{ formatDocumento(u.documento) }}
+                      <span *ngIf="u.id_ficha" class="ml-1 text-[#39A900] font-bold">(Ficha #{{ getFichaNumero(u.id_ficha) }})</span>
+                    </span>
                   </div>
                 </div>
               </td>
@@ -363,6 +377,7 @@ export class UsuariosComponent implements OnInit {
   private usuarioService = inject(UsuarioService);
   private rolService = inject(RolService);
   private sedeService = inject(SedeService);
+  private fichaService = inject(FichaService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private authService = inject(AuthService);
@@ -374,6 +389,7 @@ export class UsuariosComponent implements OnInit {
   roles: Rol[] = [];
   allRoles: Rol[] = [];
   sedes: any[] = [];
+  fichas: any[] = [];
   idSedeAdmin: number | null = null;
   currentUserId: number | null = null;
   estadoOpciones = [
@@ -456,11 +472,15 @@ export class UsuariosComponent implements OnInit {
       roles: this.rolService.getAll(),
       usuarios: this.usuarioService.getAll(),
       sedes: this.isSuperAdmin ? this.sedeService.getSedes() : of({ data: [] }),
+      fichas: this.fichaService.getFichas(),
       currentSede: loadSedeObs
     }).subscribe({
-      next: ({ roles, usuarios, sedes, currentSede }) => {
+      next: ({ roles, usuarios, sedes, fichas, currentSede }) => {
         const sedesData = Array.isArray(sedes) ? sedes : (sedes as any).data || [];
         this.sedes = sedesData;
+
+        const fichasData = Array.isArray(fichas) ? fichas : (fichas as any).data || [];
+        this.fichas = fichasData;
 
         const sedeObj = currentSede?.data || currentSede;
         if (sedeObj) {
@@ -507,12 +527,26 @@ export class UsuariosComponent implements OnInit {
             apellidos,
             id_rol: mappedRolId,
             estado: u.estado !== false,
-            rolNombre: rolObj ? (rolObj.nombreRol || rolObj.nombre) : 'Sin rol'
+            rolNombre: rolObj ? (rolObj.nombreRol || rolObj.nombre) : 'Sin rol',
+            id_ficha: u.id_ficha || null
           };
         });
 
+        const currentRole = this.authService.getUserRole()?.toUpperCase() || '';
+        
         if (this.isSuperAdmin) {
           this.usuarios = this.usuarios.filter((u: any) => u.rolNombre.toUpperCase() === 'ADMINISTRADOR');
+        } else if (currentRole === 'INSTRUCTOR') {
+          // Si el usuario es un Instructor, solo ve a los aprendices pertenecientes a sus fichas a cargo
+          const misFichasIds = this.fichas
+            .filter((f: any) => Number(f.id_responsable) === Number(this.currentUserId))
+            .map((f: any) => Number(f.id_ficha));
+
+          this.usuarios = this.usuarios.filter((u: any) => {
+            const esAprendiz = u.rolNombre.toUpperCase().includes('APRENDIZ');
+            const perteneceAMiFicha = u.id_ficha && misFichasIds.includes(Number(u.id_ficha));
+            return esAprendiz && perteneceAMiFicha;
+          });
         }
 
         this.usuariosFiltrados = this.usuarios;
@@ -564,7 +598,8 @@ export class UsuariosComponent implements OnInit {
       password: '',
       estado: true,
       id_rol: 0,
-      tenant_id: undefined
+      tenant_id: undefined,
+      id_ficha: null
     };
   }
 
@@ -705,6 +740,14 @@ export class UsuariosComponent implements OnInit {
         datosEnvio.documento = docCompleto;
       }
       if (this.usuario.tenant_id) datosEnvio.tenant_id = this.usuario.tenant_id;
+      
+      // Si el rol es Aprendiz, guardamos el id_ficha
+      const rolSeleccionado = this.getRolNombre(this.usuario.id_rol).toUpperCase();
+      if (rolSeleccionado.includes('APRENDIZ') && this.usuario.id_ficha) {
+        datosEnvio.id_ficha = Number(this.usuario.id_ficha);
+      } else {
+        datosEnvio.id_ficha = null;
+      }
 
       this.saving = true;
       this.usuarioService.create(datosEnvio).subscribe({
@@ -745,6 +788,14 @@ export class UsuariosComponent implements OnInit {
 
       if (this.usuario.tenant_id) updateData.tenant_id = this.usuario.tenant_id;
 
+      // Si el rol es Aprendiz, guardamos el id_ficha
+      const rolSeleccionado = this.getRolNombre(this.usuario.id_rol).toUpperCase();
+      if (rolSeleccionado.includes('APRENDIZ') && this.usuario.id_ficha) {
+        updateData.id_ficha = Number(this.usuario.id_ficha);
+      } else {
+        updateData.id_ficha = null;
+      }
+
       this.saving = true;
       this.usuarioService.update(this.usuario.id_usuario!, updateData).subscribe({
         next: () => {
@@ -764,6 +815,11 @@ export class UsuariosComponent implements OnInit {
   getRolNombre(id_rol: any): string {
     const rol = this.allRoles.find(r => Number(r.id_rol) === Number(id_rol));
     return rol ? rol.nombre : 'Desconocido';
+  }
+
+  getFichaNumero(id_ficha: any): string {
+    const f = this.fichas.find(ficha => Number(ficha.id_ficha) === Number(id_ficha));
+    return f ? f.numero_ficha : '—';
   }
 
   esAdmin(id_rol: any): boolean {

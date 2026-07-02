@@ -430,12 +430,20 @@ export class AsignarComponent implements OnInit, OnDestroy {
   modoNueva: 'ficha' | 'bodega' = 'ficha';
   guardandoBodega = false;
 
+  get currentUserId(): number {
+    return Number(this.authService.getUserId()) || 0;
+  }
+
+  get currentRole(): string {
+    return this.authService.getUserRole()?.toUpperCase() ?? '';
+  }
+
   nueva: { id_producto: number | null; id_ficha: number | null; id_sitio: number | null; cantidad: number; observacion: string } =
     { id_producto: null, id_ficha: null, id_sitio: null, cantidad: 1, observacion: '' };
 
   esAdmin(): boolean {
     const role = this.authService.getUserRole()?.toUpperCase() ?? '';
-    return role === 'ADMINISTRADOR' || role === 'RESPONSABLE';
+    return role === 'ADMINISTRADOR' || role === 'RESPONSABLE DE BODEGA' || role === 'RESPONSABLE';
   }
 
   ngOnInit() {
@@ -453,7 +461,26 @@ export class AsignarComponent implements OnInit, OnDestroy {
   cargar() {
     this.asignacionService.getAsignaciones().subscribe({
       next: (res: any) => {
-        const data = res?.data ?? res ?? [];
+        let data = res?.data ?? res ?? [];
+        const role = this.currentRole;
+        const userId = this.currentUserId;
+
+        if (role !== 'ADMINISTRADOR') {
+          if (role === 'RESPONSABLE DE BODEGA') {
+            data = data.filter((a: any) => {
+              const createdByMe = a.id_usuario === userId;
+              const isBodegaResponsable = a.sitio && (a.sitio.id_responsable === userId || a.sitio.responsable?.id_usuario === userId);
+              return createdByMe || isBodegaResponsable;
+            });
+          } else {
+            data = data.filter((a: any) => {
+              const createdByMe = a.id_usuario === userId;
+              const isMyFicha = a.ficha && (a.ficha.id_responsable === userId || a.ficha.responsable?.id_usuario === userId);
+              return createdByMe || isMyFicha;
+            });
+          }
+        }
+
         this.asignaciones = data;
         this.asignacionesFiltradas = data;
         this.cdr.markForCheck();

@@ -201,7 +201,7 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
               <div class="form-field">
                 <label>Rol <span class="text-red-500">*</span></label>
                 <div class="input-with-button">
-                  <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Seleccione un rol" styleClass="w-full flex items-center" appendTo="body"></p-select>
+                  <p-select [options]="roles" [(ngModel)]="usuarioForm.id_rol" optionLabel="nombre" optionValue="id_rol" placeholder="Seleccione un rol" styleClass="w-full flex items-center" appendTo="body" [disabled]="!isSuperAdmin && !esNuevoUsuario && esAdmin(usuarioForm.id_rol)"></p-select>
                   <button pButton type="button" icon="pi pi-plus" class="btn-inline-add" (click)="openNewRolDialog()"></button>
                 </div>
               </div>
@@ -573,6 +573,7 @@ import { OnlyNumbersDirective } from '../directives/only-numbers.directive';
                       icon="pi pi-pencil"
                       class="btn-table-action btn-editor"
                       (click)="seleccionarRol(r)"
+                      [disabled]="!isSuperAdmin && (r.nombre?.toUpperCase() === 'SUPER ADMINISTRADOR' || r.nombre?.toUpperCase() === 'ADMINISTRADOR')"
                     ></button>
                   </div>
                 </td>
@@ -787,6 +788,7 @@ export class RolesComponent implements OnInit {
   loading = false;
   saving = false;
   isAdmin = false;
+  isSuperAdmin = false;
 
   rol: Partial<Rol> = { nombre: '' };
 
@@ -802,6 +804,10 @@ export class RolesComponent implements OnInit {
   permisosTodos: any = {};
   permisosRolIds: number[] = [];
   loadingPermisosRol = false;
+  
+  // frontendModules, etc...
+  // (Note: we just want to replace down to ngOnInit)
+
 
   frontendModules = [
     {
@@ -926,6 +932,7 @@ export class RolesComponent implements OnInit {
 
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
+    this.isSuperAdmin = this.authService.isSuperAdmin();
     this.cargarRoles();
     this.cargarUsuarios();
   }
@@ -1417,6 +1424,11 @@ export class RolesComponent implements OnInit {
   getRolNombre(id_rol: any): string {
     const rol = this.roles.find((r) => Number(r.id_rol) === Number(id_rol));
     return rol ? rol.nombre : 'Desconocido';
+  }
+
+  esAdmin(id_rol: any): boolean {
+    const nombre = this.getRolNombre(id_rol).toUpperCase();
+    return nombre.includes('ADMIN');
   }
 
   getRolSeverity(id_rol: any): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {

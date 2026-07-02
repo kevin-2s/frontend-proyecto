@@ -477,8 +477,8 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     // El usuario es el responsable asignado de esta bodega (cualquier rol)
     if (idResponsable && idResponsable === userId) return true;
 
-    // Bodega sin responsable: solo el Administrador puede aprobar
-    if (!idResponsable && this.currentRole === 'ADMINISTRADOR') return true;
+    // Bodega sin responsable: solo Administrador o Responsable de Bodega puede aprobar
+    if (!idResponsable && (this.currentRole === 'ADMINISTRADOR' || this.currentRole === 'RESPONSABLE DE BODEGA')) return true;
 
     return false;
   }
@@ -522,7 +522,23 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
   cargarSolicitudes() {
     this.solicitudService.getSolicitudes().subscribe({
       next: (res: any) => {
-        const d = res?.data ?? res ?? [];
+        let d = res?.data ?? res ?? [];
+        const role = this.currentRole;
+        const userId = this.currentUserId;
+
+        if (role !== 'ADMINISTRADOR') {
+          if (role === 'RESPONSABLE DE BODEGA') {
+            d = d.filter((sol: any) => {
+              const idSitio = sol.producto?.id_sitio;
+              const bodega = idSitio ? this.bodegas.find(b => b.id_sitio === idSitio) : null;
+              const idResponsable = bodega?.id_responsable ?? bodega?.responsable?.id_usuario ?? null;
+              return sol.id_usuario === userId || idResponsable === userId;
+            });
+          } else {
+            d = d.filter((sol: any) => sol.id_usuario === userId);
+          }
+        }
+
         this.solicitudes = d;
         this.solicitudesFiltradas = d;
         this.cdr.markForCheck();

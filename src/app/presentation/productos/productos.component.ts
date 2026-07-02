@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subscription, of } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { SedeService } from '../../infrastructure/services/sede.service';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -1115,12 +1116,14 @@ export class ProductosComponent implements OnInit, OnDestroy {
   private trasladoService = inject(TrasladoService);
   private fichaService = inject(FichaService);
   private apiService = inject(ApiService);
+  private sedeService = inject(SedeService);
   private changesSub!: Subscription;
   skuEsAuto = true;
   private settingSkuAuto = false;
 
   esAdmin(): boolean {
-    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+    const role = this.authService.getUserRole()?.toUpperCase();
+    return role === 'ADMINISTRADOR' || role === 'RESPONSABLE DE BODEGA';
   }
 
   productos: Producto[] = [];
@@ -1629,40 +1632,80 @@ export class ProductosComponent implements OnInit, OnDestroy {
   };
 
   cargarBodegas() {
-    this.sitioService.getSitios().subscribe({
-      next: (res: any) => {
-        const all: any[] = res?.data || res || [];
-        // Guardamos TODOS los sitios para los lookups de nombres (getBodegaNombre)
-        this.bodegas = all.filter(s => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo));
+    const token = this.authService.getAccessToken();
+    let tenantId: string | null = null;
+    if (token) {
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        tenantId = decoded.tenantId || decoded.tenant_id || null;
+      } catch {}
+    }
 
-        // Calcular qué sitios pertenecen al usuario actual
-        this.misSitiosIds.clear();
-        if (this.authService.isAdmin()) {
-          this.bodegas.forEach(b => this.misSitiosIds.add(b.id_sitio));
-        } else {
-          const userId = this.authService.getUserId();
-          this.bodegas
-            .filter(b => b.id_responsable === userId || b.responsable?.id_usuario === userId)
-            .forEach(b => this.misSitiosIds.add(b.id_sitio));
-        }
+    const loadSedeObs$ = (tenantId && tenantId !== 'default')
+      ? this.sedeService.getSedePorId(Number(tenantId))
+      : of(null);
 
-        // El selector del formulario solo muestra las bodegas del usuario
-        const bodegasParaSelector = this.authService.isAdmin()
-          ? this.bodegas
-          : this.bodegas.filter(b => this.misSitiosIds.has(b.id_sitio));
+    loadSedeObs$.subscribe({
+      next: (sedeRes: any) => {
+        const sedeObj = sedeRes?.data || sedeRes;
+        const idCentroAdmin = sedeObj ? Number(sedeObj.id_centro) : null;
 
-        const orden: Record<string, number> = { BODEGA: 0, AMBIENTE: 1, LABORATORIO: 2, OTRO: 3 };
-        const sorted = [...bodegasParaSelector].sort((a, b) => (orden[a.tipo] ?? 9) - (orden[b.tipo] ?? 9));
-        this.bodegasConLabel = sorted.map(s => ({
-          label: `${s.nombre}${s.codigo_lugar ? '  ·  ' + s.codigo_lugar : ''}  [${this.TIPOS_LUGAR_LABELS[s.tipo] ?? s.tipo}]`,
-          value: s.id_sitio,
-        }));
+        this.sitioService.getSitios().subscribe({
+          next: (res: any) => {
+            const all: any[] = res?.data || res || [];
+            
+            let filteredSitios = all;
+            if (idCentroAdmin) {
+              filteredSitios = all.filter(s => Number(s.id_centro) === idCentroAdmin);
+            }
 
-        // Cargar productos una vez que sabemos qué bodegas tiene el usuario
-        this.cargarDatos();
-        this.cdr.markForCheck();
+            this.bodegas = filteredSitios.filter(s => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo));
+
+            this.misSitiosIds.clear();
+            const role = this.authService.getUserRole()?.toUpperCase();
+            const isSedeAdmin = role === 'ADMINISTRADOR';
+
+            if (isSedeAdmin || role === 'SUPER ADMINISTRADOR') {
+              this.bodegas.forEach(b => this.misSitiosIds.add(b.id_sitio));
+            } else {
+              const userId = this.authService.getUserId();
+              this.bodegas
+                .filter(b => Number(b.id_responsable) === userId || Number(b.responsable?.id_usuario) === userId)
+                .forEach(b => this.misSitiosIds.add(b.id_sitio));
+            }
+
+            const bodegasParaSelector = (isSedeAdmin || role === 'SUPER ADMINISTRADOR')
+              ? this.bodegas
+              : this.bodegas.filter(b => this.misSitiosIds.has(b.id_sitio));
+
+            const orden: Record<string, number> = { BODEGA: 0, AMBIENTE: 1, LABORATORIO: 2, OTRO: 3 };
+            const sorted = [...bodegasParaSelector].sort((a, b) => (orden[a.tipo] ?? 9) - (orden[b.tipo] ?? 9));
+            this.bodegasConLabel = sorted.map(s => ({
+              label: `${s.nombre}${s.codigo_lugar ? '  ·  ' + s.codigo_lugar : ''}  [${this.TIPOS_LUGAR_LABELS[s.tipo] ?? s.tipo}]`,
+              value: s.id_sitio,
+            }));
+
+            this.cargarDatos();
+            this.cdr.markForCheck();
+          },
+          error: () => { this.bodegas = []; this.bodegasConLabel = []; },
+        });
       },
-      error: () => { this.bodegas = []; this.bodegasConLabel = []; },
+      error: () => {
+        this.sitioService.getSitios().subscribe({
+          next: (res: any) => {
+            const all: any[] = res?.data || res || [];
+            this.bodegas = all.filter(s => this.TIPOS_LUGAR_VALIDOS.includes(s.tipo));
+            this.bodegas.forEach(b => this.misSitiosIds.add(b.id_sitio));
+            this.bodegasConLabel = this.bodegas.map(s => ({
+              label: `${s.nombre} [${s.tipo}]`,
+              value: s.id_sitio,
+            }));
+            this.cargarDatos();
+            this.cdr.markForCheck();
+          }
+        });
+      }
     });
   }
 
@@ -1699,8 +1742,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
     this.productoService.getProductos().subscribe({
       next: (res: any) => {
         let prods: any[] = res?.data || res || [];
-        // Filtrar por bodega del usuario si no es admin
-        if (!this.authService.isAdmin() && this.misSitiosIds.size > 0) {
+        const role = this.authService.getUserRole()?.toUpperCase();
+        
+        if (role !== 'SUPER ADMINISTRADOR' && this.misSitiosIds.size > 0) {
           prods = prods.filter((p: any) => this.misSitiosIds.has(p.id_sitio));
         }
         this.productoService.getAllItems().subscribe({

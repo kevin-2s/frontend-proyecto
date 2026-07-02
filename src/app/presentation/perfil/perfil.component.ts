@@ -1,10 +1,15 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { UsuarioService } from '../../infrastructure/services/usuario.service';
+import { SedeService } from '../../infrastructure/services/sede.service';
+import { SitioService } from '../../infrastructure/services/sitio.service';
+import { FichaService } from '../../infrastructure/services/ficha.service';
+import { ApiService } from '../../core/services/api.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-perfil',
@@ -55,7 +60,7 @@ import { ToastModule } from 'primeng/toast';
           </button>
           
           <h2 class="text-2xl font-black text-slate-800 m-0 mt-4 text-center">
-            {{ currentUser()?.nombre }}
+            {{ currentUser()?.nombre }} {{ currentUser()?.apellidos }}
           </h2>
           
           <div class="flex items-center gap-2 mt-2">
@@ -102,7 +107,8 @@ import { ToastModule } from 'primeng/toast';
                   <input type="text" [(ngModel)]="editForm.documento" 
                          class="w-full px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]" />
                 </div>
-                <span *ngIf="!isEditing()" class="text-sm font-semibold text-slate-700 mt-1">{{ currentUser()?.documento ?? '—' }}</span>
+                <span *ngIf="!isEditing() && currentUser()?.documento" class="text-sm font-semibold text-slate-700 mt-1">{{ currentUser()?.documento }}</span>
+                <span *ngIf="!isEditing() && !currentUser()?.documento" class="text-xs text-slate-400 italic mt-1">No registrado</span>
               </div>
             </div>
 
@@ -132,7 +138,7 @@ import { ToastModule } from 'primeng/toast';
                   <input type="email" [(ngModel)]="editForm.correo" 
                          class="w-full px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]" />
                 </div>
-                <span *ngIf="!isEditing()" class="text-sm font-semibold text-slate-700 mt-1 truncate" [title]="currentUser()?.correo">{{ currentUser()?.correo }}</span>
+                <span *ngIf="!isEditing()" class="text-sm font-semibold text-slate-700 mt-1 truncate" [title]="getCorreo()">{{ getCorreo() }}</span>
               </div>
             </div>
 
@@ -158,7 +164,75 @@ import { ToastModule } from 'primeng/toast';
                   <input type="text" [(ngModel)]="editForm.telefono" 
                          class="w-full px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]" />
                 </div>
-                <span *ngIf="!isEditing()" class="text-sm font-semibold text-slate-700 mt-1">{{ currentUser()?.telefono ?? '—' }}</span>
+                <span *ngIf="!isEditing() && currentUser()?.telefono" class="text-sm font-semibold text-slate-700 mt-1">{{ currentUser()?.telefono }}</span>
+                <span *ngIf="!isEditing() && !currentUser()?.telefono" class="text-xs text-slate-400 italic mt-1">No registrado</span>
+              </div>
+            </div>
+
+            <!-- Información Contextual por Rol (Sede, Bodegas o Fichas) -->
+            <div *ngIf="nombreSede() || infoContextual().length > 0" class="flex items-start gap-4.5 col-span-1 md:col-span-2 mt-4 pt-4 border-t border-slate-100 text-left">
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 text-[#39A900] flex items-center justify-center flex-shrink-0">
+                <i class="pi pi-building text-base"></i>
+              </div>
+              <div class="flex flex-col min-w-0 w-full">
+                <div *ngIf="nombreSede()" class="mb-4">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sede & Centro de Formación</span>
+                  <div class="text-sm font-bold text-slate-800 mt-1">{{ nombreSede() }}</div>
+                </div>
+
+                <ng-container *ngIf="getUserRoleName().toUpperCase().includes('ADMINISTRADOR')">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rol de Gestión</span>
+                  <span class="text-sm font-semibold text-slate-600 mt-1">Administración y control total de la sede.</span>
+                </ng-container>
+                
+                <ng-container *ngIf="getUserRoleName().toUpperCase() === 'RESPONSABLE DE BODEGA'">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bodegas a su Cargo</span>
+                  <div class="flex flex-col gap-1 mt-1.5">
+                    <span *ngFor="let b of infoContextual()" class="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">• {{ b }}</span>
+                    <span *ngIf="infoContextual().length === 0" class="text-xs text-slate-400 italic">No tiene bodegas asignadas actualmente.</span>
+                  </div>
+                </ng-container>
+
+                <ng-container *ngIf="getUserRoleName().toUpperCase() === 'INSTRUCTOR'">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fichas & Aprendices Bajo su Responsabilidad</span>
+                  <div class="flex flex-col gap-3.5 mt-2">
+                    
+                    <div *ngFor="let f of misFichasConAprendices()" class="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 flex flex-col gap-2">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-black text-slate-700">Ficha #{{ f.numero_ficha }}</span>
+                        <span class="text-[10px] font-bold bg-[#39A900]/10 text-[#39A900] px-2 py-0.5 rounded-full">
+                          {{ f.aprendices?.length || 0 }} {{ (f.aprendices?.length === 1) ? 'Aprendiz' : 'Aprendices' }}
+                        </span>
+                      </div>
+                      <div class="text-[11px] text-slate-500 font-medium leading-tight">
+                        {{ f.programa?.nombre || 'Sin programa asociado' }}
+                      </div>
+                      
+                      <!-- Lista de Aprendices de esta Ficha -->
+                      <div class="mt-2 pt-2 border-t border-slate-200/50 flex flex-col gap-1">
+                        <div *ngFor="let ap of f.aprendices" class="flex items-center justify-between py-1 text-xs">
+                          <span class="font-semibold text-slate-600">• {{ ap.nombre }} {{ ap.apellidos || '' }}</span>
+                          <span class="text-[10px] text-slate-400 font-mono">{{ ap.correo }}</span>
+                        </div>
+                        <div *ngIf="!f.aprendices || f.aprendices.length === 0" class="text-[10.5px] text-slate-400 italic">
+                          No hay aprendices registrados en esta ficha.
+                        </div>
+                      </div>
+                    </div>
+
+                    <span *ngIf="misFichasConAprendices().length === 0" class="text-xs text-slate-400 italic">
+                      No es responsable de ninguna ficha actualmente.
+                    </span>
+                  </div>
+                </ng-container>
+
+                <ng-container *ngIf="getUserRoleName().toUpperCase() === 'APRENDIZ'">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ficha de Formación</span>
+                  <div class="flex flex-col gap-1 mt-1.5">
+                    <span *ngFor="let f of infoContextual()" class="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">• {{ f }}</span>
+                    <span *ngIf="infoContextual().length === 0" class="text-xs text-slate-400 italic">No está asignado a ninguna ficha de formación.</span>
+                  </div>
+                </ng-container>
               </div>
             </div>
 
@@ -189,11 +263,18 @@ export class PerfilComponent implements OnInit {
   private authService = inject(AuthService);
   private usuarioService = inject(UsuarioService);
   private messageService = inject(MessageService);
+  private sedeService = inject(SedeService);
+  private sitioService = inject(SitioService);
+  private fichaService = inject(FichaService);
+  private apiService = inject(ApiService);
 
   currentUser = this.authService.currentUser;
   loadingProfile = signal(false);
   isEditing = signal(false);
   guardando = signal(false);
+  infoContextual = signal<string[]>([]);
+  nombreSede = signal<string>('');
+  misFichasConAprendices = signal<any[]>([]);
 
   editForm = {
     nombre: '',
@@ -202,18 +283,125 @@ export class PerfilComponent implements OnInit {
     telefono: ''
   };
 
+  constructor() {
+    effect(() => {
+      const user = this.currentUser();
+      if (user) {
+        this.cargarInfoContextual();
+      }
+    });
+  }
+
   ngOnInit(): void {
     if (!this.currentUser()) {
       this.cargarPerfil();
+    } else {
+      this.cargarInfoContextual();
     }
   }
 
   cargarPerfil() {
     this.loadingProfile.set(true);
+    // loadUserProfile() ya maneja todos los casos:
+    //  - Admins: llama la API y guarda en caché.
+    //  - No-admins: usa caché del localStorage (del login) o token JWT.
+    // No hace peticiones prohibidas, por eso no hay 403 en consola.
     this.authService.loadUserProfile();
-    setTimeout(() => {
-      this.loadingProfile.set(false);
-    }, 400);
+    setTimeout(() => this.loadingProfile.set(false), 400);
+  }
+
+  cargarInfoContextual() {
+    const user = this.currentUser();
+    const userId = Number(this.authService.getUserId());
+    const role = this.authService.getUserRole()?.toUpperCase() || '';
+
+    if (!user || !userId) return;
+
+    this.infoContextual.set([]);
+    this.nombreSede.set('');
+
+    const tenantId = user.tenant_id;
+    if (tenantId && tenantId !== 'default') {
+      this.sedeService.getSedePorId(Number(tenantId)).subscribe({
+        next: (res: any) => {
+          const sede = res?.data || res;
+          if (sede) {
+            const centroNombre = sede.centro?.nombre || '';
+            const direccionText = sede.direccion ? ` — ${sede.direccion}` : '';
+            const centroText = centroNombre ? ` (${centroNombre})` : '';
+            this.nombreSede.set(`${sede.nombre}${centroText}${direccionText}`);
+          }
+        },
+        error: () => {
+          this.nombreSede.set('Sede ID: ' + tenantId);
+        }
+      });
+    }
+
+    if (role === 'RESPONSABLE DE BODEGA') {
+      this.sitioService.getSitios().subscribe({
+        next: (res: any) => {
+          const list = res?.data || res || [];
+          const bodegas = list
+            .filter((s: any) => Number(s.id_responsable) === userId || Number(s.responsable?.id_usuario) === userId)
+            .map((s: any) => `${s.nombre} ${s.codigo_lugar ? '· ' + s.codigo_lugar : ''} (${s.tipo === 'OTRO' ? (s.tipo_personalizado || 'Otro') : s.tipo})`);
+          this.infoContextual.set(bodegas);
+        }
+      });
+    } else if (role === 'INSTRUCTOR') {
+      forkJoin({
+        fichas: this.fichaService.getFichas(),
+        usuarios: this.usuarioService.getAll()
+      }).subscribe({
+        next: (res: any) => {
+          const fichas = res.fichas;
+          const usuarios = res.usuarios;
+          const fichasList = Array.isArray(fichas) ? fichas : (fichas as any).data || [];
+          const usuariosList = Array.isArray(usuarios) ? usuarios : (usuarios as any).data || [];
+
+          // Filtrar fichas donde el instructor es el responsable
+          const misFichas = fichasList.filter((f: any) => 
+            Number(f.id_responsable) === userId || Number(f.responsable?.id_usuario) === userId
+          );
+
+          // Asociar aprendices a cada ficha
+          const estructurado = misFichas.map((f: any) => {
+            const aprendices = usuariosList.filter((u: any) => {
+              const belongsToFicha = Number(u.id_ficha) === Number(f.id_ficha);
+              const isAp = u.rolNombre?.toUpperCase().includes('APRENDIZ') || u.rol?.nombre?.toUpperCase().includes('APRENDIZ');
+              return belongsToFicha && isAp;
+            });
+            return {
+              ...f,
+              aprendices
+            };
+          });
+
+          this.misFichasConAprendices.set(estructurado);
+
+          const simpleTexts = misFichas.map((f: any) => `Ficha #${f.numero_ficha} — ${f.programa?.nombre || 'Sin programa'}`);
+          this.infoContextual.set(simpleTexts);
+        }
+      });
+    } else if (role === 'APRENDIZ') {
+      if (user.ficha) {
+        this.infoContextual.set([`Ficha #${user.ficha.numero_ficha} — ${user.ficha.programa?.nombre || ''}`]);
+      } else if (user.ficha_numero) {
+        this.infoContextual.set([`Ficha #${user.ficha_numero}`]);
+      } else {
+        this.fichaService.getFichas().subscribe({
+          next: (res: any) => {
+            const list = res?.data || res || [];
+            if (user.id_ficha) {
+              const f = list.find((fi: any) => fi.id_ficha === user.id_ficha);
+              if (f) {
+                this.infoContextual.set([`Ficha #${f.numero_ficha} — ${f.programa?.nombre || ''}`]);
+              }
+            }
+          }
+        });
+      }
+    }
   }
 
   activarEdicion() {
@@ -270,6 +458,14 @@ export class PerfilComponent implements OnInit {
   }
 
   getUserInitials(): string {
+    const user = this.currentUser();
+    if (user?.nombre) {
+      const nombre = (user.nombre || '').trim();
+      const apellidos = (user.apellidos || '').trim();
+      const initN = nombre.charAt(0).toUpperCase();
+      const initA = apellidos.charAt(0).toUpperCase();
+      return initA ? initN + initA : initN + (nombre.charAt(1) || '').toUpperCase();
+    }
     const role = this.authService.getUserRole() || '';
     if (!role) return 'US';
     return role.substring(0, 2).toUpperCase();
@@ -278,6 +474,14 @@ export class PerfilComponent implements OnInit {
   getUserRoleName(): string {
     const role = this.authService.getUserRole() || 'Usuario';
     return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+  }
+
+  // Devuelve el correo del usuario desde el perfil o, como fallback,
+  // desde el correo guardado durante el login (para roles sin GET /usuarios/:id)
+  getCorreo(): string {
+    return this.currentUser()?.correo
+      || localStorage.getItem('login_correo')
+      || '';
   }
 
   userAvatar() {

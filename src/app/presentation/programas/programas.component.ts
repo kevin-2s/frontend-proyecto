@@ -15,6 +15,9 @@ import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmationService } from 'primeng/api';
 import { ProgramaService } from '../../infrastructure/services/programa.service';
 import { AreaService } from '../../infrastructure/services/area.service';
+import { FichaService } from '../../infrastructure/services/ficha.service';
+import { AuthService } from '../../infrastructure/services/auth.service';
+import { forkJoin, of } from 'rxjs';
 
 interface Programa {
   id_programa?: number;
@@ -146,15 +149,6 @@ interface Programa {
       appendTo="body"
     >
       <div class="form-grid mt-2">
-        <div class="form-field">
-          <label for="codigo">Código del Programa *</label>
-          <input
-            pInputText
-            id="codigo"
-            [(ngModel)]="programa.codigo"
-            placeholder="Ej: 228106"
-          />
-        </div>
 
         <div class="form-field">
           <label for="nombre">Nombre del Programa *</label>
@@ -214,6 +208,8 @@ interface Programa {
 export class ProgramasComponent implements OnInit {
   private programaService = inject(ProgramaService);
   private areaService = inject(AreaService);
+  private fichaService = inject(FichaService);
+  private authService = inject(AuthService);
   private notification = inject(NotificationService);
   private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
@@ -233,12 +229,35 @@ export class ProgramasComponent implements OnInit {
   }
 
   cargarProgramas() {
-    this.programaService.getProgramas().subscribe({
+    const role = this.authService.getUserRole()?.toUpperCase() || '';
+    const currentUserId = Number(this.authService.getUserId());
+
+    const loadObs = forkJoin({
+      programas: this.programaService.getProgramas(),
+      fichas: role === 'INSTRUCTOR' ? this.fichaService.getFichas() : of([])
+    });
+
+    loadObs.subscribe({
       next: (res: any) => {
-        const d = res?.data || res || [];
+        const programasList = res.programas?.data || res.programas || [];
+        const fichasList = Array.isArray(res.fichas) ? res.fichas : (res.fichas?.data || []);
+
+        let list = [...programasList];
+
+        if (role === 'INSTRUCTOR') {
+          // Filtrar fichas a cargo de este instructor
+          const misFichas = fichasList.filter((f: any) => 
+            Number(f.id_responsable) === currentUserId || Number(f.responsable?.id_usuario) === currentUserId
+          );
+          // Extraer IDs únicos de programa vinculados a las fichas
+          const misProgramasIds = misFichas.map((f: any) => Number(f.id_programa));
+          // Filtrar programas
+          list = list.filter((p: any) => misProgramasIds.includes(Number(p.id_programa)));
+        }
+
         setTimeout(() => {
-          this.programas = d;
-          this.programasFiltrados = d;
+          this.programas = list;
+          this.programasFiltrados = [...list];
           this.cdr.detectChanges();
         });
       },
@@ -298,12 +317,17 @@ export class ProgramasComponent implements OnInit {
   }
 
   guardar() {
-    if (!this.programa.codigo || !this.programa.nombre || !this.programa.id_area) {
+    if (this.esNuevo && !this.programa.codigo) {
+      // Autogenerar código de 6 dígitos aleatorios (ej: 228118)
+      this.programa.codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    if (!this.programa.nombre || !this.programa.id_area) {
       this.notification.add({
         module: 'Programas',
         severity: 'warn',
         summary: 'Advertencia',
-        detail: 'Código, Nombre y Área son requeridos',
+        detail: 'Nombre y Área son requeridos',
       });
       return;
     }

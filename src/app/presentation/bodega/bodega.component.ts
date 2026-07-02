@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subscription, of } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { SedeService } from '../../infrastructure/services/sede.service';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -297,7 +298,10 @@ export class BodegaComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private apiService = inject(ApiService);
+  private sedeService = inject(SedeService);
   private changesSub!: Subscription;
+
+  currentIdCentro: number | null = null;
 
   bodegas: Bodega[] = [];
   bodegasFiltradas: Bodega[] = [];
@@ -331,7 +335,8 @@ export class BodegaComponent implements OnInit, OnDestroy {
   }
 
   esAdmin(): boolean {
-    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+    const role = this.authService.getUserRole()?.toUpperCase();
+    return role === 'ADMINISTRADOR' || role === 'RESPONSABLE DE BODEGA';
   }
 
   ngOnInit() {
@@ -351,28 +356,74 @@ export class BodegaComponent implements OnInit, OnDestroy {
   private readonly TIPOS_VALIDOS = ['BODEGA', 'AMBIENTE', 'LABORATORIO', 'OTRO'];
 
   cargarBodegas() {
-    this.sitioService.getSitios().subscribe({
-      next: (res: any) => {
-        const all: any[] = res?.data || res || [];
-        let filtered = all.filter(s => this.TIPOS_VALIDOS.includes(s.tipo));
-        if (!this.authService.isAdmin()) {
-          const userId = this.authService.getUserId();
-          filtered = filtered.filter(b =>
-            b.id_responsable === userId || b.responsable?.id_usuario === userId
-          );
-        }
-        this.bodegas = filtered;
-        this.bodegasFiltradas = [...this.bodegas];
-        this.cdr.markForCheck();
+    const token = this.authService.getAccessToken();
+    let tenantId: string | null = null;
+    if (token) {
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        tenantId = decoded.tenantId || decoded.tenant_id || null;
+      } catch {}
+    }
+
+    const loadSedeObs$ = (tenantId && tenantId !== 'default')
+      ? this.sedeService.getSedePorId(Number(tenantId))
+      : of(null);
+
+    loadSedeObs$.subscribe({
+      next: (sedeRes: any) => {
+        const sedeObj = sedeRes?.data || sedeRes;
+        this.currentIdCentro = sedeObj ? Number(sedeObj.id_centro) : null;
+
+        this.sitioService.getSitios().subscribe({
+          next: (res: any) => {
+            const all: any[] = res?.data || res || [];
+            let filtered = all.filter(s => this.TIPOS_VALIDOS.includes(s.tipo));
+            if (this.currentIdCentro) {
+              filtered = filtered.filter(s => Number(s.id_centro) === this.currentIdCentro);
+            }
+
+            const role = this.authService.getUserRole()?.toUpperCase();
+            if (role !== 'ADMINISTRADOR' && role !== 'SUPER ADMINISTRADOR') {
+              const userId = this.authService.getUserId();
+              filtered = filtered.filter(b =>
+                Number(b.id_responsable) === userId || Number(b.responsable?.id_usuario) === userId
+              );
+            }
+
+            this.bodegas = filtered;
+            this.bodegasFiltradas = [...this.bodegas];
+            this.cdr.markForCheck();
+          },
+          error: () => {
+            this.bodegas = [];
+            this.bodegasFiltradas = [];
+            this.cdr.markForCheck();
+          },
+        });
       },
       error: () => {
-        this.bodegas = [];
-        this.bodegasFiltradas = [];
-      },
+        this.sitioService.getSitios().subscribe({
+          next: (res: any) => {
+            const all: any[] = res?.data || res || [];
+            this.bodegas = all.filter(s => this.TIPOS_VALIDOS.includes(s.tipo));
+            this.bodegasFiltradas = [...this.bodegas];
+            this.cdr.markForCheck();
+          }
+        });
+      }
     });
   }
 
   cargarUsuarios() {
+    const role = this.authService.getUserRole()?.toUpperCase();
+    const isSedeAdmin = role === 'ADMINISTRADOR';
+    const isSuperAdmin = role === 'SUPER ADMINISTRADOR';
+
+    if (!isSedeAdmin && !isSuperAdmin) {
+      this.usuariosResponsables = [];
+      return;
+    }
+
     this.usuarioService.getAll().subscribe({
       next: (res: any) => {
         const todos: any[] = res?.data || res || [];
@@ -471,6 +522,7 @@ export class BodegaComponent implements OnInit, OnDestroy {
       tipo_personalizado: this.bodega.tipo === 'OTRO' ? this.bodega.tipo_personalizado!.trim() : null,
       codigo_lugar: this.bodega.codigo_lugar?.trim() || null,
       id_responsable: this.bodega.id_responsable,
+      id_centro: this.currentIdCentro,
       estado: true,
     };
 

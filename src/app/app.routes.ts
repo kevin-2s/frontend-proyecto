@@ -42,31 +42,38 @@ export const routes: Routes = [
           },
           {
             path: 'productos',
-            loadComponent: () => import('./presentation/productos/productos.component').then(m => m.ProductosComponent)
+            loadComponent: () => import('./presentation/productos/productos.component').then(m => m.ProductosComponent),
+            canActivate: [permissionGuard('ver_productos')]
           },
           {
             path: 'categoria',
-            loadComponent: () => import('./presentation/categoria/categoria.component').then(m => m.CategoriaComponent)
+            loadComponent: () => import('./presentation/categoria/categoria.component').then(m => m.CategoriaComponent),
+            canActivate: [permissionGuard('ver_productos')]
           },
           {
             path: 'bodega',
-            loadComponent: () => import('./presentation/bodega/bodega.component').then(m => m.BodegaComponent)
+            loadComponent: () => import('./presentation/bodega/bodega.component').then(m => m.BodegaComponent),
+            canActivate: [permissionGuard('ver_inventario')]
           },
           {
             path: 'solicitudes',
-            loadComponent: () => import('./presentation/solicitudes/solicitudes.component').then(m => m.SolicitudesComponent)
+            loadComponent: () => import('./presentation/solicitudes/solicitudes.component').then(m => m.SolicitudesComponent),
+            canActivate: [permissionGuard('ver_solicitudes')]
           },
           {
             path: 'asignar',
-            loadComponent: () => import('./presentation/asignar/asignar.component').then(m => m.AsignarComponent)
+            loadComponent: () => import('./presentation/asignar/asignar.component').then(m => m.AsignarComponent),
+            canActivate: [permissionGuard('ver_solicitudes')]
           },
           {
             path: 'novedades',
-            loadComponent: () => import('./presentation/novedades/novedades.component').then(m => m.NovedadesComponent)
+            loadComponent: () => import('./presentation/novedades/novedades.component').then(m => m.NovedadesComponent),
+            canActivate: [permissionGuard('ver_inventario')]
           },
           {
             path: 'traslados',
-            loadComponent: () => import('./presentation/traslados/traslados.component').then(m => m.TrasladosComponent)
+            loadComponent: () => import('./presentation/traslados/traslados.component').then(m => m.TrasladosComponent),
+            canActivate: [permissionGuard('ver_traslados')]
           }
         ]
       },

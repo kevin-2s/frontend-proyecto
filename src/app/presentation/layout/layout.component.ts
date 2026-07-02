@@ -369,6 +369,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
       title: 'REPORTES',
       expanded: true,
       items: [
+        { title: 'Kardex', path: 'kardex', icon: 'pi-history', requiredPermission: 'ver_inventario' },
         { title: 'Reportes', path: 'reportes', icon: 'pi-chart-bar', requiredPermission: 'ver_reportes' }
       ]
     },
@@ -501,44 +502,61 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   hasAccess(item: any): boolean {
     const role = this.authService.getUserRole()?.toUpperCase() || '';
-    
+    const path = item?.path || '';
+
+    // Super Admin: solo ve centros, sedes, usuarios y perfil
     if (role === 'SUPER ADMINISTRADOR') {
-      const allowedPaths = ['centros', 'sedes', 'usuarios', 'perfil'];
-      return allowedPaths.includes(item.path);
+      const allowedPaths = ['centros', 'sedes', 'usuarios', 'perfil', 'home'];
+      return allowedPaths.includes(path);
     }
 
-    if (item?.requiresSuperAdmin && !this.authService.isSuperAdmin()) {
-      return false;
+    // Bloquear ítems que requieren Super Admin
+    if (item?.requiresSuperAdmin) return false;
+
+    // Administrador: acceso total (excepto centros que son solo del Super Admin)
+    if (role === 'ADMINISTRADOR') {
+      return path !== 'centros';
     }
 
-    // Si el item tiene un permiso requerido y lo cumple, retornamos true
+    // Para otros roles: verificar permiso granular primero
     if (item?.requiredPermission && this.authService.hasPermission(item.requiredPermission)) {
       return true;
     }
 
-    if (role === 'ADMINISTRADOR') {
-      return true;
+    // RESPONSABLE DE BODEGA: gestiona inventario completo
+    if (role === 'RESPONSABLE DE BODEGA') {
+      const responsablePaths = [
+        'home', 'perfil',
+        'inventario/productos', 'inventario/categoria',
+        'inventario/bodega', 'inventario/solicitudes',
+        'inventario/asignar', 'inventario/novedades',
+        'inventario/traslados', 'kardex', 'reportes', 'qr'
+      ];
+      return responsablePaths.includes(path);
     }
 
-    const path = item?.path || '';
+    // INSTRUCTOR: gestiona fichas/programas, ve productos pero NO bodega ni asignar
     if (role === 'INSTRUCTOR') {
       const instructorPaths = [
-        'sedes', 'sitios', 'areas', 'programas', 'fichas',
-        'inventario/productos', 'inventario/categoria', 'inventario/bodega', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades', 'inventario/traslados',
-        'home',
+        'home', 'perfil',
+        'programas', 'fichas',
+        'inventario/productos', 'inventario/categoria',
+        'inventario/solicitudes',
         'kardex', 'reportes', 'qr'
       ];
       return instructorPaths.includes(path);
     }
 
+    // APRENDIZ: solo ve productos y puede hacer solicitudes
     if (role === 'APRENDIZ') {
       const aprendizPaths = [
-        'inventario/productos', 'inventario/categoria', 'inventario/solicitudes', 'inventario/asignar', 'inventario/novedades',
-        'home', 'qr'
+        'home', 'perfil',
+        'inventario/productos', 'inventario/categoria',
+        'inventario/solicitudes', 'qr'
       ];
       return aprendizPaths.includes(path);
     }
-    
+
     return false;
   }
 

@@ -476,7 +476,7 @@ export class TrasladosComponent implements OnInit, OnDestroy {
 
     const idResponsable: number | null = t.sitio_origen?.id_responsable ?? t.sitio_origen?.responsable?.id_usuario ?? null;
 
-    if (this.currentRole === 'ADMINISTRADOR') {
+    if (this.currentRole === 'ADMINISTRADOR' || this.currentRole === 'RESPONSABLE DE BODEGA') {
       return !idResponsable || idResponsable === userId;
     }
     // Cualquier usuario asignado como responsable del sitio origen puede aprobar

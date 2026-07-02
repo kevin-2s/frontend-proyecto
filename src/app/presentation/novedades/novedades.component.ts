@@ -296,6 +296,14 @@ export class NovedadesComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   private changesSub!: Subscription;
 
+  get currentUserId(): number {
+    return Number(this.authService.getUserId()) || 0;
+  }
+
+  get currentRole(): string {
+    return this.authService.getUserRole()?.toUpperCase() ?? '';
+  }
+
   novedades: Novedad[] = [];
   novedadesFiltradas: Novedad[] = [];
   filtro = '';
@@ -311,7 +319,8 @@ export class NovedadesComponent implements OnInit, OnDestroy {
     { tipo: '', id_item: null, descripcion: '' };
 
   esAdmin(): boolean {
-    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+    const role = this.authService.getUserRole()?.toUpperCase();
+    return role === 'ADMINISTRADOR' || role === 'RESPONSABLE DE BODEGA';
   }
 
   ngOnInit() {
@@ -327,7 +336,22 @@ export class NovedadesComponent implements OnInit, OnDestroy {
   cargar() {
     this.novedadService.getNovedades().subscribe({
       next: (res: any) => {
-        const data = res?.data ?? res ?? [];
+        let data = res?.data ?? res ?? [];
+        const role = this.currentRole;
+        const userId = this.currentUserId;
+
+        if (role !== 'ADMINISTRADOR') {
+          if (role === 'RESPONSABLE DE BODEGA') {
+            data = data.filter((n: any) => {
+              const createdByMe = n.id_usuario === userId;
+              const isWarehouseResponsable = n.item?.sitio && (n.item.sitio.id_responsable === userId || n.item.sitio.responsable?.id_usuario === userId);
+              return createdByMe || isWarehouseResponsable;
+            });
+          } else {
+            data = data.filter((n: any) => n.id_usuario === userId);
+          }
+        }
+
         this.novedades = data;
         this.novedadesFiltradas = data;
         this.cdr.markForCheck();
@@ -335,6 +359,7 @@ export class NovedadesComponent implements OnInit, OnDestroy {
       error: () => {
         this.novedades = [];
         this.novedadesFiltradas = [];
+        this.cdr.markForCheck();
       },
     });
   }

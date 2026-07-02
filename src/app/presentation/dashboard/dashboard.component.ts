@@ -384,17 +384,27 @@ export class DashboardComponent implements OnInit {
         catchError(() => of([]))
       );
 
+    const role = this.authService.getUserRole()?.toUpperCase() || '';
+    const isAdmin = role === 'ADMINISTRADOR' || role === 'SUPER ADMINISTRADOR';
+    
+    // Evitar peticiones que devuelvan 403 según el rol
+    const canSeeUsers = isAdmin || this.authService.hasPermission('ver_usuarios');
+    const canSeeFichas = isAdmin || this.authService.hasPermission('ver_fichas') || role === 'INSTRUCTOR';
+    const canSeeSitios = isAdmin || this.authService.hasPermission('ver_sedes') || role === 'RESPONSABLE DE BODEGA';
+    const canSeeInventario = isAdmin || this.authService.hasPermission('ver_inventario') || role === 'RESPONSABLE DE BODEGA';
+    const canSeeAsignaciones = isAdmin || role === 'RESPONSABLE DE BODEGA' || this.authService.hasPermission('ver_solicitudes');
+
     forkJoin({
-      usuarios:    req('/usuarios'),
+      usuarios:    canSeeUsers ? req('/usuarios') : of([]),
       productos:   req('/productos'),
       solicitudes: req('/solicitudes'),
-      inventario:  req('/inventario'),
+      inventario:  canSeeInventario ? req('/inventario') : of([]),
       items:       req('/items'),
-      sitios:      req('/sitios'),
-      fichas:      req('/fichas'),
+      sitios:      canSeeSitios ? req('/sitios') : of([]),
+      fichas:      canSeeFichas ? req('/fichas') : of([]),
       categorias:  req('/categorias'),
-      movimientos:  req('/movimientos'),
-      asignaciones: req('/asignaciones'),
+      movimientos:  of([]),
+      asignaciones: canSeeAsignaciones ? req('/asignaciones') : of([]),
     }).subscribe({
       next: ({ usuarios, productos, solicitudes, inventario, items, sitios, fichas, categorias, movimientos, asignaciones }) => {
 

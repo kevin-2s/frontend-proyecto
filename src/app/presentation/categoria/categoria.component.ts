@@ -160,7 +160,8 @@ export class CategoriaComponent implements OnInit, OnDestroy {
   private changesSub!: Subscription;
 
   esAdmin(): boolean {
-    return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+    const role = this.authService.getUserRole()?.toUpperCase();
+    return role === 'ADMINISTRADOR' || role === 'RESPONSABLE DE BODEGA';
   }
   categorias: Categoria[] = [];
   categoriasFiltradas: Categoria[] = [];

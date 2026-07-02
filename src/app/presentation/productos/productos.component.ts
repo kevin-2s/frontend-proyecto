@@ -81,7 +81,7 @@ type SelectOption = { label: string; value: string };
           </div>
           <button pButton label="Buscar Placa SENA" icon="pi pi-id-card" class="btn-add"
             (click)="abrirBuscarPlaca()"></button>
-          <button *ngIf="esAdmin()" pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
+          <button *ngIf="puedeCrearProducto()" pButton label="Nuevo" icon="pi pi-plus" class="btn-add" (click)="openNew()"></button>
         </div>
       </div>
 
@@ -1121,6 +1121,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   esAdmin(): boolean {
     return this.authService.getUserRole()?.toUpperCase() === 'ADMINISTRADOR';
+  }
+
+  puedeCrearProducto(): boolean {
+    return this.esAdmin() || this.misSitiosIds.size > 0;
   }
 
   productos: Producto[] = [];

@@ -94,7 +94,7 @@ interface Programa {
               <td><span class="font-mono text-sm font-semibold text-slate-700">{{ programa.codigo }}</span></td>
               <td><span class="nombre-cell">{{ programa.nombre }}</span></td>
               <td><span class="text-slate-600 text-sm font-semibold">{{ programa.area?.nombre || 'Sin área' }}</span></td>
-              <td><span class="text-slate-500 text-xs">{{ programa.area?.sitio?.nombre || 'Sin sede' }}</span></td>
+              <td><span class="text-slate-500 text-xs">{{ programa.area?.sede?.nombre || 'Sin sede' }}</span></td>
               <td>
                 <p-tag
                   [value]="programa.estado !== false ? 'ACTIVO' : 'INACTIVO'"

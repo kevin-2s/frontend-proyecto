@@ -42,6 +42,20 @@ testem.log
 /typings
 __screenshots__/
 
+# Build artifacts
+*.tsbuildinfo
+
+# Archivos de logs y scripts de utilidad temporales
+build_errors_final.txt
+update_dialogs.js
+update_dialogs2.js
+update_roles.js
+
+# Archivos temporales del sistema
+*.tmp
+~$*
+~WRL*.tmp
+
 # System files
 .DS_Store
 Thumbs.db

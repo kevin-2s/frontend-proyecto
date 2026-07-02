@@ -317,6 +317,7 @@ interface Usuario {
                       type="checkbox" 
                       [checked]="u.estado !== false" 
                       (change)="actualizarEstado(u)" 
+                      [disabled]="u.id_usuario === idSedeAdmin"
                     />
                     <span class="custom-switch-slider"></span>
                   </label>
@@ -332,12 +333,14 @@ interface Usuario {
                     icon="pi pi-pencil"
                     class="btn-table-action btn-editor"
                     (click)="editar(u)"
+                    [disabled]="u.id_usuario === idSedeAdmin && currentUserId !== idSedeAdmin"
                   ></button>
                   <button
                     pButton
                     icon="pi pi-trash"
                     class="btn-table-action btn-eliminar"
                     (click)="eliminar(u)"
+                    [disabled]="u.id_usuario === idSedeAdmin"
                   ></button>
                 </div>
               </td>
@@ -371,6 +374,8 @@ export class UsuariosComponent implements OnInit {
   roles: Rol[] = [];
   allRoles: Rol[] = [];
   sedes: any[] = [];
+  idSedeAdmin: number | null = null;
+  currentUserId: number | null = null;
   estadoOpciones = [
     { label: 'Activo', value: true },
     { label: 'Inactivo', value: false }
@@ -396,7 +401,19 @@ export class UsuariosComponent implements OnInit {
   ngOnInit() {
     this.isAdmin = this.authService.getUserRole() === 'ADMINISTRADOR';
     this.isSuperAdmin = this.authService.isSuperAdmin();
+    this.currentUserId = Number(this.authService.getUserId());
     this.cargarDatos();
+  }
+
+  getTenantId(): string | null {
+    const token = this.authService.getAccessToken();
+    if (!token) return null;
+    try {
+      const decoded = JSON.parse(atob(token.split('.')[1]));
+      return decoded.tenantId || null;
+    } catch {
+      return null;
+    }
   }
 
   openRolDialog() {
@@ -430,14 +447,26 @@ export class UsuariosComponent implements OnInit {
 
   cargarDatos() {
     this.loading = true;
+    const tenantId = this.getTenantId();
+    const loadSedeObs = (!this.isSuperAdmin && tenantId && tenantId !== 'default') 
+      ? this.sedeService.getSedePorId(Number(tenantId)) 
+      : of(null);
+
     forkJoin({
       roles: this.rolService.getAll(),
       usuarios: this.usuarioService.getAll(),
-      sedes: this.isSuperAdmin ? this.sedeService.getSedes() : of({ data: [] })
+      sedes: this.isSuperAdmin ? this.sedeService.getSedes() : of({ data: [] }),
+      currentSede: loadSedeObs
     }).subscribe({
-      next: ({ roles, usuarios, sedes }) => {
+      next: ({ roles, usuarios, sedes, currentSede }) => {
         const sedesData = Array.isArray(sedes) ? sedes : (sedes as any).data || [];
         this.sedes = sedesData;
+
+        const sedeObj = currentSede?.data || currentSede;
+        if (sedeObj) {
+          this.idSedeAdmin = Number(sedeObj.id_administrador || (sedeObj.administrador ? sedeObj.administrador.id_usuario : 0));
+        }
+
         // Mapear Roles
         const rolesData = Array.isArray(roles) ? roles : (roles as any).data || [];
         this.allRoles = rolesData;
@@ -449,7 +478,7 @@ export class UsuariosComponent implements OnInit {
         } else {
           this.roles = rolesData.filter((r: any) => {
             const n = (r.nombreRol || r.nombre)?.toUpperCase();
-            return n !== 'SUPER ADMINISTRADOR' && n !== 'ADMINISTRADOR';
+            return n !== 'SUPER ADMINISTRADOR';
           });
         }
 
@@ -472,8 +501,8 @@ export class UsuariosComponent implements OnInit {
 
           return {
             ...u,
-            id: u.id_usuario || u.id,
-            id_usuario: u.id_usuario || u.id,
+            id: Number(u.id_usuario || u.id),
+            id_usuario: Number(u.id_usuario || u.id),
             nombre,
             apellidos,
             id_rol: mappedRolId,
